@@ -52,7 +52,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
 	AndroidJavaObject webView;
 	Vector2 offset;
-	bool needsInput;
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
@@ -122,7 +121,7 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
 		offset = new Vector2(0, 0);
 		webView = new AndroidJavaObject("net.gree.unitywebview.WebViewPlugin");
-		needsInput = webView.Call<bool>("Init", name);
+		webView.Call("Init", name);
 #endif
 	}
 
@@ -213,25 +212,6 @@ public class WebViewObject : MonoBehaviour
 		if (callback != null)
 			callback(message);
 	}
-
-#if !UNITY_EDITOR && UNITY_ANDROID
-	void Update()
-	{
-		if (!needsInput)
-			return;
-
-		bool down = Input.GetButton("Fire1");
-		bool press = Input.GetButtonDown("Fire1");
-		bool release = Input.GetButtonUp("Fire1");
-
-		if (!down && !press && !release)
-			return;
-
-		Vector3 pos = Input.mousePosition;
-		webView.Call("Update", pos.x - offset.x,
-			Screen.height - (pos.y - offset.y), down, press, release);
-	}
-#endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
 	void OnGUI()

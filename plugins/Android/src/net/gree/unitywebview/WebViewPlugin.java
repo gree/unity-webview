@@ -55,18 +55,15 @@ public class WebViewPlugin
 {
 	private static FrameLayout layout = null;
 	private WebView mWebView;
-	private boolean mNeedsInput;
 	private long mDownTime;
 
 	public WebViewPlugin()
 	{
 	}
 
-	public boolean Init(final String gameObject)
+	public void Init(final String gameObject)
 	{
 		final Activity a = UnityPlayer.currentActivity;
-		mNeedsInput = a.getClass().getSimpleName().compareTo(
-			"UnityPlayerNativeActivity") == 0;
 		a.runOnUiThread(new Runnable() {public void run() {
 
 			mWebView = new WebView(a);
@@ -97,8 +94,6 @@ public class WebViewPlugin
 			webSettings.setPluginsEnabled(true);
 
 		}});
-
-		return mNeedsInput;
 	}
 
 	public void Destroy()
@@ -161,41 +156,6 @@ public class WebViewPlugin
 			} else {
 				mWebView.setVisibility(View.GONE);
 			}
-
-		}});
-	}
-
-	public void Update(final float x, final float y,
-		final boolean down, final boolean press, final boolean release)
-	{
-		if (!mNeedsInput || mWebView == null)
-			return;
-
-		Activity a = UnityPlayer.currentActivity;
-		a.runOnUiThread(new Runnable() {public void run() {
-
-			long time = SystemClock.uptimeMillis();
-			if (down)
-				mDownTime = time;
-
-			int action;
-			if (press) {
-				action = MotionEvent.ACTION_DOWN;
-			} else if (release) {
-				action = MotionEvent.ACTION_UP;
-			} else {
-				action = MotionEvent.ACTION_MOVE;
-			}
-
-			MotionEvent motionEvent = MotionEvent.obtain(
-				mDownTime,
-				time,
-				action,
-				x, 
-				y, 
-				0);
-
-			mWebView.dispatchTouchEvent(motionEvent);
 
 		}});
 	}
