@@ -161,33 +161,46 @@ static void UnitySendMessage(
 	[webView stringByEvaluatingJavaScriptFromString:jsStr];
 }
 
-- (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease textureId:(int)tId
+- (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars textureId:(int)tId
 {
 	textureId = tId;
 	NSView *view = [[[webView mainFrame] frameView] documentView];
 	NSGraphicsContext *context = [NSGraphicsContext currentContext];
-	NSEvent *mouseEvent;
+	NSEvent *event;
+	NSString *characters;
 
 	if (buttonDown) {
 		if (buttonPress) {
-			mouseEvent = [NSEvent mouseEventWithType:NSLeftMouseDown
+			event = [NSEvent mouseEventWithType:NSLeftMouseDown
 				location:NSMakePoint(x, y) modifierFlags:nil
 				timestamp:GetCurrentEventTime() windowNumber:0
 				context:context eventNumber:nil clickCount:1 pressure:nil];
-			[view mouseDown:mouseEvent];
+			[view mouseDown:event];
 		} else {
-			mouseEvent = [NSEvent mouseEventWithType:NSLeftMouseDragged
+			event = [NSEvent mouseEventWithType:NSLeftMouseDragged
 				location:NSMakePoint(x, y) modifierFlags:nil
 				timestamp:GetCurrentEventTime() windowNumber:0
 				context:context eventNumber:nil clickCount:0 pressure:nil];
-			[view mouseDragged:mouseEvent];
+			[view mouseDragged:event];
 		}
 	} else if (buttonRelease) {
-		mouseEvent = [NSEvent mouseEventWithType:NSLeftMouseUp
+		event = [NSEvent mouseEventWithType:NSLeftMouseUp
 			location:NSMakePoint(x, y) modifierFlags:nil
 			timestamp:GetCurrentEventTime() windowNumber:0
 			context:context eventNumber:nil clickCount:0 pressure:nil];
-		[view mouseUp:mouseEvent];
+		[view mouseUp:event];
+	}
+
+	if (keyPress) {
+	  characters = [NSString stringWithUTF8String:keyChars];
+	  event = [NSEvent keyEventWithType:NSKeyDown
+			location:NSMakePoint(x, y) modifierFlags:nil
+			timestamp:GetCurrentEventTime() windowNumber:0
+			context:context
+			characters:characters
+			charactersIgnoringModifiers:characters
+			isARepeat:NO keyCode:(unsigned short)keyCode];
+	  [view keyDown:event];
 	}
 
 	if (deltaY != 0) {
@@ -249,7 +262,8 @@ void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
 void _WebViewPlugin_LoadURL(void *instance, const char *url);
 void _WebViewPlugin_EvaluateJS(void *instance, const char *url);
 void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
-	BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease, int textureId);
+	BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
+	BOOL keyPress, unsigned char keyCode, const char *keyChars, int textureId);
 void UnityRenderEvent(int eventID);
 }
 
@@ -293,12 +307,13 @@ void _WebViewPlugin_EvaluateJS(void *instance, const char *js)
 }
 
 void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
-	BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease, int textureId)
+	BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease, BOOL keyPress,
+	unsigned char keyCode, const char *keyChars, int textureId)
 {
 	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
 	[webViewPlugin update:x y:y deltaY:deltaY
-		buttonDown:buttonDown buttonPress:buttonPress
-			buttonRelease:buttonRelease textureId:textureId];
+		buttonDown:buttonDown buttonPress:buttonPress buttonRelease:buttonRelease
+		keyPress:keyPress keyCode:keyCode keyChars:keyChars textureId:textureId];
 }
 
 void UnityRenderEvent(int eventID)

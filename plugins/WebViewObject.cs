@@ -75,7 +75,7 @@ public class WebViewObject : MonoBehaviour
 	[DllImport("WebView")]
 	private static extern void _WebViewPlugin_Update(IntPtr instance,
 		int x, int y, float deltaY, bool down, bool press, bool release,
-		int textureId);
+		bool keyPress, short keyCode, string keyChars, int textureId);
 #elif UNITY_IPHONE
 	[DllImport("__Internal")]
 	private static extern IntPtr _WebViewPlugin_Init(string gameObject);
@@ -214,6 +214,12 @@ public class WebViewObject : MonoBehaviour
 	}
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
+	private string inputString = "";
+	void Update()
+	{
+	  inputString += Input.inputString;
+	}
+
 	void OnGUI()
 	{
 		if (webView == IntPtr.Zero || !visibility)
@@ -224,9 +230,20 @@ public class WebViewObject : MonoBehaviour
 		bool press = Input.GetButtonDown("Fire1");
 		bool release = Input.GetButtonUp("Fire1");
 		float deltaY = Input.GetAxis("Mouse ScrollWheel");
+		bool keyPress = false;
+		string keyChars = "";
+		short keyCode = 0;
+		if (inputString.Length > 0)
+		{
+		  keyPress = true;
+		  keyChars = inputString.Substring(0, 1);
+		  keyCode = (short)inputString[0];
+		  inputString = inputString.Substring(1);
+		}
 		_WebViewPlugin_Update(webView,
 			(int)(pos.x - rect.x), (int)(pos.y - rect.y), deltaY,
-			down, press, release, texture.GetNativeTextureID());
+			down, press, release, keyPress, keyCode, keyChars,
+			texture.GetNativeTextureID());
 		GL.IssuePluginEvent((int)webView);
 		Matrix4x4 m = GUI.matrix;
 		GUI.matrix = Matrix4x4.TRS(new Vector3(0, Screen.height, 0),
