@@ -47,6 +47,7 @@ public class WebViewObject : MonoBehaviour
 	bool visibility;
 	Rect rect;
 	Texture2D texture;
+	string inputString;
 #elif UNITY_IPHONE
 	IntPtr webView;
 #elif UNITY_ANDROID
@@ -214,10 +215,9 @@ public class WebViewObject : MonoBehaviour
 	}
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
-	private string inputString = "";
 	void Update()
 	{
-	  inputString += Input.inputString;
+		inputString += Input.inputString;
 	}
 
 	void OnGUI()
@@ -233,12 +233,11 @@ public class WebViewObject : MonoBehaviour
 		bool keyPress = false;
 		string keyChars = "";
 		short keyCode = 0;
-		if (inputString.Length > 0)
-		{
-		  keyPress = true;
-		  keyChars = inputString.Substring(0, 1);
-		  keyCode = (short)inputString[0];
-		  inputString = inputString.Substring(1);
+		if (inputString.Length > 0) {
+			keyPress = true;
+			keyChars = inputString.Substring(0, 1);
+			keyCode = (short)inputString[0];
+			inputString = inputString.Substring(1);
 		}
 		_WebViewPlugin_Update(webView,
 			(int)(pos.x - rect.x), (int)(pos.y - rect.y), deltaY,

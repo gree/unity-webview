@@ -192,15 +192,15 @@ static void UnitySendMessage(
 	}
 
 	if (keyPress) {
-	  characters = [NSString stringWithUTF8String:keyChars];
-	  event = [NSEvent keyEventWithType:NSKeyDown
+		characters = [NSString stringWithUTF8String:keyChars];
+		event = [NSEvent keyEventWithType:NSKeyDown
 			location:NSMakePoint(x, y) modifierFlags:nil
 			timestamp:GetCurrentEventTime() windowNumber:0
 			context:context
 			characters:characters
 			charactersIgnoringModifiers:characters
 			isARepeat:NO keyCode:(unsigned short)keyCode];
-	  [view keyDown:event];
+		[view keyDown:event];
 	}
 
 	if (deltaY != 0) {
@@ -311,9 +311,9 @@ void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
 	unsigned char keyCode, const char *keyChars, int textureId)
 {
 	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin update:x y:y deltaY:deltaY
-		buttonDown:buttonDown buttonPress:buttonPress buttonRelease:buttonRelease
-		keyPress:keyPress keyCode:keyCode keyChars:keyChars textureId:textureId];
+	[webViewPlugin update:x y:y deltaY:deltaY buttonDown:buttonDown
+		buttonPress:buttonPress buttonRelease:buttonRelease keyPress:keyPress
+		keyCode:keyCode keyChars:keyChars textureId:textureId];
 }
 
 void UnityRenderEvent(int eventID)
