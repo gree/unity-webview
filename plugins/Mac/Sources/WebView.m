@@ -118,6 +118,7 @@ static void UnitySendMessage(
 	[webView release];
 	[gameObject release];
 	[bitmap release];
+	[super dealloc];
 }
 
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener

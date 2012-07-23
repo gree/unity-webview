@@ -51,6 +51,7 @@ extern UIViewController *UnityGetGLViewController();
 	[webView removeFromSuperview];
 	[webView release];
 	[gameObjectName release];
+	[super dealloc];
 }
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
