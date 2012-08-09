@@ -9,4 +9,4 @@ ant release
 mkdir -p $DSTDIR
 cp -a bin/classes.jar $DSTDIR/WebViewPlugin.jar
 ant clean
-rm -rf libs proguard-project.txt
+rm -rf libs res proguard-project.txt
