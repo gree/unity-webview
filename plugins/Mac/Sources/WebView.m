@@ -268,12 +268,18 @@ void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
 void UnityRenderEvent(int eventID);
 }
 
+static NSMutableSet *pool;
+
 void *_WebViewPlugin_Init(
 	const char *gameObject, int width, int height, BOOL ineditor)
 {
+	if (pool == 0)
+		pool = [[NSMutableSet alloc] init];
+
 	inEditor = ineditor;
 	id instance = [[WebViewPlugin alloc]
 		initWithGameObject:gameObject width:width height:height];
+	[pool addObject:[NSValue valueWithPointer:instance]];
 	return (void *)instance;
 }
 
@@ -281,6 +287,7 @@ void _WebViewPlugin_Destroy(void *instance)
 {
 	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
 	[webViewPlugin release];
+	[pool removeObject:[NSValue valueWithPointer:instance]];
 }
 
 void _WebViewPlugin_SetRect(void *instance, int width, int height)
@@ -319,8 +326,10 @@ void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
 
 void UnityRenderEvent(int eventID)
 {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)eventID;
-	[webViewPlugin render];
-	[pool drain];
+	@autoreleasepool {
+		if ([pool containsObject:[NSValue valueWithPointer:(void *)eventID]]) {
+			WebViewPlugin *webViewPlugin = (WebViewPlugin *)eventID;
+			[webViewPlugin render];
+		}
+	}
 }
