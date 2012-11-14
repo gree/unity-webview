@@ -22,6 +22,7 @@
 #import <UIKit/UIKit.h>
 
 extern UIViewController *UnityGetGLViewController();
+extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @interface WebViewPlugin : NSObject<UIWebViewDelegate>
 {
