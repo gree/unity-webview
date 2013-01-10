@@ -231,6 +231,10 @@ static void UnitySendMessage(
 			return;
 
 		int samplesPerPixel = [bitmap samplesPerPixel];
+        int rowLength = 0;
+        int unpackAlign = 0;
+        glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
+        glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH,
 			[bitmap bytesPerRow] / samplesPerPixel);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -249,6 +253,8 @@ static void UnitySendMessage(
 				GL_UNSIGNED_BYTE,
 				[bitmap bitmapData]);
 		}
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
 	}
 }
 
