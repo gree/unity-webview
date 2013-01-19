@@ -12,6 +12,13 @@ unity-webview is derived from keijiro-san's unity-webview-integration https://gi
 
 (TBW)
 
+### For iOS with Unity 3.5.*
+
+CADisplayLink stops updating when UIWebView scrolled, thus you have to change AppController.mm as the following.
+
+    -        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+    +        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+
 ### Sample Project
 
     $ open sample/Assets/Sample.unity
