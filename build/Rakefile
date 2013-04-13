@@ -21,27 +21,44 @@
 require 'fileutils'
 
 UNITY="/Applications/Unity/Unity.app/Contents"
-SRCDIR="../plugins"
-DSTDIR="Packager/Assets/Plugins"
 
-SRCS=%W|
+CNT = 2
+SRCDIR = Array.new(CNT);
+DSTDIR = Array.new(CNT);
+SRCS = Array.new(CNT);
+
+SRCDIR[0]="../plugins"
+DSTDIR[0]="Packager/Assets/Plugins"
+SRCS[0]=%W|
   WebViewObject.cs
   iOS/WebView.mm
+|
+
+DSTDIR[1]="Packager/Assets/WebPlayerTemplates"
+SRCDIR[1]="../WebPlayerTemplates"
+SRCS[1]=%W|
+  unity-webview/index.html
+  unity-webview/thumbnail.png
+  unity-webview/unity-webview.js
 |
 
 task :default => ["build"]
 
 desc "build"
 task :build do
-  FileUtils.rm_rf DSTDIR
-  FileUtils.mkdir_p DSTDIR
-  SRCS.each do |src|
-    dstdir = "#{DSTDIR}/#{File.dirname(src)}"
-    FileUtils.mkdir_p dstdir
-    FileUtils.cp "#{SRCDIR}/#{src}", dstdir, {:preserve => true}
+  DSTDIR.each do |dir|
+    FileUtils.rm_rf dir 
+    FileUtils.mkdir_p dir
+  end
+  CNT.times do |i|
+    SRCS[i].each do |src|
+      dstdir = "#{DSTDIR[i]}/#{File.dirname(src)}"
+      FileUtils.mkdir_p dstdir
+      FileUtils.cp "#{SRCDIR[i]}/#{src}", dstdir, {:preserve => true}
+    end
   end
   ["Android", "Mac"].each do |t|
-    Dir.chdir("#{SRCDIR}/#{t}") do
+    Dir.chdir("#{SRCDIR[0]}/#{t}") do
       system "./install.sh"
     end
   end
@@ -61,5 +78,7 @@ end
 
 desc "clean"
 task :clean do
-  FileUtils.rm_rf DSTDIR
+  DSTDIR.each do |dir|
+    FileUtils.rm_rf dir
+  end
 end
