@@ -1,12 +1,14 @@
 var unityWebView = 
 {
+    loaded: [],
+
     init : function (name) {
         $containers = $('.webviewContainer');
         if ($containers.size() === 0) {
             $('<div class="webviewContainer" style="overflow:hidden; position:relative; width:100%; height:100%; top:-100%; pointer-events:none;"></div>')
                 .appendTo($('#unityPlayer'));
         }
-        var $last = $containers.last();
+        var $last = $('.webviewContainer:last');
         var clonedTop = parseInt($last.css('top')) - 100;
         var $clone = $last.clone().insertAfter($last).css('top', clonedTop + '%');
         var $iframe =
@@ -14,8 +16,9 @@ var unityWebView =
             .attr('id', 'webview_' + name)
             .appendTo($last)
             .load(function () {
+                $(this).attr('loaded', 'true');
                 var contents = $(this).contents();
-                var w = this.contentWindow;
+                var w = $(this)[0].contentWindow;
                 contents.find('a').click(function (e) {
                     var href = $.trim($(this).attr('href'));
                     if (href.substr(0, 6) === 'unity:') {
@@ -40,6 +43,10 @@ var unityWebView =
                     return true;
                 }); 
             });
+    },
+
+    sendMessage: function (name, message) {
+        u.getUnity().SendMessage(name, "CallFromJS", message);
     },
 
     setMargins: function (name, left, top, right, bottom) {
@@ -67,11 +74,18 @@ var unityWebView =
     },
 
     loadURL: function(name, url) {
-        this.iframe(name)[0].contentWindow.location.replace(url);
+        this.iframe(name).attr('loaded', 'false')[0].contentWindow.location.replace(url);
     },
 
     evaluateJS: function (name, js) {
-        this.iframe(name)[0].contentWindow.eval(js);
+        $iframe = this.iframe(name);
+        if ($iframe.attr('loaded') === 'true') {
+            $iframe[0].contentWindow.eval(js);
+        } else {
+            $iframe.load(function(){
+                $(this)[0].contentWindow.eval(js);
+            });
+        }
     },
 
     destroy: function (name) {
