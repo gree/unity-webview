@@ -67,16 +67,28 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 	}
 }
 
+- (void)setFrame:(NSInteger)x positionY:(NSInteger)y width:(NSInteger)width height:(NSInteger)height
+{
+    UIView* view = UnityGetGLViewController().view;
+    CGRect frame = webView.frame;
+    CGRect screen = view.bounds;
+    frame.origin.x = x + ((screen.size.width - width)/2);
+    frame.origin.y = -y + ((screen.size.height - height)/2);
+    frame.size.width = width;
+    frame.size.height = height;
+    webView.frame = frame;
+}
+
 - (void)setMargins:(int)left top:(int)top right:(int)right bottom:(int)bottom
 {
 	UIView *view = UnityGetGLViewController().view;
-
-	CGRect frame = view.frame;
-	CGFloat scale = view.contentScaleFactor;
-	frame.size.width -= (left + right) / scale;
-	frame.size.height -= (top + bottom) / scale;
-	frame.origin.x += left / scale;
-	frame.origin.y += top / scale;
+	CGRect frame = webView.frame;
+	CGRect screen = view.bounds;
+	CGFloat scale = 1.0f / view.contentScaleFactor;
+	frame.size.width = screen.size.width - scale * (left + right) ;
+	frame.size.height = screen.size.height - scale * (top + bottom) ;
+	frame.origin.x = scale * left ;
+	frame.origin.y = scale * top ;
 	webView.frame = frame;
 }
 
@@ -104,6 +116,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 extern "C" {
 	void *_WebViewPlugin_Init(const char *gameObjectName);
 	void _WebViewPlugin_Destroy(void *instance);
+	void _WebViewPlugin_SetFrame(void* instace,NSInteger x,NSInteger y,NSInteger width,NSInteger height);
 	void _WebViewPlugin_SetMargins(
 		void *instance, int left, int top, int right, int bottom);
 	void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -121,6 +134,19 @@ void _WebViewPlugin_Destroy(void *instance)
 {
 	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
 	[webViewPlugin release];
+}
+
+void _WebViewPlugin_SetFrame(void* instance,NSInteger x,NSInteger y,NSInteger width,NSInteger height)
+{
+    float screenScale = [ UIScreen instancesRespondToSelector:@selector( scale ) ]?
+    [ UIScreen mainScreen ].scale:1.0f;
+    
+    WebViewPlugin* webViewPlugin = (WebViewPlugin*)instance;
+    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad){
+        if(screenScale == 2.0)
+            screenScale = 1.0f;
+    }
+    [webViewPlugin setFrame:x/screenScale positionY:y/screenScale width:width/screenScale height: height/screenScale];
 }
 
 void _WebViewPlugin_SetMargins(
