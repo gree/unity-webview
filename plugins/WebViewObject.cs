@@ -94,6 +94,9 @@ public class WebViewObject : MonoBehaviour
 	[DllImport("__Internal")]
 	private static extern void _WebViewPlugin_EvaluateJS(
 		IntPtr instance, string url);
+    [DllImport("__Internal")]
+    private static extern void _WebViewPlugin_SetFrame(
+        IntPtr instance, int x , int y , int width , int height);
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
