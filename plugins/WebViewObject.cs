@@ -94,6 +94,9 @@ public class WebViewObject : MonoBehaviour
 	[DllImport("__Internal")]
 	private static extern void _WebViewPlugin_EvaluateJS(
 		IntPtr instance, string url);
+    [DllImport("__Internal")]
+    private static extern void _WebViewPlugin_SetFrame(
+        IntPtr instance, int x , int y , int width , int height);
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
@@ -142,6 +145,20 @@ public class WebViewObject : MonoBehaviour
 		webView.Call("Destroy");
 #endif
 	}
+
+    /** Use this function instead of SetMargins to easily set up a centered window */
+    public void SetCenterPositionWithScale(Vector2 center , Vector2 scale)
+    {
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX
+        rect.x = center.x + (Screen.width - scale.x)/2;
+        rect.y = center.y + (Screen.height - scale.y)/2;
+        rect.width = scale.x;
+        rect.height = scale.y;
+#elif UNITY_IPHONE
+        if(webView == IntPtr.Zero) return;
+        _WebViewPlugin_SetFrame(webView,(int)center.x,(int)center.y,(int)scale.x,(int)scale.y);
+#endif
+    }
 
 	public void SetMargins(int left, int top, int right, int bottom)
 	{
