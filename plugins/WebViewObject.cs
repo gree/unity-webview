@@ -52,8 +52,25 @@ public class WebViewObject : MonoBehaviour
 	IntPtr webView;
 #elif UNITY_ANDROID
 	AndroidJavaObject webView;
-	Vector2 offset;
+	
+	bool mIsKeyboardVisible = false;
+	
+	/// Called from Java native plugin to set when the keyboard is opened
+	public void SetKeyboardVisible(string pIsVisible)
+	{
+		mIsKeyboardVisible = (pIsVisible == "true");
+	}
 #endif
+	
+	public bool IsKeyboardVisible {
+		get {
+#if UNITY_ANDROID && !UNITY_EDITOR
+			return mIsKeyboardVisible;
+#else
+			return TouchScreenKeyboard.visible;
+#endif
+		}
+	}
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
 	[DllImport("WebView")]
@@ -123,7 +140,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_IPHONE
 		webView = _WebViewPlugin_Init(name);
 #elif UNITY_ANDROID
-		offset = new Vector2(0, 0);
 		webView = new AndroidJavaObject("net.gree.unitywebview.WebViewPlugin");
 		webView.Call("Init", name);
 #endif
@@ -176,7 +192,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
 		if (webView == null)
 			return;
-		offset = new Vector2(left, top);
 		webView.Call("SetMargins", left, top, right, bottom);
 #endif
 	}
