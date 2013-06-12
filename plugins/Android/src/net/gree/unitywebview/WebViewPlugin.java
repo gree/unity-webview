@@ -94,6 +94,25 @@ public class WebViewPlugin
 			webSettings.setPluginsEnabled(true);
 
 		}});
+
+		final View activityRootView = a.getWindow().getDecorView().getRootView();
+		activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+		@Override
+		public void onGlobalLayout() {
+				android.graphics.Rect r = new android.graphics.Rect();
+				//r will be populated with the coordinates of your view that area still visible.
+				activityRootView.getWindowVisibleDisplayFrame(r);
+				android.view.Display display = a.getWindowManager().getDefaultDisplay();
+				int screenHeight = display.getHeight();
+				int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
+				//System.out.print(String.format("[NativeWebview] %d, %d\n", screenHeight, heightDiff));
+				if (heightDiff > screenHeight/3) { // assume that this means that the keyboard is on
+					UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "true");
+				} else {
+					UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "false");
+				}
+			}
+		}); 
 	}
 
 	public void Destroy()
