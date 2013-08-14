@@ -91,6 +91,7 @@ public class WebViewPlugin
 			WebSettings webSettings = mWebView.getSettings();
 			webSettings.setSupportZoom(false);
 			webSettings.setJavaScriptEnabled(true);
+			webSettings.setAllowUniversalAccessFromFileURLs(true);
 
 		}});
 	}
