@@ -30,6 +30,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.content.Context;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -92,6 +93,11 @@ public class WebViewPlugin
 			webSettings.setSupportZoom(false);
 			webSettings.setJavaScriptEnabled(true);
 			webSettings.setAllowUniversalAccessFromFileURLs(true);
+
+			String databasePath = mWebView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath(); 
+	        webSettings.setDatabaseEnabled(true);
+	        webSettings.setDomStorageEnabled(true);
+			webSettings.setDatabasePath(databasePath); 
 
 		}});
 	}
