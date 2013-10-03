@@ -19,6 +19,10 @@ CADisplayLink stops updating when UIWebView scrolled, thus you have to change Ap
     -        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
     +        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 
+### Android: Uncaught TypeError: Object [object Object] has no method 'call'
+
+https://github.com/gree/unity-webview/issues/10
+
 ### Sample Project
 
     $ open sample/Assets/Sample.unity
