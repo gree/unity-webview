@@ -36,6 +36,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.webkit.JavascriptInterface;
 
 class WebViewPluginInterface
 {
@@ -46,6 +47,7 @@ class WebViewPluginInterface
 		mGameObject = gameObject;
 	}
 
+	@JavascriptInterface
 	public void call(String message)
 	{
 		UnityPlayer.UnitySendMessage(mGameObject, "CallFromJS", message);
