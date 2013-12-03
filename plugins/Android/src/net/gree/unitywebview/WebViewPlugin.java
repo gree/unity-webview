@@ -38,6 +38,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.webkit.JavascriptInterface;
+import android.content.Intent;
+import android.net.Uri;
 
 class WebViewPluginInterface
 {
@@ -93,7 +95,19 @@ public class WebViewPlugin
 					return true;
 				}
 			});
-			mWebView.setWebViewClient(new WebViewClient());
+			mWebView.setWebViewClient(new WebViewClient() {
+				@Override
+				public boolean shouldOverrideUrlLoading(WebView view, String url) {
+					if (url.startsWith("http://") || url.startsWith("https://") || 
+							url.startsWith("file://") || url.startsWith("javascript:")) {
+						// Let webview handle the URL
+						return false;
+					}
+					Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+					view.getContext().startActivity(intent);
+					return true;
+				}
+			});
 			mWebView.addJavascriptInterface(
 				new WebViewPluginInterface(gameObject), "Unity");
 
