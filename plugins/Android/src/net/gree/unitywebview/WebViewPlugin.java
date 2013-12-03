@@ -84,7 +84,12 @@ public class WebViewPlugin
 				LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT,
 				Gravity.NO_GRAVITY));
 
-			mWebView.setWebChromeClient(new WebChromeClient());
+			mWebView.setWebChromeClient(new WebChromeClient() {
+				public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
+					Log.d("Webview", cm.message());
+					return true;
+				}
+			});
 			mWebView.setWebViewClient(new WebViewClient());
 			mWebView.addJavascriptInterface(
 				new WebViewPluginInterface(gameObject), "Unity");
