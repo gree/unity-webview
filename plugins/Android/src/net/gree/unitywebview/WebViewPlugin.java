@@ -24,6 +24,7 @@ package net.gree.unitywebview;
 import com.unity3d.player.UnityPlayer;
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.Gravity;
@@ -99,7 +100,12 @@ public class WebViewPlugin
 			WebSettings webSettings = mWebView.getSettings();
 			webSettings.setSupportZoom(false);
 			webSettings.setJavaScriptEnabled(true);
-			webSettings.setAllowUniversalAccessFromFileURLs(true);
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+				Log.i("WebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
+				webSettings.setAllowUniversalAccessFromFileURLs(true);
+			}
+			webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+			webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 
 			String databasePath = mWebView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath(); 
 	        webSettings.setDatabaseEnabled(true);
