@@ -60,6 +60,7 @@ public class WebViewObject : MonoBehaviour
 	{
 		mIsKeyboardVisible = (pIsVisible == "true");
 	}
+#elif UNITY_WEBPLAYER
 #endif
 	
 	public bool IsKeyboardVisible {
@@ -142,6 +143,8 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
 		webView = new AndroidJavaObject("net.gree.unitywebview.WebViewPlugin");
 		webView.Call("Init", name);
+#elif UNITY_WEBPLAYER
+		Application.ExternalCall("unityWebView.init", name);
 #endif
 	}
 
@@ -159,6 +162,8 @@ public class WebViewObject : MonoBehaviour
 		if (webView == null)
 			return;
 		webView.Call("Destroy");
+#elif UNITY_WEBPLAYER
+		Application.ExternalCall("unityWebView.destroy", name);
 #endif
 	}
 
@@ -193,6 +198,8 @@ public class WebViewObject : MonoBehaviour
 		if (webView == null)
 			return;
 		webView.Call("SetMargins", left, top, right, bottom);
+#elif UNITY_WEBPLAYER
+		Application.ExternalCall("unityWebView.setMargins", name, left, top, right, bottom);
 #endif
 	}
 
@@ -211,6 +218,8 @@ public class WebViewObject : MonoBehaviour
 		if (webView == null)
 			return;
 		webView.Call("SetVisibility", v);
+#elif UNITY_WEBPLAYER
+		Application.ExternalCall("unityWebView.setVisibility", name, v);
 #endif
 	}
 
@@ -224,6 +233,8 @@ public class WebViewObject : MonoBehaviour
 		if (webView == null)
 			return;
 		webView.Call("LoadURL", url);
+#elif UNITY_WEBPLAYER
+		Application.ExternalCall("unityWebView.loadURL", name, url);
 #endif
 	}
 
@@ -237,6 +248,8 @@ public class WebViewObject : MonoBehaviour
 		if (webView == null)
 			return;
 		webView.Call("LoadURL", "javascript:" + js);
+#elif UNITY_WEBPLAYER
+		Application.ExternalCall("unityWebView.evaluateJS", name, js);
 #endif
 	}
 
