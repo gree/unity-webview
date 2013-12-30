@@ -52,9 +52,26 @@ public class WebViewObject : MonoBehaviour
 	IntPtr webView;
 #elif UNITY_ANDROID
 	AndroidJavaObject webView;
-	Vector2 offset;
+	
+	bool mIsKeyboardVisible = false;
+	
+	/// Called from Java native plugin to set when the keyboard is opened
+	public void SetKeyboardVisible(string pIsVisible)
+	{
+		mIsKeyboardVisible = (pIsVisible == "true");
+	}
 #elif UNITY_WEBPLAYER
 #endif
+	
+	public bool IsKeyboardVisible {
+		get {
+#if UNITY_ANDROID && !UNITY_EDITOR
+			return mIsKeyboardVisible;
+#else
+			return TouchScreenKeyboard.visible;
+#endif
+		}
+	}
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
 	[DllImport("WebView")]
@@ -95,6 +112,9 @@ public class WebViewObject : MonoBehaviour
 	[DllImport("__Internal")]
 	private static extern void _WebViewPlugin_EvaluateJS(
 		IntPtr instance, string url);
+    [DllImport("__Internal")]
+    private static extern void _WebViewPlugin_SetFrame(
+        IntPtr instance, int x , int y , int width , int height);
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
@@ -121,7 +141,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_IPHONE
 		webView = _WebViewPlugin_Init(name);
 #elif UNITY_ANDROID
-		offset = new Vector2(0, 0);
 		webView = new AndroidJavaObject("net.gree.unitywebview.WebViewPlugin");
 		webView.Call("Init", name);
 #elif UNITY_WEBPLAYER
@@ -148,6 +167,20 @@ public class WebViewObject : MonoBehaviour
 #endif
 	}
 
+    /** Use this function instead of SetMargins to easily set up a centered window */
+    public void SetCenterPositionWithScale(Vector2 center , Vector2 scale)
+    {
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX
+        rect.x = center.x + (Screen.width - scale.x)/2;
+        rect.y = center.y + (Screen.height - scale.y)/2;
+        rect.width = scale.x;
+        rect.height = scale.y;
+#elif UNITY_IPHONE
+        if(webView == IntPtr.Zero) return;
+        _WebViewPlugin_SetFrame(webView,(int)center.x,(int)center.y,(int)scale.x,(int)scale.y);
+#endif
+    }
+
 	public void SetMargins(int left, int top, int right, int bottom)
 	{
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
@@ -164,7 +197,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
 		if (webView == null)
 			return;
-		offset = new Vector2(left, top);
 		webView.Call("SetMargins", left, top, right, bottom);
 #elif UNITY_WEBPLAYER
 		Application.ExternalCall("unityWebView.setMargins", name, left, top, right, bottom);

@@ -29,6 +29,10 @@ CADisplayLink stops updating when UIWebView scrolled, thus you have to change Ap
 Since using IFRAME, some problems can be occurred because of browsers' XSS prevention. It is desired that "an_unityplayer_page.html…" and "a_page_loaded_in_webview.html…" are located at same domain.
 
 
+### Android: Uncaught TypeError: Object [object Object] has no method 'call'
+
+https://github.com/gree/unity-webview/issues/10
+
 ### Sample Project
 
     $ open sample/Assets/Sample.unity
