@@ -44,7 +44,7 @@ public class SampleWebView : MonoBehaviour
 		case RuntimePlatform.OSXEditor:
 		case RuntimePlatform.OSXPlayer:
 		case RuntimePlatform.IPhonePlayer:
-			webViewObject.LoadURL("files:/" + Application.dataPath + "/WebPlayerTemplates/unity-webview/" + Url);
+			webViewObject.LoadURL("file://" + Application.dataPath + "/WebPlayerTemplates/unity-webview/" + Url);
 			webViewObject.EvaluateJS(
 				"window.addEventListener('load', function() {" +
 				"	window.Unity = {" +
