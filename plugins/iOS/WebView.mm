@@ -84,12 +84,21 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 	UIView *view = UnityGetGLViewController().view;
 	CGRect frame = webView.frame;
 	CGRect screen = view.bounds;
-	CGFloat scale = 1.0f / view.contentScaleFactor;
+	CGFloat scale = 1.0f / [self getScale:view];
 	frame.size.width = screen.size.width - scale * (left + right) ;
 	frame.size.height = screen.size.height - scale * (top + bottom) ;
 	frame.origin.x = scale * left ;
 	frame.origin.y = scale * top ;
 	webView.frame = frame;
+}
+
+- (CGFloat) getScale:(UIView*)view
+{
+    if ( [[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0 ) {
+        return view.window.screen.nativeScale;
+    }
+    
+    return view.contentScaleFactor;
 }
 
 - (void)setVisibility:(BOOL)visibility
