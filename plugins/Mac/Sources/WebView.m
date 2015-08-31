@@ -271,6 +271,7 @@ void _WebViewPlugin_EvaluateJS(void *instance, const char *url);
 void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
 	BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
 	BOOL keyPress, unsigned char keyCode, const char *keyChars, int textureId);
+void _WebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventID);
 }
 
@@ -330,11 +331,18 @@ void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
 		keyCode:keyCode keyChars:keyChars textureId:textureId];
 }
 
+static void *_instance;
+
+void _WebViewPlugin_SetCurrentInstance(void *instance)
+{
+	_instance = instance;
+}
+
 void UnityRenderEvent(int eventID)
 {
 	@autoreleasepool {
-		if ([pool containsObject:[NSValue valueWithPointer:(void *)eventID]]) {
-			WebViewPlugin *webViewPlugin = (WebViewPlugin *)eventID;
+		if ([pool containsObject:[NSValue valueWithPointer:(void *)_instance]]) {
+			WebViewPlugin *webViewPlugin = (WebViewPlugin *)_instance;
 			[webViewPlugin render];
 		}
 	}
