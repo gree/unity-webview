@@ -212,21 +212,18 @@ static void UnitySendMessage(
 		[view scrollWheel:scrollEvent];
 	}
 
-	@synchronized(bitmap) {
+	@synchronized(self) {
+		if (bitmap == nil)
+			bitmap = [[webView bitmapImageRepForCachingDisplayInRect:webView.frame] retain];
+		memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+		[webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
 		needsDisplay = YES; // TODO (bitmap == nil || [view needsDisplay]);
-		if (needsDisplay) {
-			[bitmap release];
-			bitmap = [[webView
-				bitmapImageRepForCachingDisplayInRect:[webView visibleRect]] retain];
-			[webView cacheDisplayInRect:[webView visibleRect]
-				toBitmapImageRep:bitmap];
-		}
 	}
 }
 
 - (void)render
 {
-	@synchronized(bitmap) {
+	@synchronized(self) {
 		if (!needsDisplay)
 			return;
 
