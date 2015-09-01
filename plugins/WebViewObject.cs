@@ -284,7 +284,7 @@ public class WebViewObject : MonoBehaviour
 		bool keyPress = false;
 		string keyChars = "";
 		short keyCode = 0;
-		if (inputString.Length > 0) {
+		if (inputString != null && inputString.Length > 0) {
 			keyPress = true;
 			keyChars = inputString.Substring(0, 1);
 			keyCode = (short)inputString[0];
