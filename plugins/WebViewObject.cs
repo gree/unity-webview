@@ -261,8 +261,12 @@ public class WebViewObject : MonoBehaviour
 
 	public void CallFromJS(string message)
 	{
-		if (callback != null)
+		if (callback != null) {
+#if !UNITY_ANDROID
+			message = WWW.UnEscapeURL(message);
+#endif
 			callback(message);
+		}
 	}
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
