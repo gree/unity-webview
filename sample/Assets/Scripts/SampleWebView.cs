@@ -64,7 +64,7 @@ public class SampleWebView : MonoBehaviour
 					"	window.Unity = {" +
 					"		call:function(msg) {" +
 					"			var iframe = document.createElement('IFRAME');" +
-					"			iframe.setAttribute('src', 'unity:' + msg;" +
+					"			iframe.setAttribute('src', 'unity:' + msg);" +
 					"			document.documentElement.appendChild(iframe);" +
 					"			iframe.parentNode.removeChild(iframe);" +
 					"			iframe = null;" +
