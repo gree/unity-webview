@@ -42,7 +42,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 	webView.delegate = self;
 	webView.hidden = YES;
 	[view addSubview:webView];
-	gameObjectName = [[NSString stringWithUTF8String:gameObjectName_] retain];
+	gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
 
 	return self;
 }
@@ -50,9 +50,6 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 - (void)dealloc
 {
 	[webView removeFromSuperview];
-	[webView release];
-	[gameObjectName release];
-	[super dealloc];
 }
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
@@ -136,13 +133,13 @@ extern "C" {
 void *_WebViewPlugin_Init(const char *gameObjectName)
 {
 	id instance = [[WebViewPlugin alloc] initWithGameObjectName:gameObjectName];
-	return (void *)instance;
+	return (__bridge_retained void *)instance;
 }
 
 void _WebViewPlugin_Destroy(void *instance)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin release];
+	WebViewPlugin *webViewPlugin = (__bridge_transfer WebViewPlugin *)instance;
+	webViewPlugin = nil;
 }
 
 void _WebViewPlugin_SetFrame(void* instance,NSInteger x,NSInteger y,NSInteger width,NSInteger height)
@@ -150,7 +147,7 @@ void _WebViewPlugin_SetFrame(void* instance,NSInteger x,NSInteger y,NSInteger wi
     float screenScale = [ UIScreen instancesRespondToSelector:@selector( scale ) ]?
     [ UIScreen mainScreen ].scale:1.0f;
     
-    WebViewPlugin* webViewPlugin = (WebViewPlugin*)instance;
+    WebViewPlugin* webViewPlugin = (__bridge WebViewPlugin*)instance;
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad){
         if(screenScale == 2.0)
             screenScale = 1.0f;
@@ -161,24 +158,24 @@ void _WebViewPlugin_SetFrame(void* instance,NSInteger x,NSInteger y,NSInteger wi
 void _WebViewPlugin_SetMargins(
 	void *instance, int left, int top, int right, int bottom)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+	WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
 	[webViewPlugin setMargins:left top:top right:right bottom:bottom];
 }
 
 void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+	WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
 	[webViewPlugin setVisibility:visibility];
 }
 
 void _WebViewPlugin_LoadURL(void *instance, const char *url)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+	WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
 	[webViewPlugin loadURL:url];
 }
 
 void _WebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+	WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
 	[webViewPlugin evaluateJS:js];
 }
