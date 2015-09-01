@@ -95,6 +95,8 @@ public class WebViewObject : MonoBehaviour
 	private static extern void _WebViewPlugin_Update(IntPtr instance,
 		int x, int y, float deltaY, bool down, bool press, bool release,
 		bool keyPress, short keyCode, string keyChars, int textureId);
+	[DllImport("WebView")]
+	private static extern void _WebViewPlugin_SetCurrentInstance(IntPtr instance);
 #elif UNITY_IPHONE
 	[DllImport("__Internal")]
 	private static extern IntPtr _WebViewPlugin_Init(string gameObject);
@@ -154,16 +156,20 @@ public class WebViewObject : MonoBehaviour
 		if (webView == IntPtr.Zero)
 			return;
 		_WebViewPlugin_Destroy(webView);
+		webView = IntPtr.Zero;
 #elif UNITY_IPHONE
 		if (webView == IntPtr.Zero)
 			return;
 		_WebViewPlugin_Destroy(webView);
+		webView = IntPtr.Zero;
 #elif UNITY_ANDROID
 		if (webView == null)
 			return;
 		webView.Call("Destroy");
+		webView = null;
 #elif UNITY_WEBPLAYER
 		Application.ExternalCall("unityWebView.destroy", name);
+		webView = null;
 #endif
 	}
 
@@ -287,8 +293,9 @@ public class WebViewObject : MonoBehaviour
 		_WebViewPlugin_Update(webView,
 			(int)(pos.x - rect.x), (int)(pos.y - rect.y), deltaY,
 			down, press, release, keyPress, keyCode, keyChars,
-			texture.GetNativeTextureID());
-		GL.IssuePluginEvent((int)webView);
+			(int)texture.GetNativeTexturePtr());
+		_WebViewPlugin_SetCurrentInstance(webView);
+		GL.IssuePluginEvent(-1);
 		Matrix4x4 m = GUI.matrix;
 		GUI.matrix = Matrix4x4.TRS(new Vector3(0, Screen.height, 0),
 			Quaternion.identity, new Vector3(1, -1, 1));
