@@ -50,8 +50,6 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 - (void)dealloc
 {
 	[webView removeFromSuperview];
-	[webView release];
-    [super dealloc];
 }
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
@@ -141,7 +139,6 @@ void *_WebViewPlugin_Init(const char *gameObjectName)
 void _WebViewPlugin_Destroy(void *instance)
 {
 	WebViewPlugin *webViewPlugin = (__bridge_transfer WebViewPlugin *)instance;
-	[webViewPlugin release];
 	webViewPlugin = nil;
 }
 
