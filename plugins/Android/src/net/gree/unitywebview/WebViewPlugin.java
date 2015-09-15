@@ -61,6 +61,7 @@ public class WebViewPlugin
 {
 	private static FrameLayout layout = null;
 	private WebView mWebView;
+	private WebViewPluginInterface mWebViewPlugin;
 	private long mDownTime;
 
 	public WebViewPlugin()
@@ -103,13 +104,21 @@ public class WebViewPlugin
 						// Let webview handle the URL
 						return false;
 					}
+					else if(url.startsWith("unity:")){
+						String message = url.substring(6);
+						mWebViewPlugin.call(message);
+						return true;
+					}
 					Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
 					view.getContext().startActivity(intent);
 					return true;
 				}
 			});
+			
+			mWebViewPlugin = new WebViewPluginInterface(gameObject);
+			
 			mWebView.addJavascriptInterface(
-				new WebViewPluginInterface(gameObject), "Unity");
+				mWebViewPlugin , "Unity");
 
 			WebSettings webSettings = mWebView.getSettings();
 			webSettings.setSupportZoom(false);
