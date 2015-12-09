@@ -299,7 +299,7 @@ public class WebViewObject : MonoBehaviour
 			down, press, release, keyPress, keyCode, keyChars,
 			(int)texture.GetNativeTexturePtr());
 		_WebViewPlugin_SetCurrentInstance(webView);
-		GL.IssuePluginEvent(-1);
+		GL.IssuePluginEvent(webView, -1);
 		Matrix4x4 m = GUI.matrix;
 		GUI.matrix = Matrix4x4.TRS(new Vector3(0, Screen.height, 0),
 			Quaternion.identity, new Vector3(1, -1, 1));
