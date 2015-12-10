@@ -97,6 +97,8 @@ public class WebViewObject : MonoBehaviour
         bool keyPress, short keyCode, string keyChars, int textureId);
     [DllImport("WebView")]
     private static extern void _WebViewPlugin_SetCurrentInstance(IntPtr instance);
+    [DllImport("WebView")]
+    private static extern IntPtr GetRenderEventFunc();
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
     private static extern IntPtr _WebViewPlugin_Init(string gameObject);
@@ -299,7 +301,11 @@ public class WebViewObject : MonoBehaviour
             down, press, release, keyPress, keyCode, keyChars,
             (int)texture.GetNativeTexturePtr());
         _WebViewPlugin_SetCurrentInstance(webView);
+#if UNITY_4_6 || UNITY_5_0 || UNITY_5_1
         GL.IssuePluginEvent(-1);
+#else
+        GL.IssuePluginEvent(GetRenderEventFunc(), -1);
+#endif
         Matrix4x4 m = GUI.matrix;
         GUI.matrix = Matrix4x4.TRS(new Vector3(0, Screen.height, 0),
             Quaternion.identity, new Vector3(1, -1, 1));

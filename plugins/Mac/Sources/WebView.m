@@ -257,6 +257,7 @@ static void UnitySendMessage(
 
 @end
 
+typedef void (*UnityRenderEventFunc)(int eventId);
 extern "C" {
 void *_WebViewPlugin_Init(
     const char *gameObject, int width, int height, BOOL inEditor);
@@ -270,6 +271,7 @@ void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
     BOOL keyPress, unsigned char keyCode, const char *keyChars, int textureId);
 void _WebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventID);
+UnityRenderEventFunc GetRenderEventFunc();
 }
 
 static NSMutableSet *pool;
@@ -343,4 +345,9 @@ void UnityRenderEvent(int eventID)
             [webViewPlugin render];
         }
     }
+}
+
+UnityRenderEventFunc GetRenderEventFunc()
+{
+    return UnityRenderEvent;
 }
