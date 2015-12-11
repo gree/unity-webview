@@ -162,9 +162,8 @@ static void UnitySendMessage(
     [webView stringByEvaluatingJavaScriptFromString:jsStr];
 }
 
-- (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars textureId:(int)tId
+- (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars
 {
-    textureId = tId;
     NSView *view = [[[webView mainFrame] frameView] documentView];
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     NSEvent *event;
@@ -221,10 +220,33 @@ static void UnitySendMessage(
     }
 }
 
+- (int)bitmapWide
+{
+    @synchronized(self) {
+        return (bitmap == nil) ? 0 : [bitmap pixelsWide];
+    }
+}
+
+- (int)bitmapHigh
+{
+    @synchronized(self) {
+        return (bitmap == nil) ? 0 : [bitmap pixelsHigh];
+    }
+}
+
+- (void)setTextureId:(int)tId
+{
+    @synchronized(self) {
+        textureId = tId;
+    }
+}
+
 - (void)render
 {
     @synchronized(self) {
         if (!needsDisplay)
+            return;
+        if (bitmap == nil)
             return;
 
         int samplesPerPixel = [bitmap samplesPerPixel];
@@ -232,20 +254,18 @@ static void UnitySendMessage(
         int unpackAlign = 0;
         glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
         glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH,
-            [bitmap bytesPerRow] / samplesPerPixel);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, [bitmap bytesPerRow] / samplesPerPixel);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        
         if (![bitmap isPlanar] &&
                 (samplesPerPixel == 3 || samplesPerPixel == 4)) {
-            glTexImage2D(GL_TEXTURE_2D,
+            glTexSubImage2D(
+                GL_TEXTURE_2D,
                 0,
-                samplesPerPixel == 4 ? GL_RGBA8 : GL_RGB8,
+                0,
+                0,
                 [bitmap pixelsWide],
                 [bitmap pixelsHigh],
-                0,
                 samplesPerPixel == 4 ? GL_RGBA : GL_RGB,
                 GL_UNSIGNED_BYTE,
                 [bitmap bitmapData]);
@@ -268,7 +288,10 @@ void _WebViewPlugin_LoadURL(void *instance, const char *url);
 void _WebViewPlugin_EvaluateJS(void *instance, const char *url);
 void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
     BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
-    BOOL keyPress, unsigned char keyCode, const char *keyChars, int textureId);
+    BOOL keyPress, unsigned char keyCode, const char *keyChars);
+int _WebViewPlugin_BitmapWidth(void *instance);
+int _WebViewPlugin_BitmapHeight(void *instance);
+void _WebViewPlugin_SetTextureId(void *instance, int textureId);
 void _WebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventID);
 UnityRenderEventFunc GetRenderEventFunc();
@@ -322,12 +345,30 @@ void _WebViewPlugin_EvaluateJS(void *instance, const char *js)
 
 void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
     BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease, BOOL keyPress,
-    unsigned char keyCode, const char *keyChars, int textureId)
+    unsigned char keyCode, const char *keyChars)
 {
     WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
     [webViewPlugin update:x y:y deltaY:deltaY buttonDown:buttonDown
         buttonPress:buttonPress buttonRelease:buttonRelease keyPress:keyPress
-        keyCode:keyCode keyChars:keyChars textureId:textureId];
+        keyCode:keyCode keyChars:keyChars];
+}
+
+int _WebViewPlugin_BitmapWidth(void *instance)
+{
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    return [webViewPlugin bitmapWide];
+}
+
+int _WebViewPlugin_BitmapHeight(void *instance)
+{
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    return [webViewPlugin bitmapHigh];
+}
+
+void _WebViewPlugin_SetTextureId(void *instance, int textureId)
+{
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin setTextureId:textureId];
 }
 
 static void *_instance;

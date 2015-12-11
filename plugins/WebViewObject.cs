@@ -94,7 +94,13 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern void _WebViewPlugin_Update(IntPtr instance,
         int x, int y, float deltaY, bool down, bool press, bool release,
-        bool keyPress, short keyCode, string keyChars, int textureId);
+        bool keyPress, short keyCode, string keyChars);
+    [DllImport("WebView")]
+    private static extern int _WebViewPlugin_BitmapWidth(IntPtr instance);
+    [DllImport("WebView")]
+    private static extern int _WebViewPlugin_BitmapHeight(IntPtr instance);
+    [DllImport("WebView")]
+    private static extern void _WebViewPlugin_SetTextureId(IntPtr instance, int textureId);
     [DllImport("WebView")]
     private static extern void _WebViewPlugin_SetCurrentInstance(IntPtr instance);
     [DllImport("WebView")]
@@ -121,27 +127,13 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance, int x , int y , int width , int height);
 #endif
 
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX
-    private void CreateTexture(int x, int y, int width, int height)
-    {
-        int w = 1;
-        int h = 1;
-        while (w < width)
-            w <<= 1;
-        while (h < height)
-            h <<= 1;
-        rect = new Rect(x, y, width, height);
-        texture = new Texture2D(w, h, TextureFormat.ARGB32, false);
-    }
-#endif
-
     public void Init(Callback cb = null)
     {
         callback = cb;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
-        CreateTexture(0, 0, Screen.width, Screen.height);
         webView = _WebViewPlugin_Init(name, Screen.width, Screen.height,
             Application.platform == RuntimePlatform.OSXEditor);
+        rect = new Rect(0, 0, Screen.width, Screen.height);
 #elif UNITY_IPHONE
         webView = _WebViewPlugin_Init(name);
 #elif UNITY_ANDROID
@@ -196,8 +188,8 @@ public class WebViewObject : MonoBehaviour
             return;
         int width = Screen.width - (left + right);
         int height = Screen.height - (bottom + top);
-        CreateTexture(left, bottom, width, height);
         _WebViewPlugin_SetRect(webView, width, height);
+        rect = new Rect(left, bottom, width, height);
 #elif UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
@@ -298,8 +290,17 @@ public class WebViewObject : MonoBehaviour
         }
         _WebViewPlugin_Update(webView,
             (int)(pos.x - rect.x), (int)(pos.y - rect.y), deltaY,
-            down, press, release, keyPress, keyCode, keyChars,
-            (int)texture.GetNativeTexturePtr());
+            down, press, release, keyPress, keyCode, keyChars);
+        {
+            var w = _WebViewPlugin_BitmapWidth(webView);
+            var h = _WebViewPlugin_BitmapHeight(webView);
+            if (texture == null || texture.width != w || texture.height != h) {
+                texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true);
+                texture.filterMode = FilterMode.Bilinear;
+                texture.wrapMode = TextureWrapMode.Clamp;
+            }
+        }
+        _WebViewPlugin_SetTextureId(webView, (int)texture.GetNativeTexturePtr());
         _WebViewPlugin_SetCurrentInstance(webView);
 #if UNITY_4_6 || UNITY_5_0 || UNITY_5_1
         GL.IssuePluginEvent(-1);
