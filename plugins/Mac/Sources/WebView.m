@@ -109,15 +109,25 @@ static void UnitySendMessage(
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
     [webView setPolicyDelegate:self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
-
     return self;
 }
 
 - (void)dealloc
 {
-    [webView release];
-    [gameObject release];
-    [bitmap release];
+    @synchronized(self) {
+        if (webView != nil) {
+            [webView release];
+            webView = nil;
+        }
+        if (gameObject != nil) {
+            [gameObject release];
+            gameObject = nil;
+        }
+        if (bitmap != nil) {
+            [bitmap release];
+            bitmap = nil;
+        }
+    }
     [super dealloc];
 }
 
@@ -141,6 +151,10 @@ static void UnitySendMessage(
     frame.origin.x = 0;
     frame.origin.y = 0;
     webView.frame = frame;
+    if (bitmap != nil) {
+        [bitmap release];
+        bitmap = nil;
+    }
 }
 
 - (void)setVisibility:(BOOL)visibility
@@ -381,8 +395,12 @@ void _WebViewPlugin_SetCurrentInstance(void *instance)
 void UnityRenderEvent(int eventID)
 {
     @autoreleasepool {
+        if (_instance == nil) {
+            return;
+        }
         if ([pool containsObject:[NSValue valueWithPointer:(void *)_instance]]) {
             WebViewPlugin *webViewPlugin = (WebViewPlugin *)_instance;
+            _instance = nil;
             [webViewPlugin render];
         }
     }
