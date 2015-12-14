@@ -22,7 +22,10 @@ require 'fileutils'
 
 UNITY="/Applications/Unity/Unity.app/Contents"
 
-CNT = 2
+# NOTE: WebPlayerTemplates is not inclued for now because the sample app becomes complicated.
+#
+# CNT = 1
+CNT = 1
 SRCDIR = Array.new(CNT);
 DSTDIR = Array.new(CNT);
 SRCS = Array.new(CNT);
@@ -34,13 +37,15 @@ SRCS[0]=%W|
   iOS/WebView.mm
 |
 
-DSTDIR[1]="Packager/Assets/WebPlayerTemplates"
-SRCDIR[1]="../WebPlayerTemplates"
-SRCS[1]=%W|
-  unity-webview/index.html
-  unity-webview/thumbnail.png
-  unity-webview/unity-webview.js
-|
+# NOTE: WebPlayerTemplates is not inclued for now because the sample app becomes complicated.
+#
+# DSTDIR[1]="Packager/Assets/WebPlayerTemplates"
+# SRCDIR[1]="../WebPlayerTemplates"
+# SRCS[1]=%W|
+#   unity-webview/index.html
+#   unity-webview/thumbnail.png
+#   unity-webview/unity-webview.js
+# |
 
 task :default => ["build"]
 

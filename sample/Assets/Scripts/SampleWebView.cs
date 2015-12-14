@@ -18,6 +18,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
+using System.Collections;
 using UnityEngine;
 
 public class SampleWebView : MonoBehaviour
@@ -27,46 +28,54 @@ public class SampleWebView : MonoBehaviour
 	public GUIText status;
 	WebViewObject webViewObject;
 
-	void Start()
+	IEnumerator Start()
 	{
 		webViewObject =
 			(new GameObject("WebViewObject")).AddComponent<WebViewObject>();
 		webViewObject.Init((msg)=>{
 			Debug.Log(string.Format("CallFromJS[{0}]", msg));
 			status.text = msg;
-			status.animation.Play();
+			status.GetComponent<Animation>().Play();
 		});
 		
-		webViewObject.SetMargins(5, 5, 5, 40);
+		webViewObject.SetMargins(5, 5, 5, Screen.height / 4);
 		webViewObject.SetVisibility(true);
 
 		switch (Application.platform) {
 		case RuntimePlatform.OSXEditor:
 		case RuntimePlatform.OSXPlayer:
 		case RuntimePlatform.IPhonePlayer:
-			webViewObject.LoadURL("file://" + Application.dataPath + "/WebPlayerTemplates/unity-webview/" + Url);
-			webViewObject.EvaluateJS(
-				"window.addEventListener('load', function() {" +
-				"	window.Unity = {" +
-				"		call:function(msg) {" +
-				"			var iframe = document.createElement('IFRAME');" +
-				"			iframe.setAttribute('src', 'unity:' + msg);" +
-				"			document.documentElement.appendChild(iframe);" +
-				"			iframe.parentNode.removeChild(iframe);" +
-				"			iframe = null;" +
-				"		}" +
-				"	}" +
-				"}, false);");
-			webViewObject.EvaluateJS(
-				"window.addEventListener('load', function() {" +
-				"	window.addEventListener('click', function() {" +
-				"		Unity.call('clicked');" +
-				"	}, false);" +
-				"}, false);");
+		case RuntimePlatform.Android:
+			var src = System.IO.Path.Combine(Application.streamingAssetsPath, Url);
+			var dst = System.IO.Path.Combine(Application.persistentDataPath, Url);
+			var result = "";
+			if (src.Contains("://")) {
+				var www = new WWW(src);
+				yield return www;
+				result = www.text;
+			} else {
+				result = System.IO.File.ReadAllText(src);
+			}
+			System.IO.File.WriteAllText(dst, result);
+			webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
+			if (Application.platform != RuntimePlatform.Android) {
+				webViewObject.EvaluateJS(
+					"window.addEventListener('load', function() {" +
+					"	window.Unity = {" +
+					"		call:function(msg) {" +
+					"			var iframe = document.createElement('IFRAME');" +
+					"			iframe.setAttribute('src', 'unity:' + msg);" +
+					"			document.documentElement.appendChild(iframe);" +
+					"			iframe.parentNode.removeChild(iframe);" +
+					"			iframe = null;" +
+					"		}" +
+					"	}" +
+					"}, false);");
+			}
 			break;
 		case RuntimePlatform.OSXWebPlayer:
 		case RuntimePlatform.WindowsWebPlayer:
-			webViewObject.LoadURL(Url);
+			webViewObject.LoadURL(Url.Replace(" ", "%20"));
 			webViewObject.EvaluateJS(
 				"parent.$(function() {" +
 				"	window.Unity = {" +
@@ -74,9 +83,6 @@ public class SampleWebView : MonoBehaviour
 				"			parent.unityWebView.sendMessage('WebViewObject', msg)" +
 				"		}" +
 				"	};" +
-				"	parent.$(window).click(function() {" +
-				"		window.Unity.call('clicked');" +
-				"	});" +
 				"});");
 			break;
 		}

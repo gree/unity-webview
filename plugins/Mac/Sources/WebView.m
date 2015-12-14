@@ -35,18 +35,18 @@ typedef void *MonoMethod;
 typedef void *MonoString;
 
 extern "C" {
-	MonoDomain *mono_domain_get();
-	MonoAssembly *mono_domain_assembly_open(
-		MonoDomain *domain, const char *assemblyName);
-	MonoImage *mono_assembly_get_image(MonoAssembly *assembly);
-	MonoMethodDesc *mono_method_desc_new(
-		const char *methodString, int useNamespace);
-	MonoMethodDesc *mono_method_desc_free(MonoMethodDesc *desc);
-	MonoMethod *mono_method_desc_search_in_image(
-		MonoMethodDesc *methodDesc, MonoImage *image);
-	MonoObject *mono_runtime_invoke(
-		MonoMethod *method, void *obj, void **params, MonoObject **exc);
-	MonoString *mono_string_new(MonoDomain *domain, const char *text);
+    MonoDomain *mono_domain_get();
+    MonoAssembly *mono_domain_assembly_open(
+        MonoDomain *domain, const char *assemblyName);
+    MonoImage *mono_assembly_get_image(MonoAssembly *assembly);
+    MonoMethodDesc *mono_method_desc_new(
+        const char *methodString, int useNamespace);
+    MonoMethodDesc *mono_method_desc_free(MonoMethodDesc *desc);
+    MonoMethod *mono_method_desc_search_in_image(
+        MonoMethodDesc *methodDesc, MonoImage *image);
+    MonoObject *mono_runtime_invoke(
+        MonoMethod *method, void *obj, void **params, MonoObject **exc);
+    MonoString *mono_string_new(MonoDomain *domain, const char *text);
 }
 
 static BOOL inEditor;
@@ -57,44 +57,44 @@ static MonoMethodDesc *monoDesc;
 static MonoMethod *monoMethod;
 
 static void UnitySendMessage(
-	const char *gameObject, const char *method, const char *message)
+    const char *gameObject, const char *method, const char *message)
 {
-	if (monoMethod == 0) {
-		NSString *assemblyPath;
-		if (inEditor) {
-			assemblyPath =
-				@"Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll";
-		} else {
-			NSString *dllPath =
-				@"Contents/Data/Managed/Assembly-CSharp-firstpass.dll";
-			assemblyPath = [[[NSBundle mainBundle] bundlePath]
-				stringByAppendingPathComponent:dllPath];
-		}
-		monoDomain = mono_domain_get();
-		monoAssembly =
-			mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
-		monoImage = mono_assembly_get_image(monoAssembly);
-		monoDesc = mono_method_desc_new(
-			"UnitySendMessageDispatcher:Dispatch(string,string,string)", FALSE);
-		monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
-	}
+    if (monoMethod == 0) {
+        NSString *assemblyPath;
+        if (inEditor) {
+            assemblyPath =
+                @"Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll";
+        } else {
+            NSString *dllPath =
+                @"Contents/Data/Managed/Assembly-CSharp-firstpass.dll";
+            assemblyPath = [[[NSBundle mainBundle] bundlePath]
+                stringByAppendingPathComponent:dllPath];
+        }
+        monoDomain = mono_domain_get();
+        monoAssembly =
+            mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
+        monoImage = mono_assembly_get_image(monoAssembly);
+        monoDesc = mono_method_desc_new(
+            "UnitySendMessageDispatcher:Dispatch(string,string,string)", FALSE);
+        monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
+    }
 
-	void *args[] = {
-		mono_string_new(monoDomain, gameObject),
-		mono_string_new(monoDomain, method),
-		mono_string_new(monoDomain, message),
-	};
+    void *args[] = {
+        mono_string_new(monoDomain, gameObject),
+        mono_string_new(monoDomain, method),
+        mono_string_new(monoDomain, message),
+    };
 
-	mono_runtime_invoke(monoMethod, 0, args, 0);
+    mono_runtime_invoke(monoMethod, 0, args, 0);
 }
 
 @interface WebViewPlugin : NSObject
 {
-	WebView *webView;
-	NSString *gameObject;
-	NSBitmapImageRep *bitmap;
-	int textureId;
-	BOOL needsDisplay;
+    WebView *webView;
+    NSString *gameObject;
+    NSBitmapImageRep *bitmap;
+    int textureId;
+    BOOL needsDisplay;
 }
 @end
 
@@ -102,240 +102,311 @@ static void UnitySendMessage(
 
 - (id)initWithGameObject:(const char *)gameObject_ width:(int)width height:(int)height
 {
-	self = [super init];
-	monoMethod = 0;
-	webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
-	webView.hidden = YES;
-	[webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
-	[webView setPolicyDelegate:self];
-	gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
-
-	return self;
+    self = [super init];
+    monoMethod = 0;
+    webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+    webView.hidden = YES;
+    [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
+    [webView setPolicyDelegate:self];
+    gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
+    return self;
 }
 
 - (void)dealloc
 {
-	[webView release];
-	[gameObject release];
-	[bitmap release];
-	[super dealloc];
+    @synchronized(self) {
+        if (webView != nil) {
+            [webView release];
+            webView = nil;
+        }
+        if (gameObject != nil) {
+            [gameObject release];
+            gameObject = nil;
+        }
+        if (bitmap != nil) {
+            [bitmap release];
+            bitmap = nil;
+        }
+    }
+    [super dealloc];
 }
 
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
-	NSString *url = [[request URL] absoluteString];
-	if ([url hasPrefix:@"unity:"]) {
-		UnitySendMessage([gameObject UTF8String],
-			"CallFromJS", [[url substringFromIndex:6] UTF8String]);
-		[listener ignore];
-	} else {
-		[listener use];
-	}
+    NSString *url = [[request URL] absoluteString];
+    if ([url hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObject UTF8String],
+            "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        [listener ignore];
+    } else {
+        [listener use];
+    }
 }
 
 - (void)setRect:(int)width height:(int)height
 {
-	NSRect frame;
-	frame.size.width = width;
-	frame.size.height = height;
-	frame.origin.x = 0;
-	frame.origin.y = 0;
-	webView.frame = frame;
+    NSRect frame;
+    frame.size.width = width;
+    frame.size.height = height;
+    frame.origin.x = 0;
+    frame.origin.y = 0;
+    webView.frame = frame;
+    if (bitmap != nil) {
+        [bitmap release];
+        bitmap = nil;
+    }
 }
 
 - (void)setVisibility:(BOOL)visibility
 {
-	webView.hidden = visibility ? NO : YES;
+    webView.hidden = visibility ? NO : YES;
 }
 
 - (void)loadURL:(const char *)url
 {
-	NSString *urlStr = [NSString stringWithUTF8String:url];
-	NSURL *nsurl = [NSURL URLWithString:urlStr];
-	NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
-	[[webView mainFrame] loadRequest:request];
+    NSString *urlStr = [NSString stringWithUTF8String:url];
+    NSURL *nsurl = [NSURL URLWithString:urlStr];
+    NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
+    [[webView mainFrame] loadRequest:request];
 }
 
 - (void)evaluateJS:(const char *)js
 {
-	NSString *jsStr = [NSString stringWithUTF8String:js];
-	[webView stringByEvaluatingJavaScriptFromString:jsStr];
+    NSString *jsStr = [NSString stringWithUTF8String:js];
+    [webView stringByEvaluatingJavaScriptFromString:jsStr];
 }
 
-- (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars textureId:(int)tId
+- (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars
 {
-	textureId = tId;
-	NSView *view = [[[webView mainFrame] frameView] documentView];
-	NSGraphicsContext *context = [NSGraphicsContext currentContext];
-	NSEvent *event;
-	NSString *characters;
+    NSView *view = [[[webView mainFrame] frameView] documentView];
+    NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    NSEvent *event;
+    NSString *characters;
 
-	if (buttonDown) {
-		if (buttonPress) {
-			event = [NSEvent mouseEventWithType:NSLeftMouseDown
-				location:NSMakePoint(x, y) modifierFlags:nil
-				timestamp:GetCurrentEventTime() windowNumber:0
-				context:context eventNumber:nil clickCount:1 pressure:nil];
-			[view mouseDown:event];
-		} else {
-			event = [NSEvent mouseEventWithType:NSLeftMouseDragged
-				location:NSMakePoint(x, y) modifierFlags:nil
-				timestamp:GetCurrentEventTime() windowNumber:0
-				context:context eventNumber:nil clickCount:0 pressure:nil];
-			[view mouseDragged:event];
-		}
-	} else if (buttonRelease) {
-		event = [NSEvent mouseEventWithType:NSLeftMouseUp
-			location:NSMakePoint(x, y) modifierFlags:nil
-			timestamp:GetCurrentEventTime() windowNumber:0
-			context:context eventNumber:nil clickCount:0 pressure:nil];
-		[view mouseUp:event];
-	}
+    if (buttonDown) {
+        if (buttonPress) {
+            event = [NSEvent mouseEventWithType:NSLeftMouseDown
+                location:NSMakePoint(x, y) modifierFlags:nil
+                timestamp:GetCurrentEventTime() windowNumber:0
+                context:context eventNumber:nil clickCount:1 pressure:nil];
+            [view mouseDown:event];
+        } else {
+            event = [NSEvent mouseEventWithType:NSLeftMouseDragged
+                location:NSMakePoint(x, y) modifierFlags:nil
+                timestamp:GetCurrentEventTime() windowNumber:0
+                context:context eventNumber:nil clickCount:0 pressure:nil];
+            [view mouseDragged:event];
+        }
+    } else if (buttonRelease) {
+        event = [NSEvent mouseEventWithType:NSLeftMouseUp
+            location:NSMakePoint(x, y) modifierFlags:nil
+            timestamp:GetCurrentEventTime() windowNumber:0
+            context:context eventNumber:nil clickCount:0 pressure:nil];
+        [view mouseUp:event];
+    }
 
-	if (keyPress) {
-		characters = [NSString stringWithUTF8String:keyChars];
-		event = [NSEvent keyEventWithType:NSKeyDown
-			location:NSMakePoint(x, y) modifierFlags:nil
-			timestamp:GetCurrentEventTime() windowNumber:0
-			context:context
-			characters:characters
-			charactersIgnoringModifiers:characters
-			isARepeat:NO keyCode:(unsigned short)keyCode];
-		[view keyDown:event];
-	}
+    if (keyPress) {
+        characters = [NSString stringWithUTF8String:keyChars];
+        event = [NSEvent keyEventWithType:NSKeyDown
+            location:NSMakePoint(x, y) modifierFlags:nil
+            timestamp:GetCurrentEventTime() windowNumber:0
+            context:context
+            characters:characters
+            charactersIgnoringModifiers:characters
+            isARepeat:NO keyCode:(unsigned short)keyCode];
+        [view keyDown:event];
+    }
 
-	if (deltaY != 0) {
-		CGEventRef cgEvent = CGEventCreateScrollWheelEvent(NULL,
-			kCGScrollEventUnitLine, 1, deltaY * 3, 0);
-		NSEvent *scrollEvent = [NSEvent eventWithCGEvent:cgEvent];
-		CFRelease(cgEvent);
-		[view scrollWheel:scrollEvent];
-	}
+    if (deltaY != 0) {
+        CGEventRef cgEvent = CGEventCreateScrollWheelEvent(NULL,
+            kCGScrollEventUnitLine, 1, deltaY * 3, 0);
+        NSEvent *scrollEvent = [NSEvent eventWithCGEvent:cgEvent];
+        CFRelease(cgEvent);
+        [view scrollWheel:scrollEvent];
+    }
 
-	@synchronized(bitmap) {
-		needsDisplay = YES; // TODO (bitmap == nil || [view needsDisplay]);
-		if (needsDisplay) {
-			[bitmap release];
-			bitmap = [[webView
-				bitmapImageRepForCachingDisplayInRect:[webView visibleRect]] retain];
-			[webView cacheDisplayInRect:[webView visibleRect]
-				toBitmapImageRep:bitmap];
-		}
-	}
+    @synchronized(self) {
+        if (bitmap == nil)
+            bitmap = [[webView bitmapImageRepForCachingDisplayInRect:webView.frame] retain];
+        memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+        [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+        needsDisplay = YES; // TODO (bitmap == nil || [view needsDisplay]);
+    }
+}
+
+- (int)bitmapWide
+{
+    @synchronized(self) {
+        return (bitmap == nil) ? 0 : [bitmap pixelsWide];
+    }
+}
+
+- (int)bitmapHigh
+{
+    @synchronized(self) {
+        return (bitmap == nil) ? 0 : [bitmap pixelsHigh];
+    }
+}
+
+- (void)setTextureId:(int)tId
+{
+    @synchronized(self) {
+        textureId = tId;
+    }
 }
 
 - (void)render
 {
-	@synchronized(bitmap) {
-		if (!needsDisplay)
-			return;
+    @synchronized(self) {
+        if (!needsDisplay)
+            return;
+        if (bitmap == nil)
+            return;
 
-		int samplesPerPixel = [bitmap samplesPerPixel];
+        int samplesPerPixel = [bitmap samplesPerPixel];
         int rowLength = 0;
         int unpackAlign = 0;
         glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
         glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
-		glPixelStorei(GL_UNPACK_ROW_LENGTH,
-			[bitmap bytesPerRow] / samplesPerPixel);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		glBindTexture(GL_TEXTURE_2D, textureId);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		
-		if (![bitmap isPlanar] &&
-				(samplesPerPixel == 3 || samplesPerPixel == 4)) {
-			glTexImage2D(GL_TEXTURE_2D,
-				0,
-				samplesPerPixel == 4 ? GL_RGBA8 : GL_RGB8,
-				[bitmap pixelsWide],
-				[bitmap pixelsHigh],
-				0,
-				samplesPerPixel == 4 ? GL_RGBA : GL_RGB,
-				GL_UNSIGNED_BYTE,
-				[bitmap bitmapData]);
-		}
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, [bitmap bytesPerRow] / samplesPerPixel);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        if (![bitmap isPlanar] &&
+                (samplesPerPixel == 3 || samplesPerPixel == 4)) {
+            glTexSubImage2D(
+                GL_TEXTURE_2D,
+                0,
+                0,
+                0,
+                [bitmap pixelsWide],
+                [bitmap pixelsHigh],
+                samplesPerPixel == 4 ? GL_RGBA : GL_RGB,
+                GL_UNSIGNED_BYTE,
+                [bitmap bitmapData]);
+        }
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
-	}
+        glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
+    }
 }
 
 @end
 
+typedef void (*UnityRenderEventFunc)(int eventId);
 extern "C" {
 void *_WebViewPlugin_Init(
-	const char *gameObject, int width, int height, BOOL inEditor);
+    const char *gameObject, int width, int height, BOOL inEditor);
 void _WebViewPlugin_Destroy(void *instance);
 void _WebViewPlugin_SetRect(void *instance, int width, int height);
 void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
 void _WebViewPlugin_LoadURL(void *instance, const char *url);
 void _WebViewPlugin_EvaluateJS(void *instance, const char *url);
 void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
-	BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
-	BOOL keyPress, unsigned char keyCode, const char *keyChars, int textureId);
+    BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
+    BOOL keyPress, unsigned char keyCode, const char *keyChars);
+int _WebViewPlugin_BitmapWidth(void *instance);
+int _WebViewPlugin_BitmapHeight(void *instance);
+void _WebViewPlugin_SetTextureId(void *instance, int textureId);
+void _WebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventID);
+UnityRenderEventFunc GetRenderEventFunc();
 }
 
 static NSMutableSet *pool;
 
 void *_WebViewPlugin_Init(
-	const char *gameObject, int width, int height, BOOL ineditor)
+    const char *gameObject, int width, int height, BOOL ineditor)
 {
-	if (pool == 0)
-		pool = [[NSMutableSet alloc] init];
+    if (pool == 0)
+        pool = [[NSMutableSet alloc] init];
 
-	inEditor = ineditor;
-	id instance = [[WebViewPlugin alloc]
-		initWithGameObject:gameObject width:width height:height];
-	[pool addObject:[NSValue valueWithPointer:instance]];
-	return (void *)instance;
+    inEditor = ineditor;
+    id instance = [[WebViewPlugin alloc]
+        initWithGameObject:gameObject width:width height:height];
+    [pool addObject:[NSValue valueWithPointer:instance]];
+    return (void *)instance;
 }
 
 void _WebViewPlugin_Destroy(void *instance)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin release];
-	[pool removeObject:[NSValue valueWithPointer:instance]];
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin release];
+    [pool removeObject:[NSValue valueWithPointer:instance]];
 }
 
 void _WebViewPlugin_SetRect(void *instance, int width, int height)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin setRect:width height:height];
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin setRect:width height:height];
 }
 
 void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin setVisibility:visibility];
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin setVisibility:visibility];
 }
 
 void _WebViewPlugin_LoadURL(void *instance, const char *url)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin loadURL:url];
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin loadURL:url];
 }
 
 void _WebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin evaluateJS:js];
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin evaluateJS:js];
 }
 
 void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
-	BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease, BOOL keyPress,
-	unsigned char keyCode, const char *keyChars, int textureId)
+    BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease, BOOL keyPress,
+    unsigned char keyCode, const char *keyChars)
 {
-	WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
-	[webViewPlugin update:x y:y deltaY:deltaY buttonDown:buttonDown
-		buttonPress:buttonPress buttonRelease:buttonRelease keyPress:keyPress
-		keyCode:keyCode keyChars:keyChars textureId:textureId];
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin update:x y:y deltaY:deltaY buttonDown:buttonDown
+        buttonPress:buttonPress buttonRelease:buttonRelease keyPress:keyPress
+        keyCode:keyCode keyChars:keyChars];
+}
+
+int _WebViewPlugin_BitmapWidth(void *instance)
+{
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    return [webViewPlugin bitmapWide];
+}
+
+int _WebViewPlugin_BitmapHeight(void *instance)
+{
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    return [webViewPlugin bitmapHigh];
+}
+
+void _WebViewPlugin_SetTextureId(void *instance, int textureId)
+{
+    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    [webViewPlugin setTextureId:textureId];
+}
+
+static void *_instance;
+
+void _WebViewPlugin_SetCurrentInstance(void *instance)
+{
+    _instance = instance;
 }
 
 void UnityRenderEvent(int eventID)
 {
-	@autoreleasepool {
-		if ([pool containsObject:[NSValue valueWithPointer:(void *)eventID]]) {
-			WebViewPlugin *webViewPlugin = (WebViewPlugin *)eventID;
-			[webViewPlugin render];
-		}
-	}
+    @autoreleasepool {
+        if (_instance == nil) {
+            return;
+        }
+        if ([pool containsObject:[NSValue valueWithPointer:(void *)_instance]]) {
+            WebViewPlugin *webViewPlugin = (WebViewPlugin *)_instance;
+            _instance = nil;
+            [webViewPlugin render];
+        }
+    }
+}
+
+UnityRenderEventFunc GetRenderEventFunc()
+{
+    return UnityRenderEvent;
 }
