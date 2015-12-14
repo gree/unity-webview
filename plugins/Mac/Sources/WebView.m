@@ -92,6 +92,7 @@ static void UnitySendMessage(
 {
     WebView *webView;
     NSString *gameObject;
+    NSString *ua;
     NSBitmapImageRep *bitmap;
     int textureId;
     BOOL needsDisplay;
@@ -100,7 +101,7 @@ static void UnitySendMessage(
 
 @implementation WebViewPlugin
 
-- (id)initWithGameObject:(const char *)gameObject_ width:(int)width height:(int)height
+- (id)initWithGameObject:(const char *)gameObject_ width:(int)width height:(int)height ua:(const char *)ua_
 {
     self = [super init];
     monoMethod = 0;
@@ -109,6 +110,10 @@ static void UnitySendMessage(
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
     [webView setPolicyDelegate:(id)self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
+    if (ua_ != NULL && strcmp(ua_, "") != 0) {
+        ua = [[NSString stringWithUTF8String:ua_] retain];
+        [webView setCustomUserAgent:ua];
+    }
     return self;
 }
 
@@ -122,6 +127,10 @@ static void UnitySendMessage(
         if (gameObject != nil) {
             [gameObject release];
             gameObject = nil;
+        }
+        if (ua != nil) {
+            [ua release];
+            ua = nil;
         }
         if (bitmap != nil) {
             [bitmap release];
@@ -306,7 +315,7 @@ static void UnitySendMessage(
 typedef void (*UnityRenderEventFunc)(int eventId);
 extern "C" {
 void *_WebViewPlugin_Init(
-    const char *gameObject, int width, int height, BOOL inEditor);
+    const char *gameObject, int width, int height, BOOL inEditor, const char *ua);
 void _WebViewPlugin_Destroy(void *instance);
 void _WebViewPlugin_SetRect(void *instance, int width, int height);
 void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -326,13 +335,13 @@ UnityRenderEventFunc GetRenderEventFunc();
 static NSMutableSet *pool;
 
 void *_WebViewPlugin_Init(
-    const char *gameObject, int width, int height, BOOL ineditor)
+    const char *gameObject, int width, int height, BOOL ineditor, const char *ua)
 {
     if (pool == 0)
         pool = [[NSMutableSet alloc] init];
 
     inEditor = ineditor;
-    id instance = [[WebViewPlugin alloc] initWithGameObject:gameObject width:width height:height];
+    id instance = [[WebViewPlugin alloc] initWithGameObject:gameObject width:width height:height ua:ua];
     [pool addObject:[NSValue valueWithPointer:instance]];
     return (void *)instance;
 }
