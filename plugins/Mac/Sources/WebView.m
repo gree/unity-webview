@@ -107,7 +107,7 @@ static void UnitySendMessage(
     webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
     webView.hidden = YES;
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
-    [webView setPolicyDelegate:self];
+    [webView setPolicyDelegate:(id)self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
     return self;
 }
@@ -145,6 +145,8 @@ static void UnitySendMessage(
 
 - (void)setRect:(int)width height:(int)height
 {
+    if (webView == nil)
+        return;
     NSRect frame;
     frame.size.width = width;
     frame.size.height = height;
@@ -159,11 +161,15 @@ static void UnitySendMessage(
 
 - (void)setVisibility:(BOOL)visibility
 {
+    if (webView == nil)
+        return;
     webView.hidden = visibility ? NO : YES;
 }
 
 - (void)loadURL:(const char *)url
 {
+    if (webView == nil)
+        return;
     NSString *urlStr = [NSString stringWithUTF8String:url];
     NSURL *nsurl = [NSURL URLWithString:urlStr];
     NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
@@ -172,12 +178,17 @@ static void UnitySendMessage(
 
 - (void)evaluateJS:(const char *)js
 {
+    if (webView == nil)
+        return;
     NSString *jsStr = [NSString stringWithUTF8String:js];
     [webView stringByEvaluatingJavaScriptFromString:jsStr];
 }
 
 - (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars
 {
+    if (webView == nil)
+        return;
+
     NSView *view = [[[webView mainFrame] frameView] documentView];
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     NSEvent *event;
@@ -237,14 +248,14 @@ static void UnitySendMessage(
 - (int)bitmapWide
 {
     @synchronized(self) {
-        return (bitmap == nil) ? 0 : [bitmap pixelsWide];
+        return (bitmap == nil) ? 0 : (int)[bitmap pixelsWide];
     }
 }
 
 - (int)bitmapHigh
 {
     @synchronized(self) {
-        return (bitmap == nil) ? 0 : [bitmap pixelsHigh];
+        return (bitmap == nil) ? 0 : (int)[bitmap pixelsHigh];
     }
 }
 
@@ -258,28 +269,29 @@ static void UnitySendMessage(
 - (void)render
 {
     @synchronized(self) {
+        if (webView == nil)
+            return;
         if (!needsDisplay)
             return;
         if (bitmap == nil)
             return;
 
-        int samplesPerPixel = [bitmap samplesPerPixel];
+        int samplesPerPixel = (int)[bitmap samplesPerPixel];
         int rowLength = 0;
         int unpackAlign = 0;
         glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
         glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, [bitmap bytesPerRow] / samplesPerPixel);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)[bitmap bytesPerRow] / samplesPerPixel);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glBindTexture(GL_TEXTURE_2D, textureId);
-        if (![bitmap isPlanar] &&
-                (samplesPerPixel == 3 || samplesPerPixel == 4)) {
+        if (![bitmap isPlanar] && (samplesPerPixel == 3 || samplesPerPixel == 4)) {
             glTexSubImage2D(
                 GL_TEXTURE_2D,
                 0,
                 0,
                 0,
-                [bitmap pixelsWide],
-                [bitmap pixelsHigh],
+                (GLsizei)[bitmap pixelsWide],
+                (GLsizei)[bitmap pixelsHigh],
                 samplesPerPixel == 4 ? GL_RGBA : GL_RGB,
                 GL_UNSIGNED_BYTE,
                 [bitmap bitmapData]);
@@ -307,7 +319,7 @@ int _WebViewPlugin_BitmapWidth(void *instance);
 int _WebViewPlugin_BitmapHeight(void *instance);
 void _WebViewPlugin_SetTextureId(void *instance, int textureId);
 void _WebViewPlugin_SetCurrentInstance(void *instance);
-void UnityRenderEvent(int eventID);
+void UnityRenderEvent(int eventId);
 UnityRenderEventFunc GetRenderEventFunc();
 }
 
@@ -320,8 +332,7 @@ void *_WebViewPlugin_Init(
         pool = [[NSMutableSet alloc] init];
 
     inEditor = ineditor;
-    id instance = [[WebViewPlugin alloc]
-        initWithGameObject:gameObject width:width height:height];
+    id instance = [[WebViewPlugin alloc] initWithGameObject:gameObject width:width height:height];
     [pool addObject:[NSValue valueWithPointer:instance]];
     return (void *)instance;
 }
@@ -392,7 +403,7 @@ void _WebViewPlugin_SetCurrentInstance(void *instance)
     _instance = instance;
 }
 
-void UnityRenderEvent(int eventID)
+void UnityRenderEvent(int eventId)
 {
     @autoreleasepool {
         if (_instance == nil) {
