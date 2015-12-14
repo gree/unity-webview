@@ -1,15 +1,15 @@
 /*
  * Copyright (C) 2011 Keijiro Takahashi
  * Copyright (C) 2012 GREE, Inc.
- * 
+ *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
  * arising from the use of this software.
- * 
+ *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
  * freely, subject to the following restrictions:
- * 
+ *
  * 1. The origin of this software must not be misrepresented; you must not
  *    claim that you wrote the original software. If you use this software
  *    in a product, an acknowledgment in the product documentation would be
@@ -21,7 +21,9 @@
 
 #import <UIKit/UIKit.h>
 
-extern UIViewController *UnityGetGLViewController();
+// NOTE: we need extern without "C" before unity 4.5
+//extern UIViewController *UnityGetGLViewController();
+extern "C" UIViewController *UnityGetGLViewController();
 extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @interface WebViewPlugin : NSObject<UIWebViewDelegate>
@@ -50,14 +52,17 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 - (void)dealloc
 {
     [webView removeFromSuperview];
+    webView = nil;
+    gameObjectName = nil;
 }
 
-- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
+- (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
 {
+    if (webView == nil)
+        return YES;
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObjectName UTF8String],
-            "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         return NO;
     } else {
         return YES;
@@ -66,11 +71,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 - (void)setFrame:(NSInteger)x positionY:(NSInteger)y width:(NSInteger)width height:(NSInteger)height
 {
+    if (webView == nil)
+        return;
     UIView* view = UnityGetGLViewController().view;
     CGRect frame = webView.frame;
     CGRect screen = view.bounds;
-    frame.origin.x = x + ((screen.size.width - width)/2);
-    frame.origin.y = -y + ((screen.size.height - height)/2);
+    frame.origin.x = x + ((screen.size.width - width) / 2);
+    frame.origin.y = -y + ((screen.size.height - height) / 2);
     frame.size.width = width;
     frame.size.height = height;
     webView.frame = frame;
@@ -78,6 +85,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 - (void)setMargins:(int)left top:(int)top right:(int)right bottom:(int)bottom
 {
+    if (webView == nil)
+        return;
     UIView *view = UnityGetGLViewController().view;
     CGRect frame = webView.frame;
     CGRect screen = view.bounds;
@@ -89,22 +98,24 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     webView.frame = frame;
 }
 
-- (CGFloat) getScale:(UIView*)view
+- (CGFloat)getScale:(UIView *)view
 {
-    if ( [[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0 ) {
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
         return view.window.screen.nativeScale;
-    }
-    
     return view.contentScaleFactor;
 }
 
 - (void)setVisibility:(BOOL)visibility
 {
+    if (webView == nil)
+        return;
     webView.hidden = visibility ? NO : YES;
 }
 
 - (void)loadURL:(const char *)url
 {
+    if (webView == nil)
+        return;
     NSString *urlStr = [NSString stringWithUTF8String:url];
     NSURL *nsurl = [NSURL URLWithString:urlStr];
     NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
@@ -113,6 +124,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 - (void)evaluateJS:(const char *)js
 {
+    if (webView == nil)
+        return;
     NSString *jsStr = [NSString stringWithUTF8String:js];
     [webView stringByEvaluatingJavaScriptFromString:jsStr];
 }
@@ -122,7 +135,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 extern "C" {
     void *_WebViewPlugin_Init(const char *gameObjectName);
     void _WebViewPlugin_Destroy(void *instance);
-    void _WebViewPlugin_SetFrame(void* instace,NSInteger x,NSInteger y,NSInteger width,NSInteger height);
+    void _WebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _WebViewPlugin_SetMargins(
         void *instance, int left, int top, int right, int bottom);
     void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -142,17 +155,17 @@ void _WebViewPlugin_Destroy(void *instance)
     webViewPlugin = nil;
 }
 
-void _WebViewPlugin_SetFrame(void* instance,NSInteger x,NSInteger y,NSInteger width,NSInteger height)
+void _WebViewPlugin_SetFrame(void* instance, int x, int y, int width, int height)
 {
-    float screenScale = [ UIScreen instancesRespondToSelector:@selector( scale ) ]?
-    [ UIScreen mainScreen ].scale:1.0f;
-    
+    float screenScale = [UIScreen instancesRespondToSelector:@selector(scale)] ? [UIScreen mainScreen].scale : 1.0f;
     WebViewPlugin* webViewPlugin = (__bridge WebViewPlugin*)instance;
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-        if (screenScale == 2.0)
-            screenScale = 1.0f;
-    }
-    [webViewPlugin setFrame:x/screenScale positionY:y/screenScale width:width/screenScale height: height/screenScale];
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && screenScale == 2.0f)
+        screenScale = 1.0f;
+    [webViewPlugin
+        setFrame:x / screenScale
+        positionY:y / screenScale
+        width:width / screenScale
+        height:height / screenScale];
 }
 
 void _WebViewPlugin_SetMargins(

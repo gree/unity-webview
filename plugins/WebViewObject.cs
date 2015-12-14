@@ -42,12 +42,13 @@ public class UnitySendMessageDispatcher
 public class WebViewObject : MonoBehaviour
 {
     Callback callback;
+    bool visibility;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
     IntPtr webView;
-    bool visibility;
     Rect rect;
     Texture2D texture;
     string inputString;
+    bool hasFocus;
 #elif UNITY_IPHONE
     IntPtr webView;
 #elif UNITY_ANDROID
@@ -127,13 +128,24 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance, int x , int y , int width , int height);
 #endif
 
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX
+    void OnApplicationFocus(bool focus)
+    {
+        hasFocus = focus;
+    }
+#endif
+
     public void Init(Callback cb = null)
     {
         callback = cb;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
-        webView = _WebViewPlugin_Init(name, Screen.width, Screen.height,
+        webView = _WebViewPlugin_Init(
+            name,
+            Screen.width,
+            Screen.height,
             Application.platform == RuntimePlatform.OSXEditor);
         rect = new Rect(0, 0, Screen.width, Screen.height);
+        OnApplicationFocus(true);
 #elif UNITY_IPHONE
         webView = _WebViewPlugin_Init(name);
 #elif UNITY_ANDROID
@@ -208,7 +220,6 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
             return;
-        visibility = v;
         _WebViewPlugin_SetVisibility(webView, v);
 #elif UNITY_IPHONE
         if (webView == IntPtr.Zero)
@@ -221,6 +232,12 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.setVisibility", name, v);
 #endif
+        visibility = v;
+    }
+
+    public bool GetVisibility()
+    {
+        return visibility;
     }
 
     public void LoadURL(string url)
@@ -266,7 +283,9 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
     void Update()
     {
-        inputString += Input.inputString;
+        if (hasFocus) {
+            inputString += Input.inputString;
+        }
     }
 
     void OnGUI()
