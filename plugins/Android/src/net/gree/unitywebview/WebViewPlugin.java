@@ -21,9 +21,11 @@
 
 package net.gree.unitywebview;
 
-import com.unity3d.player.UnityPlayer;
 import android.app.Activity;
-import android.os.Bundle;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Point;
+import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
@@ -31,80 +33,76 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-import android.content.Context;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import android.webkit.JavascriptInterface;
-import android.content.Intent;
-import android.net.Uri;
+import com.unity3d.player.UnityPlayer;
 
-class WebViewPluginInterface
-{
+class WebViewPluginInterface {
+    private WebViewPlugin mPlugin;
     private String mGameObject;
 
-    public WebViewPluginInterface(final String gameObject)
-    {
+    public WebViewPluginInterface(WebViewPlugin plugin, String gameObject) {
+        mPlugin = plugin;
         mGameObject = gameObject;
     }
 
     @JavascriptInterface
-    public void call(String message)
-    {
-        UnityPlayer.UnitySendMessage(mGameObject, "CallFromJS", message);
+    public void call(String message) {
+        final String msg = message;
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mPlugin.IsInitialized()) {
+                UnityPlayer.UnitySendMessage(mGameObject, "CallFromJS", msg);
+            }
+        }});
     }
 }
 
-public class WebViewPlugin
-{
+public class WebViewPlugin {
     private static FrameLayout layout = null;
     private WebView mWebView;
     private WebViewPluginInterface mWebViewPlugin;
-    private long mDownTime;
 
-    public WebViewPlugin()
-    {
+    public WebViewPlugin() {
     }
 
-    public void Init(final String gameObject)
-    {
+    public boolean IsInitialized() {
+        return mWebView != null;
+    }
+
+    public void Init(final String gameObject) {
+        final WebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
-
-            mWebView = new WebView(a);
-            mWebView.setVisibility(View.GONE);
-            mWebView.setFocusable(true);
-            mWebView.setFocusableInTouchMode(true);
-
-            if (layout == null) {
-                layout = new FrameLayout(a);
-                a.addContentView(layout, new LayoutParams(
-                    LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-                layout.setFocusable(true);
-                layout.setFocusableInTouchMode(true);
+            if (mWebView != null) {
+                return;
             }
+            WebView webView = new WebView(a);
+            webView.setVisibility(View.GONE);
+            webView.setFocusable(true);
+            webView.setFocusableInTouchMode(true);
 
-            layout.addView(mWebView, new FrameLayout.LayoutParams(
-                LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT,
-                Gravity.NO_GRAVITY));
+            // webView.setWebChromeClient(new WebChromeClient() {
+            //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
+            //         Log.d("Webview", cm.message());
+            //         return true;
+            //     }
+            // });
+            webView.setWebChromeClient(new WebChromeClient());
 
-            mWebView.setWebChromeClient(new WebChromeClient() {
-                public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
-                    Log.d("Webview", cm.message());
-                    return true;
-                }
-            });
-            mWebView.setWebViewClient(new WebViewClient() {
+            mWebViewPlugin = new WebViewPluginInterface(self, gameObject);
+            webView.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                    if (url.startsWith("http://") || url.startsWith("https://") || 
-                            url.startsWith("file://") || url.startsWith("javascript:")) {
+                    if (url.startsWith("http://") || url.startsWith("https://")
+                        || url.startsWith("file://") || url.startsWith("javascript:")) {
                         // Let webview handle the URL
                         return false;
-                    }
-                    else if (url.startsWith("unity:")) {
+                    } else if (url.startsWith("unity:")) {
                         String message = url.substring(6);
                         mWebViewPlugin.call(message);
                         return true;
@@ -114,41 +112,52 @@ public class WebViewPlugin
                     return true;
                 }
             });
+            webView.addJavascriptInterface(mWebViewPlugin , "Unity");
             
-            mWebViewPlugin = new WebViewPluginInterface(gameObject);
-            
-            mWebView.addJavascriptInterface(
-                mWebViewPlugin , "Unity");
-
-            WebSettings webSettings = mWebView.getSettings();
+            WebSettings webSettings = webView.getSettings();
             webSettings.setSupportZoom(false);
             webSettings.setJavaScriptEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                Log.i("WebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
+                // Log.i("WebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
             }
-            webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH);
-            webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
-
-            String databasePath = mWebView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath(); 
             webSettings.setDatabaseEnabled(true);
             webSettings.setDomStorageEnabled(true);
+            String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath(); 
             webSettings.setDatabasePath(databasePath); 
 
+            if (layout == null) {
+                layout = new FrameLayout(a);
+                a.addContentView(
+                    layout,
+                    new LayoutParams(
+                        LayoutParams.MATCH_PARENT,
+                        LayoutParams.MATCH_PARENT));
+                layout.setFocusable(true);
+                layout.setFocusableInTouchMode(true);
+            }
+            layout.addView(
+                webView,
+                new FrameLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT,
+                    Gravity.NO_GRAVITY));
+            mWebView = webView;
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();
         activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
-        @Override
-        public void onGlobalLayout() {
+            @Override
+            public void onGlobalLayout() {
                 android.graphics.Rect r = new android.graphics.Rect();
                 //r will be populated with the coordinates of your view that area still visible.
                 activityRootView.getWindowVisibleDisplayFrame(r);
                 android.view.Display display = a.getWindowManager().getDefaultDisplay();
-                int screenHeight = display.getHeight();
+                Point size = new Point();
+                display.getSize(size);
                 int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
-                //System.out.print(String.format("[NativeWebview] %d, %d\n", screenHeight, heightDiff));
-                if (heightDiff > screenHeight/3) { // assume that this means that the keyboard is on
+                //System.out.print(String.format("[NativeWebview] %d, %d\n", size.y, heightDiff));
+                if (heightDiff > size.y / 3) { // assume that this means that the keyboard is on
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "true");
                 } else {
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "false");
@@ -157,59 +166,59 @@ public class WebViewPlugin
         }); 
     }
 
-    public void Destroy()
-    {
-        Activity a = UnityPlayer.currentActivity;
+    public void Destroy() {
+        final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
-
-            if (mWebView != null) {
-                layout.removeView(mWebView);
-                mWebView = null;
+            if (mWebView == null) {
+                return;
             }
-
+            layout.removeView(mWebView);
+            mWebView = null;
         }});
     }
 
-    public void LoadURL(final String url)
-    {
+    public void LoadURL(final String url) {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
-
+            if (mWebView == null) {
+                return;
+            }
             mWebView.loadUrl(url);
-
         }});
     }
 
-    public void EvaluateJS(final String js)
-    {
+    public void EvaluateJS(final String js) {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
-
+            if (mWebView == null) {
+                return;
+            }
             mWebView.loadUrl("javascript:" + js);
-
         }});
     }
 
-    public void SetMargins(int left, int top, int right, int bottom)
-    {
-        final FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-            LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT,
+    public void SetMargins(int left, int top, int right, int bottom) {
+        final FrameLayout.LayoutParams params
+            = new FrameLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT,
                 Gravity.NO_GRAVITY);
         params.setMargins(left, top, right, bottom);
-
-        Activity a = UnityPlayer.currentActivity;
+        final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
-
+            if (mWebView == null) {
+                return;
+            }
             mWebView.setLayoutParams(params);
-
         }});
     }
 
-    public void SetVisibility(final boolean visibility)
-    {
-        Activity a = UnityPlayer.currentActivity;
+    public void SetVisibility(final boolean visibility) {
+        final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
-
+            if (mWebView == null) {
+                return;
+            }
             if (visibility) {
                 mWebView.setVisibility(View.VISIBLE);
                 layout.requestFocus();
@@ -217,7 +226,6 @@ public class WebViewPlugin
             } else {
                 mWebView.setVisibility(View.GONE);
             }
-
         }});
     }
 }
