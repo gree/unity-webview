@@ -77,7 +77,7 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
     [DllImport("WebView")]
     private static extern IntPtr _WebViewPlugin_Init(
-        string gameObject, int width, int height, bool ineditor);
+        string gameObject, int width, int height, bool ineditor, string ua);
     [DllImport("WebView")]
     private static extern int _WebViewPlugin_Destroy(IntPtr instance);
     [DllImport("WebView")]
@@ -135,7 +135,11 @@ public class WebViewObject : MonoBehaviour
     }
 #endif
 
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX
+    public void Init(Callback cb = null, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53")
+#else
     public void Init(Callback cb = null)
+#endif
     {
         callback = cb;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
@@ -143,7 +147,20 @@ public class WebViewObject : MonoBehaviour
             name,
             Screen.width,
             Screen.height,
-            Application.platform == RuntimePlatform.OSXEditor);
+            Application.platform == RuntimePlatform.OSXEditor,
+            ua);
+        // define pseudo requestAnimationFrame.
+        EvaluateJS(@"(function() {
+            var vsync = 1000 / 60;
+            var t0 = window.performance.now();
+            window.requestAnimationFrame = function(callback, element) {
+                var t1 = window.performance.now();
+                var duration = t1 - t0;
+                var d = vsync - ((duration > vsync) ? duration % vsync : duration);
+                var id = window.setTimeout(function() {t0 = window.performance.now(); callback(t1 + d);}, d);
+                return id;
+            };
+        })()");
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
