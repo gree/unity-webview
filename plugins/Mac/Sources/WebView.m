@@ -101,12 +101,15 @@ static void UnitySendMessage(
 
 @implementation WebViewPlugin
 
-- (id)initWithGameObject:(const char *)gameObject_ width:(int)width height:(int)height ua:(const char *)ua_
+- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua_ 
 {
     self = [super init];
     monoMethod = 0;
     webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
     webView.hidden = YES;
+    if (transparent) {
+        [webView setDrawsBackground:NO];
+    }
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
     [webView setPolicyDelegate:(id)self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
@@ -315,7 +318,7 @@ static void UnitySendMessage(
 typedef void (*UnityRenderEventFunc)(int eventId);
 extern "C" {
 void *_WebViewPlugin_Init(
-    const char *gameObject, int width, int height, BOOL inEditor, const char *ua);
+    const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
 void _WebViewPlugin_Destroy(void *instance);
 void _WebViewPlugin_SetRect(void *instance, int width, int height);
 void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -335,13 +338,13 @@ UnityRenderEventFunc GetRenderEventFunc();
 static NSMutableSet *pool;
 
 void *_WebViewPlugin_Init(
-    const char *gameObject, int width, int height, BOOL ineditor, const char *ua)
+    const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor)
 {
     if (pool == 0)
         pool = [[NSMutableSet alloc] init];
 
     inEditor = ineditor;
-    id instance = [[WebViewPlugin alloc] initWithGameObject:gameObject width:width height:height ua:ua];
+    id instance = [[WebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua];
     [pool addObject:[NSValue valueWithPointer:instance]];
     return (void *)instance;
 }
