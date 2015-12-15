@@ -64,21 +64,22 @@ task :build do
   end
   ["Android", "Mac"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
-      system "./install.sh"
+      sh "./install.sh"
     end
   end
 end
 
 desc "pack"
 task :pack do
-  system "#{UNITY}/MacOS/Unity -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export"
+  sh "#{UNITY}/MacOS/Unity -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export"
   FileUtils.mv "Packager/unity-webview.unitypackage", "../dist"
+  sh "(cd Packager; zip -qr9 ../../dist/unity-webview.zip `find Assets/Plugins -type f | grep -v '\.meta$'`)"
 end
 
 desc "commit"
 task :commit do
   rev = open("|git show HEAD|head -1|awk '{print $2}'").read
-  system "git commit -m \"#{rev}\" ../dist/unity-webview.unitypackage"
+  sh "git commit -m \"#{rev}\" ../dist/unity-webview.unitypackage"
 end
 
 desc "clean"
