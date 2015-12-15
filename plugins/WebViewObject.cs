@@ -129,13 +129,6 @@ public class WebViewObject : MonoBehaviour
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
-    void OnApplicationFocus(bool focus)
-    {
-        hasFocus = focus;
-    }
-#endif
-
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX
     public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53")
 #else
     public void Init(Callback cb = null, bool transparent = false)
@@ -174,7 +167,7 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    void OnDestroy()
+    protected virtual void OnDestroy()
     {
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
@@ -299,6 +292,11 @@ public class WebViewObject : MonoBehaviour
     }
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
+    void OnApplicationFocus(bool focus)
+    {
+        hasFocus = focus;
+    }
+
     void Update()
     {
         if (hasFocus) {
