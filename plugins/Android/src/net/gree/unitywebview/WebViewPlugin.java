@@ -74,7 +74,7 @@ public class WebViewPlugin {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject) {
+    public void Init(final String gameObject, final boolean transparent) {
         final WebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
@@ -125,6 +125,10 @@ public class WebViewPlugin {
             webSettings.setDomStorageEnabled(true);
             String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath(); 
             webSettings.setDatabasePath(databasePath); 
+
+            if (transparent) {
+                webView.setBackgroundColor(0x00000000);
+            }
 
             if (layout == null) {
                 layout = new FrameLayout(a);

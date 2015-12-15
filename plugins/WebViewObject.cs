@@ -77,7 +77,7 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
     [DllImport("WebView")]
     private static extern IntPtr _WebViewPlugin_Init(
-        string gameObject, int width, int height, bool ineditor, string ua);
+        string gameObject, bool transparent, int width, int height, string ua, bool ineditor);
     [DllImport("WebView")]
     private static extern int _WebViewPlugin_Destroy(IntPtr instance);
     [DllImport("WebView")]
@@ -108,7 +108,7 @@ public class WebViewObject : MonoBehaviour
     private static extern IntPtr GetRenderEventFunc();
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _WebViewPlugin_Init(string gameObject);
+    private static extern IntPtr _WebViewPlugin_Init(string gameObject, bool transparent);
     [DllImport("__Internal")]
     private static extern int _WebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -129,26 +129,20 @@ public class WebViewObject : MonoBehaviour
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
-    void OnApplicationFocus(bool focus)
-    {
-        hasFocus = focus;
-    }
-#endif
-
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX
-    public void Init(Callback cb = null, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53")
+    public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53")
 #else
-    public void Init(Callback cb = null)
+    public void Init(Callback cb = null, bool transparent = false)
 #endif
     {
         callback = cb;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
         webView = _WebViewPlugin_Init(
             name,
+            transparent,
             Screen.width,
             Screen.height,
-            Application.platform == RuntimePlatform.OSXEditor,
-            ua);
+            ua,
+            Application.platform == RuntimePlatform.OSXEditor);
         // define pseudo requestAnimationFrame.
         EvaluateJS(@"(function() {
             var vsync = 1000 / 60;
@@ -164,16 +158,16 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _WebViewPlugin_Init(name);
+        webView = _WebViewPlugin_Init(name, transparent);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.WebViewPlugin");
-        webView.Call("Init", name);
+        webView.Call("Init", name, transparent);
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.init", name);
 #endif
     }
 
-    void OnDestroy()
+    protected virtual void OnDestroy()
     {
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
@@ -298,6 +292,11 @@ public class WebViewObject : MonoBehaviour
     }
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
+    void OnApplicationFocus(bool focus)
+    {
+        hasFocus = focus;
+    }
+
     void Update()
     {
         if (hasFocus) {

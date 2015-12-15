@@ -35,12 +35,16 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @implementation WebViewPlugin
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent
 {
     self = [super init];
 
     UIView *view = UnityGetGLViewController().view;
     webView = [[UIWebView alloc] initWithFrame:view.frame];
+    if (transparent) {
+        webView.opaque = NO;
+        webView.backgroundColor = [UIColor clearColor];
+    }
     webView.delegate = self;
     webView.hidden = YES;
     [view addSubview:webView];
@@ -133,7 +137,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @end
 
 extern "C" {
-    void *_WebViewPlugin_Init(const char *gameObjectName);
+    void *_WebViewPlugin_Init(const char *gameObjectName, BOOL transparent);
     void _WebViewPlugin_Destroy(void *instance);
     void _WebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _WebViewPlugin_SetMargins(
@@ -143,9 +147,9 @@ extern "C" {
     void _WebViewPlugin_EvaluateJS(void *instance, const char *url);
 }
 
-void *_WebViewPlugin_Init(const char *gameObjectName)
+void *_WebViewPlugin_Init(const char *gameObjectName, BOOL transparent)
 {
-    id instance = [[WebViewPlugin alloc] initWithGameObjectName:gameObjectName];
+    id instance = [[WebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent];
     return (__bridge_retained void *)instance;
 }
 
