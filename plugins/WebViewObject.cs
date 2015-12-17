@@ -66,7 +66,7 @@ public class WebViewObject : MonoBehaviour
     
     public bool IsKeyboardVisible {
         get {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_WEBPLAYER
             return false;
 #elif UNITY_ANDROID
             return mIsKeyboardVisible;
@@ -188,7 +188,6 @@ public class WebViewObject : MonoBehaviour
         webView = null;
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.destroy", name);
-        webView = null;
 #endif
     }
 

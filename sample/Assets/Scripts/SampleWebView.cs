@@ -28,7 +28,11 @@ public class SampleWebView : MonoBehaviour
 	public GUIText status;
 	WebViewObject webViewObject;
 
+#if !UNITY_WEBPLAYER
 	IEnumerator Start()
+#else
+	void Start()
+#endif
 	{
 		webViewObject =
 			(new GameObject("WebViewObject")).AddComponent<WebViewObject>();
@@ -42,6 +46,7 @@ public class SampleWebView : MonoBehaviour
 		webViewObject.SetVisibility(true);
 
 		switch (Application.platform) {
+#if !UNITY_WEBPLAYER
 		case RuntimePlatform.OSXEditor:
 		case RuntimePlatform.OSXPlayer:
 		case RuntimePlatform.IPhonePlayer:
@@ -73,6 +78,7 @@ public class SampleWebView : MonoBehaviour
 					"}, false);");
 			}
 			break;
+#else
 		case RuntimePlatform.OSXWebPlayer:
 		case RuntimePlatform.WindowsWebPlayer:
 			webViewObject.LoadURL(Url.Replace(" ", "%20"));
@@ -85,6 +91,7 @@ public class SampleWebView : MonoBehaviour
 				"	};" +
 				"});");
 			break;
+#endif
 		}
 	}
 }
