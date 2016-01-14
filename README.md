@@ -5,17 +5,16 @@ unity-webview is a plugin for Unity that attaches WebView component in the game 
 unity-webview is derived from keijiro-san's unity-webview-integration https://github.com/keijiro/unity-webview-integration .
 
 ### Caution ###
-** This plugin doesn't support Unity 3.*. **
-But you can be able to run in Unity 3, if modified WebPlayerTemplates/unity-webview/index.html.
+**This plugin doesn't support Unity 3.*.**
+But you can be able to run in Unity 3, if modified `WebPlayerTemplates/unity-webview/index.html`.
 
 ### How to use
 
-(TBW)
+To Be Written.
 
 ### Document
 
-(TBW)
-
+To Be Written.
 
 ### For iOS
 
