@@ -38,6 +38,6 @@ https://github.com/gree/unity-webview/issues/10
     $ open dist/unity-webview.unitypackage
     Import all files
 
-#### Notes on Adnroid
+#### Notes on Android
 
 Once you built an apk, please copy `sample/Temp/StatingArea/AndroidManifest-main.xml` to `sample/Assets/Plugins/AndroidManifest.xml`, edit the latter to add `android:hardwareAccelerated="true"` to `<activity android:name="com.unity3d.player.UnityPlayerActivity" ...`, and rebuilt the apk. Although some old/buggy devices may not work well with `android:hardwareAccelerated="true"`, the webview runs very smoothly with this setting.
