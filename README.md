@@ -1,43 +1,68 @@
-### Introduction
+# unity-webview
 
-unity-webview is a plugin for Unity that attaches WebView component in the game scene. It works on Android, iOS, OS X, and **WebPlayer**.
+unity-webview is a plugin for Unity 5 that overlays WebView components
+on Unity view. It works on Android, iOS, Unity Web Player, and OS X
+(Windows is not supported for now).
 
-unity-webview is derived from keijiro-san's unity-webview-integration https://github.com/keijiro/unity-webview-integration .
+unity-webview is derived from keijiro-san's
+https://github.com/keijiro/unity-webview-integration .
 
-### Caution ###
-**This plugin doesn't support Unity 3.*.**
-But you can be able to run in Unity 3, if modified `WebPlayerTemplates/unity-webview/index.html`.
+## Sample Project
 
-### How to use
+It is placed under `sample/`. You can open it and import the plugin as
+below:
 
-To Be Written.
+1. Open `sample/Assets/Sample.unity`.
+2. Open `dist/unity-webview.unitypackage` and import all files. It
+   might be easier to extract `dist/unity-webview.zip` instead if
+   you've imported unity-webview before.
 
-### Document
+## Platform Specific Notes
 
-To Be Written.
+### OS X (Editor)
 
-### For iOS
+Since Unity 5.3.0, Unity.app is built with ATS (App Transport
+Security) enabled and non-secured connection (HTTP) is not
+permitted. If you want to open `http://foo/bar.html` with this plugin
+on Unity OS X Editor, you need to open
+`/Applications/Unity5.3.4p3/Unity.app/Contents/Info.plist` with a text
+editor and add the following.
 
-CADisplayLink stops updating when UIWebView scrolled, thus you have to change AppController.mm as the following.
+```diff
+--- Info.plist~	2016-04-11 18:29:25.000000000 +0900
++++ Info.plist	2016-04-15 16:17:28.000000000 +0900
+@@ -57,5 +57,10 @@
+ 	<string>EditorApplicationPrincipalClass</string>
+ 	<key>UnityBuildNumber</key>
+ 	<string>b902ad490cea</string>
++	<key>NSAppTransportSecurity</key>
++	<dict>
++		<key>NSAllowsArbitraryLoads</key>
++		<true/>
++	</dict>
+ </dict>
+ </plist>
+```
 
-    -        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
-    +        [_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
-    
-### For Web Player
+#### References
 
-Since using IFRAME, some problems can be occurred because of browsers' XSS prevention. It is desired that "an_unityplayer_page.html…" and "a_page_loaded_in_webview.html…" are located at same domain.
+* https://github.com/gree/unity-webview/issues/64
+* https://onevcat.zendesk.com/hc/en-us/articles/215527307-I-cannot-open-the-web-page-in-Unity-Editor-
 
+### Android
 
-### Android: Uncaught TypeError: Object [object Object] has no method 'call'
+Once you built an apk, please copy
+`sample/Temp/StatingArea/AndroidManifest-main.xml` to
+`sample/Assets/Plugins/AndroidManifest.xml`, edit the latter to add
+`android:hardwareAccelerated="true"` to `<activity
+android:name="com.unity3d.player.UnityPlayerActivity" ...`, and
+rebuilt the apk. Although some old/buggy devices may not work well
+with `android:hardwareAccelerated="true"`, the WebView runs very
+smoothly with this setting.
 
-https://github.com/gree/unity-webview/issues/10
+### Web Player
 
-### Sample Project
-
-    $ open sample/Assets/Sample.unity
-    $ open dist/unity-webview.unitypackage
-    Import all files
-
-#### Notes on Android
-
-Once you built an apk, please copy `sample/Temp/StatingArea/AndroidManifest-main.xml` to `sample/Assets/Plugins/AndroidManifest.xml`, edit the latter to add `android:hardwareAccelerated="true"` to `<activity android:name="com.unity3d.player.UnityPlayerActivity" ...`, and rebuilt the apk. Although some old/buggy devices may not work well with `android:hardwareAccelerated="true"`, the webview runs very smoothly with this setting.
+The implementation utilizes IFRAME so please put both
+"an\_unityplayer\_page.html" and "a\_page\_loaded\_in\_webview.html"
+should be placed on the same domain for avoiding cross-domain
+requests.
