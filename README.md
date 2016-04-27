@@ -26,7 +26,7 @@ Security) enabled and non-secured connection (HTTP) is not
 permitted. If you want to open `http://foo/bar.html` with this plugin
 on Unity OS X Editor, you need to open
 `/Applications/Unity5.3.4p3/Unity.app/Contents/Info.plist` with a text
-editor and add the following.
+editor and add the following,
 
 ```diff
 --- Info.plist~	2016-04-11 18:29:25.000000000 +0900
@@ -42,6 +42,12 @@ editor and add the following.
 +	</dict>
  </dict>
  </plist>
+```
+
+or invoke the following from your terminal,
+
+```bash
+/usr/libexec/PlistBuddy -c "Add NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" /Applications/Unity/Unity.app/Contents/Info.plist
 ```
 
 #### References
