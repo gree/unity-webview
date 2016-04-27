@@ -24,6 +24,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX
+using System.IO;
+using System.Text.RegularExpressions;
+#endif
 
 using Callback = System.Action<string>;
 
@@ -77,6 +81,8 @@ public class WebViewObject : MonoBehaviour
     }
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
+    [DllImport("WebView")]
+    private static extern string _WebViewPlugin_GetAppPath();
     [DllImport("WebView")]
     private static extern IntPtr _WebViewPlugin_Init(
         string gameObject, bool transparent, int width, int height, string ua, bool ineditor);
@@ -138,6 +144,14 @@ public class WebViewObject : MonoBehaviour
     {
         callback = cb;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
+        {
+            var path = Regex.Replace(_WebViewPlugin_GetAppPath() + "Contents/Info.plist", "^file://", "");
+            var info = File.ReadAllText(path);
+            if (Regex.IsMatch(info, @"<key>CFBundleGetInfoString</key>\s*<string>Unity version [5-9]\.[3-9]")
+                && !Regex.IsMatch(info, @"<key>NSAppTransportSecurity</key>\s*<dict>\s*<key>NSAllowsArbitraryLoads</key>\s*<true/>\s*</dict>")) {
+                Debug.LogWarning("WebViewObject: NSAppTransportSecurity isn't configured to allow HTTP. If you need to allow any HTTP access, please shutdown Unity, invoke '/usr/libexec/PlistBuddy -c \"Add NSAppTransportSecurity:NSAllowsArbitraryLoads bool true\" /Applications/Unity/Unity.app/Contents/Info.plist', and restart Unity.");
+            }
+        }
         webView = _WebViewPlugin_Init(
             name,
             transparent,

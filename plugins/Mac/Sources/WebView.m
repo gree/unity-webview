@@ -101,7 +101,7 @@ static void UnitySendMessage(
 
 @implementation WebViewPlugin
 
-- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua_ 
+- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua_
 {
     self = [super init];
     monoMethod = 0;
@@ -317,6 +317,7 @@ static void UnitySendMessage(
 
 typedef void (*UnityRenderEventFunc)(int eventId);
 extern "C" {
+const char *_WebViewPlugin_GetAppPath();
 void *_WebViewPlugin_Init(
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
 void _WebViewPlugin_Destroy(void *instance);
@@ -333,6 +334,14 @@ void _WebViewPlugin_SetTextureId(void *instance, int textureId);
 void _WebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventId);
 UnityRenderEventFunc GetRenderEventFunc();
+}
+
+const char *_WebViewPlugin_GetAppPath()
+{
+    const char *s = [[[[NSBundle mainBundle] bundleURL] absoluteString] UTF8String];
+    char *r = (char *)malloc(strlen(s) + 1);
+    strcpy(r, s);
+    return r;
 }
 
 static NSMutableSet *pool;
