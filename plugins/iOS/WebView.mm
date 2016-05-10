@@ -26,14 +26,14 @@
 extern "C" UIViewController *UnityGetGLViewController();
 extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
-@interface WebViewPlugin : NSObject<UIWebViewDelegate>
+@interface CWebViewPlugin : NSObject<UIWebViewDelegate>
 {
     UIWebView *webView;
     NSString *gameObjectName;
 }
 @end
 
-@implementation WebViewPlugin
+@implementation CWebViewPlugin
 
 - (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent
 {
@@ -137,32 +137,32 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @end
 
 extern "C" {
-    void *_WebViewPlugin_Init(const char *gameObjectName, BOOL transparent);
-    void _WebViewPlugin_Destroy(void *instance);
-    void _WebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
-    void _WebViewPlugin_SetMargins(
+    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent);
+    void _CWebViewPlugin_Destroy(void *instance);
+    void _CWebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
+    void _CWebViewPlugin_SetMargins(
         void *instance, int left, int top, int right, int bottom);
-    void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
-    void _WebViewPlugin_LoadURL(void *instance, const char *url);
-    void _WebViewPlugin_EvaluateJS(void *instance, const char *url);
+    void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
+    void _CWebViewPlugin_LoadURL(void *instance, const char *url);
+    void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
 }
 
-void *_WebViewPlugin_Init(const char *gameObjectName, BOOL transparent)
+void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent)
 {
-    id instance = [[WebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent];
+    id instance = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent];
     return (__bridge_retained void *)instance;
 }
 
-void _WebViewPlugin_Destroy(void *instance)
+void _CWebViewPlugin_Destroy(void *instance)
 {
-    WebViewPlugin *webViewPlugin = (__bridge_transfer WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
     webViewPlugin = nil;
 }
 
-void _WebViewPlugin_SetFrame(void* instance, int x, int y, int width, int height)
+void _CWebViewPlugin_SetFrame(void* instance, int x, int y, int width, int height)
 {
     float screenScale = [UIScreen instancesRespondToSelector:@selector(scale)] ? [UIScreen mainScreen].scale : 1.0f;
-    WebViewPlugin* webViewPlugin = (__bridge WebViewPlugin*)instance;
+    CWebViewPlugin* webViewPlugin = (__bridge CWebViewPlugin*)instance;
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && screenScale == 2.0f)
         screenScale = 1.0f;
     [webViewPlugin
@@ -172,27 +172,27 @@ void _WebViewPlugin_SetFrame(void* instance, int x, int y, int width, int height
         height:height / screenScale];
 }
 
-void _WebViewPlugin_SetMargins(
+void _CWebViewPlugin_SetMargins(
     void *instance, int left, int top, int right, int bottom)
 {
-    WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setMargins:left top:top right:right bottom:bottom];
 }
 
-void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility)
+void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
-    WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
 }
 
-void _WebViewPlugin_LoadURL(void *instance, const char *url)
+void _CWebViewPlugin_LoadURL(void *instance, const char *url)
 {
-    WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin loadURL:url];
 }
 
-void _WebViewPlugin_EvaluateJS(void *instance, const char *js)
+void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
-    WebViewPlugin *webViewPlugin = (__bridge WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
 }

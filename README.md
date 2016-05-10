@@ -59,7 +59,7 @@ or invoke the following from your terminal,
 
 Once you built an apk, please copy
 `sample/Temp/StatingArea/AndroidManifest-main.xml` to
-`sample/Assets/Plugins/AndroidManifest.xml`, edit the latter to add
+`sample/Assets/Plugins/Android/AndroidManifest.xml`, edit the latter to add
 `android:hardwareAccelerated="true"` to `<activity
 android:name="com.unity3d.player.UnityPlayerActivity" ...`, and
 rebuilt the apk. Although some old/buggy devices may not work well
