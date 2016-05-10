@@ -41,11 +41,11 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import com.unity3d.player.UnityPlayer;
 
-class WebViewPluginInterface {
-    private WebViewPlugin mPlugin;
+class CWebViewPluginInterface {
+    private CWebViewPlugin mPlugin;
     private String mGameObject;
 
-    public WebViewPluginInterface(WebViewPlugin plugin, String gameObject) {
+    public CWebViewPluginInterface(CWebViewPlugin plugin, String gameObject) {
         mPlugin = plugin;
         mGameObject = gameObject;
     }
@@ -62,12 +62,12 @@ class WebViewPluginInterface {
     }
 }
 
-public class WebViewPlugin {
+public class CWebViewPlugin {
     private static FrameLayout layout = null;
     private WebView mWebView;
-    private WebViewPluginInterface mWebViewPlugin;
+    private CWebViewPluginInterface mWebViewPlugin;
 
-    public WebViewPlugin() {
+    public CWebViewPlugin() {
     }
 
     public boolean IsInitialized() {
@@ -75,7 +75,7 @@ public class WebViewPlugin {
     }
 
     public void Init(final String gameObject, final boolean transparent) {
-        final WebViewPlugin self = this;
+        final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView != null) {
@@ -94,7 +94,7 @@ public class WebViewPlugin {
             // });
             webView.setWebChromeClient(new WebChromeClient());
 
-            mWebViewPlugin = new WebViewPluginInterface(self, gameObject);
+            mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
             webView.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -118,7 +118,7 @@ public class WebViewPlugin {
             webSettings.setSupportZoom(false);
             webSettings.setJavaScriptEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                // Log.i("WebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
+                // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
             }
             webSettings.setDatabaseEnabled(true);

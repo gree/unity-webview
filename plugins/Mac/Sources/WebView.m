@@ -88,7 +88,7 @@ static void UnitySendMessage(
     mono_runtime_invoke(monoMethod, 0, args, 0);
 }
 
-@interface WebViewPlugin : NSObject
+@interface CWebViewPlugin : NSObject
 {
     WebView *webView;
     NSString *gameObject;
@@ -99,7 +99,7 @@ static void UnitySendMessage(
 }
 @end
 
-@implementation WebViewPlugin
+@implementation CWebViewPlugin
 
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua_
 {
@@ -317,26 +317,26 @@ static void UnitySendMessage(
 
 typedef void (*UnityRenderEventFunc)(int eventId);
 extern "C" {
-const char *_WebViewPlugin_GetAppPath();
-void *_WebViewPlugin_Init(
+const char *_CWebViewPlugin_GetAppPath();
+void *_CWebViewPlugin_Init(
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
-void _WebViewPlugin_Destroy(void *instance);
-void _WebViewPlugin_SetRect(void *instance, int width, int height);
-void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility);
-void _WebViewPlugin_LoadURL(void *instance, const char *url);
-void _WebViewPlugin_EvaluateJS(void *instance, const char *url);
-void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
+void _CWebViewPlugin_Destroy(void *instance);
+void _CWebViewPlugin_SetRect(void *instance, int width, int height);
+void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
+void _CWebViewPlugin_LoadURL(void *instance, const char *url);
+void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
+void _CWebViewPlugin_Update(void *instance, int x, int y, float deltaY,
     BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
     BOOL keyPress, unsigned char keyCode, const char *keyChars);
-int _WebViewPlugin_BitmapWidth(void *instance);
-int _WebViewPlugin_BitmapHeight(void *instance);
-void _WebViewPlugin_SetTextureId(void *instance, int textureId);
-void _WebViewPlugin_SetCurrentInstance(void *instance);
+int _CWebViewPlugin_BitmapWidth(void *instance);
+int _CWebViewPlugin_BitmapHeight(void *instance);
+void _CWebViewPlugin_SetTextureId(void *instance, int textureId);
+void _CWebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventId);
 UnityRenderEventFunc GetRenderEventFunc();
 }
 
-const char *_WebViewPlugin_GetAppPath()
+const char *_CWebViewPlugin_GetAppPath()
 {
     const char *s = [[[[NSBundle mainBundle] bundleURL] absoluteString] UTF8String];
     char *r = (char *)malloc(strlen(s) + 1);
@@ -346,80 +346,80 @@ const char *_WebViewPlugin_GetAppPath()
 
 static NSMutableSet *pool;
 
-void *_WebViewPlugin_Init(
+void *_CWebViewPlugin_Init(
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor)
 {
     if (pool == 0)
         pool = [[NSMutableSet alloc] init];
 
     inEditor = ineditor;
-    id instance = [[WebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua];
+    id instance = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua];
     [pool addObject:[NSValue valueWithPointer:instance]];
     return (void *)instance;
 }
 
-void _WebViewPlugin_Destroy(void *instance)
+void _CWebViewPlugin_Destroy(void *instance)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin release];
     [pool removeObject:[NSValue valueWithPointer:instance]];
 }
 
-void _WebViewPlugin_SetRect(void *instance, int width, int height)
+void _CWebViewPlugin_SetRect(void *instance, int width, int height)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin setRect:width height:height];
 }
 
-void _WebViewPlugin_SetVisibility(void *instance, BOOL visibility)
+void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
 }
 
-void _WebViewPlugin_LoadURL(void *instance, const char *url)
+void _CWebViewPlugin_LoadURL(void *instance, const char *url)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin loadURL:url];
 }
 
-void _WebViewPlugin_EvaluateJS(void *instance, const char *js)
+void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
 }
 
-void _WebViewPlugin_Update(void *instance, int x, int y, float deltaY,
+void _CWebViewPlugin_Update(void *instance, int x, int y, float deltaY,
     BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease, BOOL keyPress,
     unsigned char keyCode, const char *keyChars)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin update:x y:y deltaY:deltaY buttonDown:buttonDown
         buttonPress:buttonPress buttonRelease:buttonRelease keyPress:keyPress
         keyCode:keyCode keyChars:keyChars];
 }
 
-int _WebViewPlugin_BitmapWidth(void *instance)
+int _CWebViewPlugin_BitmapWidth(void *instance)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     return [webViewPlugin bitmapWide];
 }
 
-int _WebViewPlugin_BitmapHeight(void *instance)
+int _CWebViewPlugin_BitmapHeight(void *instance)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     return [webViewPlugin bitmapHigh];
 }
 
-void _WebViewPlugin_SetTextureId(void *instance, int textureId)
+void _CWebViewPlugin_SetTextureId(void *instance, int textureId)
 {
-    WebViewPlugin *webViewPlugin = (WebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin setTextureId:textureId];
 }
 
 static void *_instance;
 
-void _WebViewPlugin_SetCurrentInstance(void *instance)
+void _CWebViewPlugin_SetCurrentInstance(void *instance)
 {
     _instance = instance;
 }
@@ -431,7 +431,7 @@ void UnityRenderEvent(int eventId)
             return;
         }
         if ([pool containsObject:[NSValue valueWithPointer:(void *)_instance]]) {
-            WebViewPlugin *webViewPlugin = (WebViewPlugin *)_instance;
+            CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)_instance;
             _instance = nil;
             [webViewPlugin render];
         }
