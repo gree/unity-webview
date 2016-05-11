@@ -51,18 +51,22 @@ public class SampleWebView : MonoBehaviour
 		case RuntimePlatform.OSXPlayer:
 		case RuntimePlatform.IPhonePlayer:
 		case RuntimePlatform.Android:
-			var src = System.IO.Path.Combine(Application.streamingAssetsPath, Url);
-			var dst = System.IO.Path.Combine(Application.persistentDataPath, Url);
-			var result = "";
-			if (src.Contains("://")) {
-				var www = new WWW(src);
-				yield return www;
-				result = www.text;
+			if (Url.StartsWith("http")) {
+				webViewObject.LoadURL(Url.Replace(" ", "%20"));
 			} else {
-				result = System.IO.File.ReadAllText(src);
+				var src = System.IO.Path.Combine(Application.streamingAssetsPath, Url);
+				var dst = System.IO.Path.Combine(Application.persistentDataPath, Url);
+				var result = "";
+				if (src.Contains("://")) {
+					var www = new WWW(src);
+					yield return www;
+					result = www.text;
+				} else {
+					result = System.IO.File.ReadAllText(src);
+				}
+				System.IO.File.WriteAllText(dst, result);
+				webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
 			}
-			System.IO.File.WriteAllText(dst, result);
-			webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
 			if (Application.platform != RuntimePlatform.Android) {
 				webViewObject.EvaluateJS(
 					"window.addEventListener('load', function() {" +
