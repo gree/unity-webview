@@ -111,6 +111,7 @@ static void UnitySendMessage(
         [webView setDrawsBackground:NO];
     }
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
+    [webView setFrameLoadDelegate:(id)self];
     [webView setPolicyDelegate:(id)self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
     if (ua_ != NULL && strcmp(ua_, "") != 0) {
@@ -143,12 +144,16 @@ static void UnitySendMessage(
     [super dealloc];
 }
 
+- (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
+{
+    UnitySendMessage([gameObject UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObject UTF8String],
-            "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        UnitySendMessage([gameObject UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         [listener ignore];
     } else {
         [listener use];

@@ -60,6 +60,11 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     gameObjectName = nil;
 }
 
+- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
+{
+    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
 - (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
 {
     if (webView == nil)

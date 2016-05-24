@@ -45,7 +45,8 @@ public class UnitySendMessageDispatcher
 
 public class WebViewObject : MonoBehaviour
 {
-    Callback callback;
+    Callback onJS;
+    Callback onError;
     bool visibility;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
     IntPtr webView;
@@ -137,12 +138,13 @@ public class WebViewObject : MonoBehaviour
 #endif
 
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
-    public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53")
+    public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53", Callback err = null)
 #else
-    public void Init(Callback cb = null, bool transparent = false)
+    public void Init(Callback cb = null, bool transparent = false, Callback err = null)
 #endif
     {
-        callback = cb;
+        onJS = cb;
+        onError = err;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
         {
             var path = Regex.Replace(_CWebViewPlugin_GetAppPath() + "Contents/Info.plist", "^file://", "");
@@ -296,13 +298,20 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public void CallOnError(string message)
+    {
+        if (onError != null) {
+            onError(message);
+        }
+    }
+
     public void CallFromJS(string message)
     {
-        if (callback != null) {
+        if (onJS != null) {
 #if !UNITY_ANDROID
             message = WWW.UnEscapeURL(message);
 #endif
-            callback(message);
+            onJS(message);
         }
     }
 
