@@ -51,12 +51,11 @@ class CWebViewPluginInterface {
     }
 
     @JavascriptInterface
-    public void call(String message) {
-        final String msg = message;
+    public void call(final String method, final String message) {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
             if (mPlugin.IsInitialized()) {
-                UnityPlayer.UnitySendMessage(mGameObject, "CallFromJS", msg);
+                UnityPlayer.UnitySendMessage(mGameObject, method, message);
             }
         }});
     }
@@ -81,7 +80,7 @@ public class CWebViewPlugin {
             if (mWebView != null) {
                 return;
             }
-            WebView webView = new WebView(a);
+            final WebView webView = new WebView(a);
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
@@ -97,6 +96,12 @@ public class CWebViewPlugin {
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
             webView.setWebViewClient(new WebViewClient() {
                 @Override
+                public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                    webView.loadUrl("about:blank");
+                    mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
+                }
+
+                @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     if (url.startsWith("http://") || url.startsWith("https://")
                         || url.startsWith("file://") || url.startsWith("javascript:")) {
@@ -104,7 +109,7 @@ public class CWebViewPlugin {
                         return false;
                     } else if (url.startsWith("unity:")) {
                         String message = url.substring(6);
-                        mWebViewPlugin.call(message);
+                        mWebViewPlugin.call("CallFromJS", message);
                         return true;
                     }
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));

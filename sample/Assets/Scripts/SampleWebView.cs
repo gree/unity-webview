@@ -24,7 +24,6 @@ using UnityEngine;
 public class SampleWebView : MonoBehaviour
 {
 	public string Url;
-	public string SameDomainUrl;
 	public GUIText status;
 	WebViewObject webViewObject;
 
@@ -34,13 +33,20 @@ public class SampleWebView : MonoBehaviour
 	void Start()
 #endif
 	{
-		webViewObject =
-			(new GameObject("WebViewObject")).AddComponent<WebViewObject>();
-		webViewObject.Init((msg)=>{
-			Debug.Log(string.Format("CallFromJS[{0}]", msg));
-			status.text = msg;
-			status.GetComponent<Animation>().Play();
-		});
+		webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+		webViewObject.Init(
+			cb: (msg) =>
+			{
+				Debug.Log(string.Format("CallFromJS[{0}]", msg));
+				status.text = msg;
+				status.GetComponent<Animation>().Play();
+			},
+			err: (msg) =>
+			{
+				Debug.Log(string.Format("CallOnError[{0}]", msg));
+				status.text = msg;
+				status.GetComponent<Animation>().Play();
+			});
 		
 		webViewObject.SetMargins(5, 5, 5, Screen.height / 4);
 		webViewObject.SetVisibility(true);
