@@ -28,12 +28,14 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
+import android.app.Fragment;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -65,12 +67,62 @@ class CWebViewPluginInterface {
     }
 }
 
-public class CWebViewPlugin {
+public class CWebViewPlugin extends Fragment {
     private static FrameLayout layout = null;
     private WebView mWebView;
     private CWebViewPluginInterface mWebViewPlugin;
 
+    private static final int INPUT_FILE_REQUEST_CODE = 1;
+    private ValueCallback<Uri> mUploadMessage;
+    private ValueCallback<Uri[]> mFilePathCallback;
+
     public CWebViewPlugin() {
+        final Activity a = UnityPlayer.currentActivity;
+        final CWebViewPlugin self = this;
+        a.runOnUiThread(new Runnable() {public void run() {
+            a
+                .getFragmentManager()
+                .beginTransaction()
+                .add(0, self, "CWebViewPlugin")
+                .commit();
+        }});
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode != INPUT_FILE_REQUEST_CODE) {
+            super.onActivityResult(requestCode, resultCode, data);
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (mFilePathCallback == null) {
+                super.onActivityResult(requestCode, resultCode, data);
+                return;
+            }
+            Uri[] results = null;
+            // Check that the response is a good one
+            if (resultCode == Activity.RESULT_OK) {
+                String dataString = data.getDataString();
+                if (dataString != null) {
+                    results = new Uri[] { Uri.parse(dataString) };
+                }
+            }
+            mFilePathCallback.onReceiveValue(results);
+            mFilePathCallback = null;
+        } else {
+            if (mUploadMessage == null) {
+                super.onActivityResult(requestCode, resultCode, data);
+                return;
+            }
+            Uri result = null;
+            if (resultCode == Activity.RESULT_OK) {
+                if (data != null) {
+                    result = data.getData();
+                }
+            }
+            mUploadMessage.onReceiveValue(result);
+            mUploadMessage = null;
+        }
     }
 
     public boolean IsInitialized() {
@@ -88,14 +140,46 @@ public class CWebViewPlugin {
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
+            webView.setWebChromeClient(new WebChromeClient() {
+                // For Android < 3.0 (won't work because we cannot utilize FragmentActivity)
+                // public void openFileChooser(ValueCallback<Uri> uploadFile) {
+                //     openFileChooser(uploadFile, "");
+                // }
 
-            // webView.setWebChromeClient(new WebChromeClient() {
-            //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
-            //         Log.d("Webview", cm.message());
-            //         return true;
-            //     }
-            // });
-            webView.setWebChromeClient(new WebChromeClient());
+                // For 3.0 <= Android < 4.1
+                public void openFileChooser(ValueCallback<Uri> uploadFile, String acceptType) {
+                    openFileChooser(uploadFile, acceptType, "");
+                }
+
+                // For 4.1 <= Android < 5.0
+                public void openFileChooser(ValueCallback<Uri> uploadFile, String acceptType, String capture) {
+                    Log.i("CWebViewPlugin", "here1");
+                    if (mUploadMessage != null) {
+                        mUploadMessage.onReceiveValue(null);
+                    }
+                    mUploadMessage = uploadFile;
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("image/*");
+                    Log.i("CWebViewPlugin", "here2");
+                    startActivityForResult(intent, INPUT_FILE_REQUEST_CODE);
+                    Log.i("CWebViewPlugin", "here3");
+                }
+
+                // For Android 5.0+
+                @Override
+                public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                    if (mFilePathCallback != null) {
+                        mFilePathCallback.onReceiveValue(null);
+                    }
+                    mFilePathCallback = filePathCallback;
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("image/*");
+                    startActivityForResult(intent, INPUT_FILE_REQUEST_CODE);
+                    return true;
+                }
+            });
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
             webView.setWebViewClient(new WebViewClient() {
