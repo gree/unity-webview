@@ -147,8 +147,8 @@ public class WebViewObject : MonoBehaviour
         onError = err;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX
         {
-            var path = Regex.Replace(_CWebViewPlugin_GetAppPath() + "Contents/Info.plist", "^file://", "");
-            var info = File.ReadAllText(path);
+            var uri = new Uri(_CWebViewPlugin_GetAppPath());
+            var info = File.ReadAllText(uri.LocalPath + "Contents/Info.plist");
             if (Regex.IsMatch(info, @"<key>CFBundleGetInfoString</key>\s*<string>Unity version [5-9]\.[3-9]")
                 && !Regex.IsMatch(info, @"<key>NSAppTransportSecurity</key>\s*<dict>\s*<key>NSAllowsArbitraryLoads</key>\s*<true/>\s*</dict>")) {
                 Debug.LogWarning("<color=yellow>WebViewObject: NSAppTransportSecurity isn't configured to allow HTTP. If you need to allow any HTTP access, please shutdown Unity and invoke:</color>\n/usr/libexec/PlistBuddy -c \"Add NSAppTransportSecurity:NSAllowsArbitraryLoads bool true\" /Applications/Unity/Unity.app/Contents/Info.plist");
