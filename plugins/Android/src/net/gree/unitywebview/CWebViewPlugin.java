@@ -51,6 +51,10 @@ class CWebViewPluginInterface {
     }
 
     @JavascriptInterface
+    public void call(final String message) {
+        call("CallFromJS", message);
+    }
+
     public void call(final String method, final String message) {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
