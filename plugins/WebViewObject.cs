@@ -270,6 +270,8 @@ public class WebViewObject : MonoBehaviour
 
     public void LoadURL(string url)
     {
+        if (string.IsNullOrEmpty(url))
+            return;
 #if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
