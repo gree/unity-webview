@@ -66,7 +66,7 @@ static void UnitySendMessage(
                 @"Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll";
         } else {
             NSString *dllPath =
-                @"Contents/Data/Managed/Assembly-CSharp-firstpass.dll";
+                @"Contents/Resources/Data/Managed/Assembly-CSharp-firstpass.dll";
             assemblyPath = [[[NSBundle mainBundle] bundlePath]
                 stringByAppendingPathComponent:dllPath];
         }
