@@ -71,14 +71,36 @@ static void UnitySendMessage(
                 stringByAppendingPathComponent:dllPath];
         }
         monoDomain = mono_domain_get();
+        monoDesc = mono_method_desc_new(
+            "UnitySendMessageDispatcher:Dispatch(string,string,string)", FALSE);
+        
         monoAssembly =
             mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
         monoImage = mono_assembly_get_image(monoAssembly);
-        monoDesc = mono_method_desc_new(
-            "UnitySendMessageDispatcher:Dispatch(string,string,string)", FALSE);
+        
         monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
+        
+        if (monoMethod == 0) {
+            if (inEditor) {
+                assemblyPath =
+                    @"Library/ScriptAssemblies/Assembly-CSharp.dll";
+            } else {
+                NSString *dllPath =
+                    @"Contents/Resources/Data/Managed/Assembly-CSharp.dll";
+                assemblyPath = [[[NSBundle mainBundle] bundlePath]
+                                stringByAppendingPathComponent:dllPath];
+            }
+            monoAssembly =
+                mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
+            monoImage = mono_assembly_get_image(monoAssembly);
+            monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
+        }
     }
-
+    
+    if (monoMethod == 0) {
+        return;
+    }
+    
     void *args[] = {
         mono_string_new(monoDomain, gameObject),
         mono_string_new(monoDomain, method),
