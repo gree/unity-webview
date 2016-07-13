@@ -55,6 +55,18 @@ or invoke the following from your terminal,
 * https://github.com/gree/unity-webview/issues/64
 * https://onevcat.zendesk.com/hc/en-us/articles/215527307-I-cannot-open-the-web-page-in-Unity-Editor-
 
+### iOS
+
+The implementation now supports WKWebView but it is disabled by
+default. For enabling it, please set enableWKWebView as below:
+
+```csharp
+		webViewObject.Init(
+            ...
+            enableWKWebView: true);
+```
+
+
 ### Android
 
 Once you built an apk, please copy

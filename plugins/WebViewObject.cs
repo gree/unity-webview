@@ -117,7 +117,7 @@ public class WebViewObject : MonoBehaviour
     private static extern IntPtr GetRenderEventFunc();
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool enableWKWebView);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -137,11 +137,7 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance, int x , int y , int width , int height);
 #endif
 
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX
-    public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53", Callback err = null)
-#else
-    public void Init(Callback cb = null, bool transparent = false, Callback err = null)
-#endif
+    public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53", Callback err = null, bool enableWKWebView = false)
     {
         onJS = cb;
         onError = err;
@@ -176,7 +172,7 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent);
+        webView = _CWebViewPlugin_Init(name, transparent, enableWKWebView);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
         webView.Call("Init", name, transparent);
