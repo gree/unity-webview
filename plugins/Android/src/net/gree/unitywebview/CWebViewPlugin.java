@@ -210,6 +210,26 @@ public class CWebViewPlugin {
         }});
     }
 
+    public void GoBack() {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.goBack();
+        }});
+    }
+
+    public void GoForward() {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.goForward();
+        }});
+    }
+
     public void SetMargins(int left, int top, int right, int bottom) {
         final FrameLayout.LayoutParams params
             = new FrameLayout.LayoutParams(

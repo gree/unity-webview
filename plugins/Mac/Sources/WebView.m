@@ -223,6 +223,20 @@ static void UnitySendMessage(
     [webView stringByEvaluatingJavaScriptFromString:jsStr];
 }
 
+- (void)goBack
+{
+    if (webView == nil)
+        return;
+    [webView goBack];
+}
+
+- (void)goForward
+{
+    if (webView == nil)
+        return;
+    [webView goForward];
+}
+
 - (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars
 {
     if (webView == nil)
@@ -352,6 +366,8 @@ void _CWebViewPlugin_SetRect(void *instance, int width, int height);
 void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
 void _CWebViewPlugin_LoadURL(void *instance, const char *url);
 void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
+void _CWebViewPlugin_GoBack(void *instance);
+void _CWebViewPlugin_GoForward(void *instance);
 void _CWebViewPlugin_Update(void *instance, int x, int y, float deltaY,
     BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
     BOOL keyPress, unsigned char keyCode, const char *keyChars);
@@ -414,6 +430,18 @@ void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
     CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
+}
+
+void _CWebViewPlugin_GoBack(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin goBack];
+}
+
+void _CWebViewPlugin_GoForward(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin goForward];
 }
 
 void _CWebViewPlugin_Update(void *instance, int x, int y, float deltaY,

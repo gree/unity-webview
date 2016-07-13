@@ -37,7 +37,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
 - (void)load:(NSURLRequest *)request;
 - (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler;
-
+- (void)goBack;
+- (void)goForward;
 @end
 
 @interface WKWebView(WebViewProtocolConformed) <WebViewProtocol>
@@ -237,6 +238,8 @@ extern "C" {
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
+    void _CWebViewPlugin_GoBack(void *instance);
+    void _CWebViewPlugin_GoForward(void *instance);
 }
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL enableWKWebView)
@@ -287,4 +290,16 @@ void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
+}
+
+void _CWebViewPlugin_GoBack(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin goBack];
+}
+
+void _CWebViewPlugin_GoForward(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin goForward];
 }
