@@ -46,8 +46,8 @@ public class SampleWebView : MonoBehaviour
 				Debug.Log(string.Format("CallOnError[{0}]", msg));
 				status.text = msg;
 				status.GetComponent<Animation>().Play();
-			});
-		
+			},
+			enableWKWebView: true);
 		webViewObject.SetMargins(5, 5, 5, Screen.height / 4);
 		webViewObject.SetVisibility(true);
 
@@ -73,20 +73,20 @@ public class SampleWebView : MonoBehaviour
 				System.IO.File.WriteAllText(dst, result);
 				webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
 			}
-			if (Application.platform != RuntimePlatform.Android) {
-				webViewObject.EvaluateJS(
-					"window.addEventListener('load', function() {" +
-					"	window.Unity = {" +
-					"		call:function(msg) {" +
-					"			var iframe = document.createElement('IFRAME');" +
-					"			iframe.setAttribute('src', 'unity:' + msg);" +
-					"			document.documentElement.appendChild(iframe);" +
-					"			iframe.parentNode.removeChild(iframe);" +
-					"			iframe = null;" +
-					"		}" +
-					"	}" +
-					"}, false);");
-			}
+#if !UNITY_ANDROID
+			webViewObject.EvaluateJS(
+				"window.addEventListener('load', function() {" +
+				"	window.Unity = {" +
+				"		call:function(msg) {" +
+				"			var iframe = document.createElement('IFRAME');" +
+				"			iframe.setAttribute('src', 'unity:' + msg);" +
+				"			document.documentElement.appendChild(iframe);" +
+				"			iframe.parentNode.removeChild(iframe);" +
+				"			iframe = null;" +
+				"		}" +
+				"	}" +
+				"}, false);");
+#endif
 			break;
 #else
 		case RuntimePlatform.OSXWebPlayer:

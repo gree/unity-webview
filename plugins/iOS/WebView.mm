@@ -20,32 +20,96 @@
  */
 
 #import <UIKit/UIKit.h>
+#import <WebKit/WebKit.h>
 
 // NOTE: we need extern without "C" before unity 4.5
 //extern UIViewController *UnityGetGLViewController();
 extern "C" UIViewController *UnityGetGLViewController();
 extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
-@interface CWebViewPlugin : NSObject<UIWebViewDelegate>
+@protocol WebViewProtocol <NSObject>
+@property (nonatomic, getter=isOpaque) BOOL opaque;
+@property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
+@property (nonatomic, getter=isHidden) BOOL hidden;
+@property (nonatomic) CGRect frame;
+@property (nullable, nonatomic, assign) id <UIWebViewDelegate> delegate;
+@property (nullable, nonatomic, weak) id <WKNavigationDelegate> navigationDelegate;
+@property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
+- (void)load:(NSURLRequest *)request;
+- (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler;
+
+@end
+
+@interface WKWebView(WebViewProtocolConformed) <WebViewProtocol>
+@end
+
+@implementation WKWebView(WebViewProtocolConformed)
+
+@dynamic delegate;
+
+- (void)load:(NSURLRequest *)request
 {
-    UIWebView *webView;
+    WKWebView *webView = (WKWebView *)self;
+    NSURL *url = [request URL];
+    if ([url.absoluteString hasPrefix:@"file:"]) {
+        [webView loadFileURL:url allowingReadAccessToURL:url];
+    } else {
+        [webView loadRequest:request];
+    }
+}
+
+@end
+
+@interface UIWebView(WebViewProtocolConformed) <WebViewProtocol>
+@end
+
+@implementation UIWebView(WebViewProtocolConformed)
+
+@dynamic navigationDelegate;
+@dynamic UIDelegate;
+
+- (void)load:(NSURLRequest *)request
+{
+    UIWebView *webView = (UIWebView *)self;
+    [webView loadRequest:request];
+}
+
+- (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler
+{
+    NSString *result = [self stringByEvaluatingJavaScriptFromString:javaScriptString];
+    if (completionHandler) {
+        completionHandler(result, nil);
+    }
+}
+
+@end
+
+@interface CWebViewPlugin : NSObject<UIWebViewDelegate, WKUIDelegate, WKNavigationDelegate>
+{
+    UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
 }
 @end
 
 @implementation CWebViewPlugin
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent enableWKWebView:(BOOL)enableWKWebView
 {
     self = [super init];
 
     UIView *view = UnityGetGLViewController().view;
-    webView = [[UIWebView alloc] initWithFrame:view.frame];
+    if (enableWKWebView && [WKWebView class]) {
+        webView = [[WKWebView alloc] initWithFrame:view.frame];
+        webView.UIDelegate = self;
+        webView.navigationDelegate = self;
+    } else {
+        webView = [[UIWebView alloc] initWithFrame:view.frame];
+        webView.delegate = self;
+    }
     if (transparent) {
         webView.opaque = NO;
         webView.backgroundColor = [UIColor clearColor];
     }
-    webView.delegate = self;
     webView.hidden = YES;
     [view addSubview:webView];
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
@@ -75,6 +139,29 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         return NO;
     } else {
         return YES;
+    }
+}
+
+- (void)webView:(WKWebView *)uiWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
+{
+    if (webView == nil) {
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    NSURL *url = [navigationAction.request URL];
+    if ([url.absoluteString rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
+        [[UIApplication sharedApplication] openURL:url];
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else if ([url.absoluteString hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
+               && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
+        // cf. for target="_blank", cf. http://qiita.com/ShingoFukuyama/items/b3a1441025a36ab7659c
+        [webView load:navigationAction.request];
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else {
+        decisionHandler(WKNavigationActionPolicyAllow);
     }
 }
 
@@ -128,7 +215,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     NSString *urlStr = [NSString stringWithUTF8String:url];
     NSURL *nsurl = [NSURL URLWithString:urlStr];
     NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
-    [webView loadRequest:request];
+    [webView load:request];
 }
 
 - (void)evaluateJS:(const char *)js
@@ -136,13 +223,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     if (webView == nil)
         return;
     NSString *jsStr = [NSString stringWithUTF8String:js];
-    [webView stringByEvaluatingJavaScriptFromString:jsStr];
+    [webView evaluateJavaScript:jsStr completionHandler:^(NSString *result, NSError *error) {}];
 }
 
 @end
 
 extern "C" {
-    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent);
+    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL enableWKWebView);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _CWebViewPlugin_SetMargins(
@@ -152,9 +239,9 @@ extern "C" {
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
 }
 
-void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent)
+void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL enableWKWebView)
 {
-    id instance = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent];
+    id instance = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent enableWKWebView:enableWKWebView];
     return (__bridge_retained void *)instance;
 }
 
