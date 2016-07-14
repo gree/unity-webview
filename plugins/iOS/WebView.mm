@@ -227,6 +227,20 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     [webView evaluateJavaScript:jsStr completionHandler:^(NSString *result, NSError *error) {}];
 }
 
+- (void)goBack
+{
+    if (webView == nil)
+        return;
+    [webView goBack];
+}
+
+- (void)goForward
+{
+    if (webView == nil)
+        return;
+    [webView goForward];
+}
+
 @end
 
 extern "C" {
