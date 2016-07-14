@@ -1,3 +1,4 @@
+#if UNITY_IOS
 using System.Collections;
 using System.IO;
 using UnityEditor.Callbacks;
@@ -18,3 +19,4 @@ public class UnityWebViewPostprocessBuild {
         }
     }
 }
+#endif
