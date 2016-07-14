@@ -23,29 +23,29 @@ using UnityEngine;
 
 public class SampleWebView : MonoBehaviour
 {
-	public string Url;
-	public GUIText status;
-	WebViewObject webViewObject;
+    public string Url;
+    public GUIText status;
+    WebViewObject webViewObject;
 
-	IEnumerator Start()
-	{
-		webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
-		webViewObject.Init(
-			cb: (msg) =>
-			{
-				Debug.Log(string.Format("CallFromJS[{0}]", msg));
-				status.text = msg;
-				status.GetComponent<Animation>().Play();
-			},
-			err: (msg) =>
-			{
-				Debug.Log(string.Format("CallOnError[{0}]", msg));
-				status.text = msg;
-				status.GetComponent<Animation>().Play();
-			},
-			enableWKWebView: true);
-		webViewObject.SetMargins(5, 50, 5, Screen.height / 4);
-		webViewObject.SetVisibility(true);
+    IEnumerator Start()
+    {
+        webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+        webViewObject.Init(
+            cb: (msg) =>
+            {
+                Debug.Log(string.Format("CallFromJS[{0}]", msg));
+                status.text = msg;
+                status.GetComponent<Animation>().Play();
+            },
+            err: (msg) =>
+            {
+                Debug.Log(string.Format("CallOnError[{0}]", msg));
+                status.text = msg;
+                status.GetComponent<Animation>().Play();
+            },
+            enableWKWebView: true);
+        webViewObject.SetMargins(5, 50, 5, Screen.height / 4);
+        webViewObject.SetVisibility(true);
 
 #if !UNITY_WEBPLAYER
         if (Url.StartsWith("http")) {
@@ -67,15 +67,15 @@ public class SampleWebView : MonoBehaviour
 #if !UNITY_ANDROID
         webViewObject.EvaluateJS(
             "window.addEventListener('load', function() {" +
-            "	window.Unity = {" +
-            "		call:function(msg) {" +
-            "			var iframe = document.createElement('IFRAME');" +
-            "			iframe.setAttribute('src', 'unity:' + msg);" +
-            "			document.documentElement.appendChild(iframe);" +
-            "			iframe.parentNode.removeChild(iframe);" +
-            "			iframe = null;" +
-            "		}" +
-            "	}" +
+            "   window.Unity = {" +
+            "       call:function(msg) {" +
+            "           var iframe = document.createElement('IFRAME');" +
+            "           iframe.setAttribute('src', 'unity:' + msg);" +
+            "           document.documentElement.appendChild(iframe);" +
+            "           iframe.parentNode.removeChild(iframe);" +
+            "           iframe = null;" +
+            "       }" +
+            "   }" +
             "}, false);");
 #endif
 #else
@@ -86,24 +86,24 @@ public class SampleWebView : MonoBehaviour
         }
         webViewObject.EvaluateJS(
             "parent.$(function() {" +
-            "	window.Unity = {" +
-            "		call:function(msg) {" +
-            "			parent.unityWebView.sendMessage('WebViewObject', msg)" +
-            "		}" +
-            "	};" +
+            "   window.Unity = {" +
+            "       call:function(msg) {" +
+            "           parent.unityWebView.sendMessage('WebViewObject', msg)" +
+            "       }" +
+            "   };" +
             "});");
 #endif
         yield break;
-	}
+    }
 
 #if !UNITY_WEBPLAYER
-	void OnGUI()
-	{
-		if (GUI.Button(new Rect(5, 5, 40, 40), "<")) {
+    void OnGUI()
+    {
+        if (GUI.Button(new Rect(5, 5, 40, 40), "<")) {
             webViewObject.GoBack();
-		} else if (GUI.Button(new Rect(55, 5, 40, 40), ">")) {
+        } else if (GUI.Button(new Rect(55, 5, 40, 40), ">")) {
             webViewObject.GoForward();
-		}
-	}
+        }
+    }
 #endif
 }
