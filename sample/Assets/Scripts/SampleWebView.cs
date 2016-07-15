@@ -44,25 +44,35 @@ public class SampleWebView : MonoBehaviour
                 status.GetComponent<Animation>().Play();
             },
             enableWKWebView: true);
-        webViewObject.SetMargins(5, 50, 5, Screen.height / 4);
+        webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
 
 #if !UNITY_WEBPLAYER
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
         } else {
-            var src = System.IO.Path.Combine(Application.streamingAssetsPath, Url);
-            var dst = System.IO.Path.Combine(Application.persistentDataPath, Url);
-            var result = "";
-            if (src.Contains("://")) {
-                var www = new WWW(src);
-                yield return www;
-                result = www.text;
-            } else {
-                result = System.IO.File.ReadAllText(src);
+            var exts = new string[]{
+                ".jpg",
+                ".html"  // should be last
+            };
+            foreach (var ext in exts) {
+                var url = Url.Replace(".html", ext);
+                var src = System.IO.Path.Combine(Application.streamingAssetsPath, url);
+                var dst = System.IO.Path.Combine(Application.persistentDataPath, url);
+                byte[] result = null;
+                if (src.Contains("://")) {  // for Android
+                    var www = new WWW(src);
+                    yield return www;
+                    result = www.bytes;
+                } else {
+                    result = System.IO.File.ReadAllBytes(src);
+                }
+                System.IO.File.WriteAllBytes(dst, result);
+                if (ext == ".html") {
+                    webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
+                    break;
+                }
             }
-            System.IO.File.WriteAllText(dst, result);
-            webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
         }
 #if !UNITY_ANDROID
         webViewObject.EvaluateJS(
@@ -99,9 +109,9 @@ public class SampleWebView : MonoBehaviour
 #if !UNITY_WEBPLAYER
     void OnGUI()
     {
-        if (GUI.Button(new Rect(5, 5, 40, 40), "<")) {
+        if (GUI.Button(new Rect(10, 10, 80, 80), "<")) {
             webViewObject.GoBack();
-        } else if (GUI.Button(new Rect(55, 5, 40, 40), ">")) {
+        } else if (GUI.Button(new Rect(100, 10, 80, 80), ">")) {
             webViewObject.GoForward();
         }
     }
