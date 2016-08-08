@@ -35,6 +35,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nullable, nonatomic, assign) id <UIWebViewDelegate> delegate;
 @property (nullable, nonatomic, weak) id <WKNavigationDelegate> navigationDelegate;
 @property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
+@property (nullable, nonatomic, readonly, copy) NSURL *URL;
 - (void)load:(NSURLRequest *)request;
 - (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler;
 - (void)goBack;
@@ -69,6 +70,11 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @dynamic navigationDelegate;
 @dynamic UIDelegate;
+
+- (NSURL *)URL
+{
+    return [NSURL URLWithString:[self stringByEvaluatingJavaScriptFromString:@"document.URL"]];
+}
 
 - (void)load:(NSURLRequest *)request
 {
@@ -126,9 +132,37 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     gameObjectName = nil;
 }
 
-- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
+- (void)webView:(UIWebView *)uiWebView didFailLoadWithError:(NSError *)error
 {
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
+- (void)webViewDidFinishLoad:(UIWebView *)uiWebView {
+    if (webView == nil)
+        return;
+    // cf. http://stackoverflow.com/questions/10996028/uiwebview-when-did-a-page-really-finish-loading/15916853#15916853
+    if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]) {
+        UnitySendMessage(
+            [gameObjectName UTF8String],
+            "CallOnLoaded",
+            [[[webView URL] absoluteString] UTF8String]);
+    }
+}
+
+- (void)webView:(WKWebView *)wkWebView didFinishNavigation:(WKNavigation *)navigation
+{
+    if (webView == nil)
+        return;
+    [wkWebView
+        evaluateJavaScript:@"document.readyState"
+         completionHandler:^(NSString *result, NSError *error) {
+            if (result != nil && error == nil && [result isEqualToString:@"complete"]) {
+                UnitySendMessage(
+                    [gameObjectName UTF8String],
+                    "CallOnLoaded",
+                    [[[webView URL] absoluteString] UTF8String]);
+            }
+         }];
 }
 
 - (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
@@ -144,7 +178,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
 }
 
-- (void)webView:(WKWebView *)uiWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
+- (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
     if (webView == nil) {
         decisionHandler(WKNavigationActionPolicyCancel);
