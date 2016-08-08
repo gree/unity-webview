@@ -74,7 +74,7 @@ desc "pack"
 task :pack do
   sh "#{UNITY}/MacOS/Unity -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export"
   FileUtils.mv "Packager/unity-webview.unitypackage", "../dist"
-  sh "(cd Packager; zip -qr9 ../../dist/unity-webview.zip `find Assets/Plugins -type f`)"
+  sh "(cd Packager; rm -f ../../dist/unity-webview.zip; zip -qr9 ../../dist/unity-webview.zip `find Assets/Plugins -type f`)"
 end
 
 desc "commit"
