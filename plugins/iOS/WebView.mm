@@ -53,7 +53,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     WKWebView *webView = (WKWebView *)self;
     NSURL *url = [request URL];
     if ([url.absoluteString hasPrefix:@"file:"]) {
-        [webView loadFileURL:url allowingReadAccessToURL:url];
+        NSURL *top = [NSURL URLWithString:[[url absoluteString] stringByDeletingLastPathComponent]];
+        [webView loadFileURL:url allowingReadAccessToURL:top];
     } else {
         [webView loadRequest:request];
     }
