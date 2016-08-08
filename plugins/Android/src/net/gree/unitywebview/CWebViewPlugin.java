@@ -106,6 +106,11 @@ public class CWebViewPlugin {
                 }
 
                 @Override
+                public void onPageFinished(WebView view, String url) {
+                    mWebViewPlugin.call("CallOnLoaded", url);
+                }
+
+                @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     if (url.startsWith("http://") || url.startsWith("https://")
                         || url.startsWith("file://") || url.startsWith("javascript:")) {

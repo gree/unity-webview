@@ -47,6 +47,7 @@ public class WebViewObject : MonoBehaviour
 {
     Callback onJS;
     Callback onError;
+    Callback onLoaded;
     bool visibility;
 #if UNITY_WEBPLAYER
 #elif UNITY_EDITOR || UNITY_STANDALONE_OSX
@@ -149,10 +150,11 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance, int x , int y , int width , int height);
 #endif
 
-    public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53", Callback err = null, bool enableWKWebView = false)
+    public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53", Callback err = null, Callback ld = null, bool enableWKWebView = false)
     {
         onJS = cb;
         onError = err;
+        onLoaded = ld;
 #if UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.init", name);
 #elif UNITY_EDITOR || UNITY_STANDALONE_OSX
@@ -337,10 +339,17 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void CallOnError(string message)
+    public void CallOnError(string error)
     {
         if (onError != null) {
-            onError(message);
+            onError(error);
+        }
+    }
+
+    public void CallOnLoaded(string url)
+    {
+        if (onLoaded != null) {
+            onLoaded(url);
         }
     }
 

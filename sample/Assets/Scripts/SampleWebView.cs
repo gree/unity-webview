@@ -43,6 +43,10 @@ public class SampleWebView : MonoBehaviour
                 status.text = msg;
                 status.GetComponent<Animation>().Play();
             },
+            ld: (msg) =>
+            {
+                Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
+            },
             enableWKWebView: true);
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);

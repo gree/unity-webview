@@ -171,6 +171,11 @@ static void UnitySendMessage(
     UnitySendMessage([gameObject UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
+- (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
+{
+    UnitySendMessage([gameObject UTF8String], "CallOnLoaded", [[[[[frame dataSource] request] URL] absoluteString] UTF8String]);
+}
+
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
     NSString *url = [[request URL] absoluteString];
