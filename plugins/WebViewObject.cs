@@ -103,6 +103,12 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_EvaluateJS(
         IntPtr instance, string url);
     [DllImport("WebView")]
+    private static extern bool _CWebViewPlugin_CanGoBack(
+        IntPtr instance);
+    [DllImport("WebView")]
+    private static extern bool _CWebViewPlugin_CanGoForward(
+        IntPtr instance);
+    [DllImport("WebView")]
     private static extern void _CWebViewPlugin_GoBack(
         IntPtr instance);
     [DllImport("WebView")]
@@ -139,6 +145,12 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_EvaluateJS(
         IntPtr instance, string url);
+    [DllImport("__Internal")]
+    private static extern bool _CWebViewPlugin_CanGoBack(
+        IntPtr instance);
+    [DllImport("__Internal")]
+    private static extern bool _CWebViewPlugin_CanGoForward(
+        IntPtr instance);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_GoBack(
         IntPtr instance);
@@ -308,6 +320,34 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("LoadURL", "javascript:" + js);
+#endif
+    }
+
+    public bool CanGoBack()
+    {
+#if UNITY_WEBPLAYER
+#elif UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return false;
+        return _CWebViewPlugin_CanGoBack(webView);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return false;
+        return webView.Get<bool>("canGoBack");
+#endif
+    }
+
+    public bool CanGoForward()
+    {
+#if UNITY_WEBPLAYER
+#elif UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return false;
+        return _CWebViewPlugin_CanGoForward(webView);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return false;
+        return webView.Get<bool>("canGoForward");
 #endif
     }
 

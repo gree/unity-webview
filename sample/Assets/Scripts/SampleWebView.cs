@@ -113,11 +113,17 @@ public class SampleWebView : MonoBehaviour
 #if !UNITY_WEBPLAYER
     void OnGUI()
     {
+        GUI.enabled = webViewObject.CanGoBack();
         if (GUI.Button(new Rect(10, 10, 80, 80), "<")) {
             webViewObject.GoBack();
-        } else if (GUI.Button(new Rect(100, 10, 80, 80), ">")) {
+        }
+        GUI.enabled = true;
+
+        GUI.enabled = webViewObject.CanGoForward();
+        if (GUI.Button(new Rect(100, 10, 80, 80), ">")) {
             webViewObject.GoForward();
         }
+        GUI.enabled = true;
     }
 #endif
 }
