@@ -24,6 +24,7 @@ package net.gree.unitywebview;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
@@ -69,6 +70,8 @@ public class CWebViewPlugin {
     private static FrameLayout layout = null;
     private WebView mWebView;
     private CWebViewPluginInterface mWebViewPlugin;
+    private boolean canGoBack;
+    private boolean canGoForward;
 
     public CWebViewPlugin() {
     }
@@ -102,11 +105,21 @@ public class CWebViewPlugin {
                 @Override
                 public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                     webView.loadUrl("about:blank");
+                    canGoBack = webView.canGoBack();
+                    canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
                 }
 
                 @Override
+                public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                    canGoBack = webView.canGoBack();
+                    canGoForward = webView.canGoForward();
+                }
+
+                @Override
                 public void onPageFinished(WebView view, String url) {
+                    canGoBack = webView.canGoBack();
+                    canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnLoaded", url);
                 }
 
@@ -127,7 +140,7 @@ public class CWebViewPlugin {
                 }
             });
             webView.addJavascriptInterface(mWebViewPlugin , "Unity");
-            
+
             WebSettings webSettings = webView.getSettings();
             webSettings.setSupportZoom(false);
             webSettings.setJavaScriptEnabled(true);
@@ -137,8 +150,8 @@ public class CWebViewPlugin {
             }
             webSettings.setDatabaseEnabled(true);
             webSettings.setDomStorageEnabled(true);
-            String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath(); 
-            webSettings.setDatabasePath(databasePath); 
+            String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
+            webSettings.setDatabasePath(databasePath);
 
             if (transparent) {
                 webView.setBackgroundColor(0x00000000);
@@ -181,7 +194,7 @@ public class CWebViewPlugin {
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "false");
                 }
             }
-        }); 
+        });
     }
 
     public void Destroy() {

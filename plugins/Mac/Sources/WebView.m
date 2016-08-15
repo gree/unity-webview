@@ -228,6 +228,20 @@ static void UnitySendMessage(
     [webView stringByEvaluatingJavaScriptFromString:jsStr];
 }
 
+- (BOOL)canGoBack
+{
+    if (webView == nil)
+        return false;
+    return [webView canGoBack];
+}
+
+- (BOOL)canGoForward
+{
+    if (webView == nil)
+        return false;
+    return [webView canGoForward];
+}
+
 - (void)goBack
 {
     if (webView == nil)
@@ -371,6 +385,8 @@ void _CWebViewPlugin_SetRect(void *instance, int width, int height);
 void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
 void _CWebViewPlugin_LoadURL(void *instance, const char *url);
 void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
+BOOL _CWebViewPlugin_CanGoBack(void *instance);
+BOOL _CWebViewPlugin_CanGoForward(void *instance);
 void _CWebViewPlugin_GoBack(void *instance);
 void _CWebViewPlugin_GoForward(void *instance);
 void _CWebViewPlugin_Update(void *instance, int x, int y, float deltaY,
@@ -435,6 +451,18 @@ void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
     CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
+}
+
+BOOL _CWebViewPlugin_CanGoBack(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    return [webViewPlugin canGoBack];
+}
+
+BOOL _CWebViewPlugin_CanGoForward(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    return [webViewPlugin canGoForward];
 }
 
 void _CWebViewPlugin_GoBack(void *instance)
