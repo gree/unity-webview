@@ -36,11 +36,13 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import com.unity3d.player.UnityPlayer;
+import java.io.ByteArrayInputStream;
 
 class CWebViewPluginInterface {
     private CWebViewPlugin mPlugin;
@@ -137,6 +139,23 @@ public class CWebViewPlugin {
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     view.getContext().startActivity(intent);
                     return true;
+                }
+
+                @Override
+                public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                    try {
+                        Uri uri = Uri.parse(url);
+                        String path = uri.getPath().toLowerCase();
+                        if (path.endsWith(".mp4")
+                            || path.endsWith(".m4v")
+                            || path.endsWith(".m4a")
+                            || path.endsWith(".mov")) {
+                            ByteArrayInputStream dummyStream = new ByteArrayInputStream(new byte[]{});
+                            return new WebResourceResponse("application/octet-stream", null, dummyStream);
+                        }
+                    } catch (Exception ex) {
+                    }
+                    return null;
                 }
             });
             webView.addJavascriptInterface(mWebViewPlugin , "Unity");
