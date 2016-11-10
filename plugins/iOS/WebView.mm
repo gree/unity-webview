@@ -37,6 +37,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
 @property (nullable, nonatomic, readonly, copy) NSURL *URL;
 - (void)load:(NSURLRequest *)request;
+- (void)loadHTML:(NSString *)html baseURL:(NSURL *)baseUrl;
 - (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler;
 @property (nonatomic, readonly) BOOL canGoBack;
 @property (nonatomic, readonly) BOOL canGoForward;
@@ -63,6 +64,12 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
 }
 
+- (void)loadHTML:(NSString *)html baseURL:(NSURL *)baseUrl
+{
+    WKWebView *webView = (WKWebView *)self;
+    [webView loadHTMLString:html baseURL:baseUrl];
+}
+
 @end
 
 @interface UIWebView(WebViewProtocolConformed) <WebViewProtocol>
@@ -82,6 +89,12 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 {
     UIWebView *webView = (UIWebView *)self;
     [webView loadRequest:request];
+}
+
+- (void)loadHTML:(NSString *)html baseURL:(NSURL *)baseUrl
+{
+    UIWebView *webView = (UIWebView *)self;
+    [webView loadHTMLString:html baseURL:baseUrl];
 }
 
 - (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler
@@ -256,6 +269,16 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     [webView load:request];
 }
 
+- (void)loadHTML:(const char *)html baseURL:(const char *)baseUrl
+{
+    if (webView == nil)
+        return;
+    NSString *htmlStr = [NSString stringWithUTF8String:html];
+    NSString *baseStr = [NSString stringWithUTF8String:baseUrl];
+    NSURL *baseNSUrl = [NSURL URLWithString:baseStr];
+    [webView loadHTML:htmlStr baseURL:baseNSUrl];
+}
+
 - (void)evaluateJS:(const char *)js
 {
     if (webView == nil)
@@ -302,6 +325,7 @@ extern "C" {
         void *instance, int left, int top, int right, int bottom);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
+    void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
     BOOL _CWebViewPlugin_CanGoBack(void *instance);
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
@@ -351,6 +375,12 @@ void _CWebViewPlugin_LoadURL(void *instance, const char *url)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin loadURL:url];
+}
+
+void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin loadHTML:html baseURL:baseUrl];
 }
 
 void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
