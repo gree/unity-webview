@@ -218,6 +218,17 @@ public class CWebViewPlugin {
         }});
     }
 
+    public void LoadHTML(final String html, final String baseURL)
+    {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.loadDataWithBaseURL(baseURL, html, "text/html", "UTF8", null);
+        }});
+    }
+
     public void EvaluateJS(final String js) {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {

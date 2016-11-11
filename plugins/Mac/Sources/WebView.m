@@ -220,6 +220,16 @@ static void UnitySendMessage(
     [[webView mainFrame] loadRequest:request];
 }
 
+- (void)loadHTML:(const char *)html baseURL:(const char *)baseUrl
+{
+    if (webView == nil)
+        return;
+    NSString *htmlStr = [NSString stringWithUTF8String:html];
+    NSString *baseStr = [NSString stringWithUTF8String:baseUrl];
+    NSURL *baseNSUrl = [NSURL URLWithString:baseStr];
+    [[webView mainFrame] loadHTMLString:htmlStr baseURL:baseNSUrl];
+}
+
 - (void)evaluateJS:(const char *)js
 {
     if (webView == nil)
@@ -384,6 +394,7 @@ void _CWebViewPlugin_Destroy(void *instance);
 void _CWebViewPlugin_SetRect(void *instance, int width, int height);
 void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
 void _CWebViewPlugin_LoadURL(void *instance, const char *url);
+void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
 void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
 BOOL _CWebViewPlugin_CanGoBack(void *instance);
 BOOL _CWebViewPlugin_CanGoForward(void *instance);
@@ -445,6 +456,12 @@ void _CWebViewPlugin_LoadURL(void *instance, const char *url)
 {
     CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
     [webViewPlugin loadURL:url];
+}
+
+void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    [webViewPlugin loadHTML:html baseURL:baseUrl];
 }
 
 void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)

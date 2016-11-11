@@ -100,6 +100,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_LoadURL(
         IntPtr instance, string url);
     [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_LoadHTML(
+        IntPtr instance, string html, string baseUrl);
+    [DllImport("WebView")]
     private static extern void _CWebViewPlugin_EvaluateJS(
         IntPtr instance, string url);
     [DllImport("WebView")]
@@ -142,6 +145,9 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_LoadURL(
         IntPtr instance, string url);
+    [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_LoadHTML(
+        IntPtr instance, string html, string baseUrl);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_EvaluateJS(
         IntPtr instance, string url);
@@ -305,6 +311,25 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("LoadURL", url);
+#endif
+    }
+
+    public void LoadHTML(string html, string baseUrl)
+    {
+        if(string.IsNullOrEmpty(html))
+            return;
+        if(string.IsNullOrEmpty(baseUrl))
+            baseUrl = "";
+#if UNITY_WEBPLAYER
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_LoadHTML(webView, html, baseUrl);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("LoadHTML", html, baseUrl);
 #endif
     }
 
