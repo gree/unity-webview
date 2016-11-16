@@ -43,6 +43,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nonatomic, readonly) BOOL canGoForward;
 - (void)goBack;
 - (void)goForward;
+- (void)stopLoading;
 @end
 
 @interface WKWebView(WebViewProtocolConformed) <WebViewProtocol>
@@ -142,6 +143,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 - (void)dealloc
 {
+    if ([webView isKindOfClass:[WKWebView class]]) {
+        webView.UIDelegate = nil;
+        webView.navigationDelegate = nil;
+    } else {
+        webView.delegate = nil;
+    }
+    [webView stopLoading];
     [webView removeFromSuperview];
     webView = nil;
     gameObjectName = nil;

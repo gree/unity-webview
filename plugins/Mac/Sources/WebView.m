@@ -147,6 +147,9 @@ static void UnitySendMessage(
 {
     @synchronized(self) {
         if (webView != nil) {
+            [webView setFrameLoadDelegate:nil];
+            [webView setPolicyDelegate:nil];
+            [webView stopLoading:nil];
             [webView release];
             webView = nil;
         }
