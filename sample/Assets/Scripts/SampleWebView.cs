@@ -46,6 +46,19 @@ public class SampleWebView : MonoBehaviour
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
+#if !UNITY_ANDROID
+                webViewObject.EvaluateJS(@"
+                  window.Unity = {
+                    call: function(msg) {
+                      var iframe = document.createElement('IFRAME');
+                      iframe.setAttribute('src', 'unity:' + msg);
+                      document.documentElement.appendChild(iframe);
+                      iframe.parentNode.removeChild(iframe);
+                      iframe = null;
+                    }
+                  }
+                ");
+#endif
             },
             enableWKWebView: true);
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
@@ -78,20 +91,6 @@ public class SampleWebView : MonoBehaviour
                 }
             }
         }
-#if !UNITY_ANDROID
-        webViewObject.EvaluateJS(
-            "window.addEventListener('load', function() {" +
-            "   window.Unity = {" +
-            "       call:function(msg) {" +
-            "           var iframe = document.createElement('IFRAME');" +
-            "           iframe.setAttribute('src', 'unity:' + msg);" +
-            "           document.documentElement.appendChild(iframe);" +
-            "           iframe.parentNode.removeChild(iframe);" +
-            "           iframe = null;" +
-            "       }" +
-            "   }" +
-            "}, false);");
-#endif
 #else
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
