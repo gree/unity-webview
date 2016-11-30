@@ -134,6 +134,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         webView.opaque = NO;
         webView.backgroundColor = [UIColor clearColor];
     }
+    webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     webView.hidden = YES;
     [view addSubview:webView];
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
