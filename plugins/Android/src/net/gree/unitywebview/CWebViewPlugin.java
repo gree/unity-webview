@@ -67,7 +67,7 @@ class CWebViewPluginInterface {
 }
 
 public class CWebViewPlugin {
-    private static FrameLayout layout = null;
+    private FrameLayout layout;
     private WebView mWebView;
     private CWebViewPluginInterface mWebViewPlugin;
     private boolean canGoBack;
@@ -88,7 +88,6 @@ public class CWebViewPlugin {
                 return;
             }
             final WebView webView = new WebView(a);
-            webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
 
@@ -166,6 +165,7 @@ public class CWebViewPlugin {
                         LayoutParams.MATCH_PARENT));
                 layout.setFocusable(true);
                 layout.setFocusableInTouchMode(true);
+                layout.setVisibility(View.GONE);
             }
             layout.addView(
                 webView,
@@ -282,11 +282,11 @@ public class CWebViewPlugin {
                 return;
             }
             if (visibility) {
-                mWebView.setVisibility(View.VISIBLE);
+                layout.setVisibility(View.VISIBLE);
                 layout.requestFocus();
                 mWebView.requestFocus();
             } else {
-                mWebView.setVisibility(View.GONE);
+                layout.setVisibility(View.GONE);
             }
         }});
     }
