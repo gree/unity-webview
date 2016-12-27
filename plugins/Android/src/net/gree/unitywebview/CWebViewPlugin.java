@@ -203,7 +203,9 @@ public class CWebViewPlugin {
             if (mWebView == null) {
                 return;
             }
+            mWebView.stopLoading();
             layout.removeView(mWebView);
+            mWebView.destroy();
             mWebView = null;
         }});
     }
