@@ -124,7 +124,15 @@ public class CWebViewPlugin {
                 }
 
                 @Override
+                public void onLoadResource(WebView view, String url) {
+                    canGoBack = webView.canGoBack();
+                    canGoForward = webView.canGoForward();
+                }
+
+                @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                    canGoBack = webView.canGoBack();
+                    canGoForward = webView.canGoForward();
                     if (url.startsWith("http://") || url.startsWith("https://")
                         || url.startsWith("file://") || url.startsWith("javascript:")) {
                         // Let webview handle the URL
@@ -203,7 +211,9 @@ public class CWebViewPlugin {
             if (mWebView == null) {
                 return;
             }
+            mWebView.stopLoading();
             layout.removeView(mWebView);
+            mWebView.destroy();
             mWebView = null;
         }});
     }
