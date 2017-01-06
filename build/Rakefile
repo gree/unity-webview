@@ -36,6 +36,7 @@ SRCS[0]=%W|
   WebViewObject.cs
   iOS/WebView.mm
   iOS/Editor/UnityWebViewPostprocessBuild.cs
+  Android/Editor/UnityWebViewPostprocessBuild.cs
 |
 
 # NOTE: WebPlayerTemplates is not inclued for now because the sample app becomes complicated.
