@@ -7,8 +7,10 @@ using UnityEditor;
 using UnityEngine;
 
 public class UnityWebViewPostprocessBuild {
-    // you need to modify ACTIVITY_NAME if you utilize any custom activty.
+#if UNITYWEBVIEW_ANDROID_USE_ACTIVITY_NAME
+    // please modify ACTIVITY_NAME if you set UNITYWEBVIEW_ANDROID_USE_ACTIVITY_NAME and utilize any custom activty.
     private const string ACTIVITY_NAME = "com.unity3d.player.UnityPlayerActivity";
+#endif
 
     [PostProcessBuild(100)]
     public static void OnPostprocessBuild(BuildTarget buildTarget, string path) {
@@ -25,20 +27,7 @@ public class UnityWebViewPostprocessBuild {
             }
             XmlDocument doc = new XmlDocument();
             doc.Load(manifest);
-            XmlElement activity = null;
-            // Let's find the application node.
-            foreach (XmlNode node0 in doc.DocumentElement.ChildNodes) {
-                if (node0.Name == "application") {
-                    foreach (XmlNode node1 in node0.ChildNodes) {
-                        if (node1.Name == "activity"
-                            && ((XmlElement)node1).GetAttribute("android:name") == ACTIVITY_NAME) {
-                            activity = (XmlElement)node1;
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
+            XmlElement activity = SearchActivity(doc);
             if (activity != null
                 && string.IsNullOrEmpty(activity.GetAttribute("android:hardwareAccelerated"))) {
                 activity.SetAttribute("hardwareAccelerated", "http://schemas.android.com/apk/res/android", "true");
@@ -46,6 +35,43 @@ public class UnityWebViewPostprocessBuild {
                 Debug.LogError("adjusted AndroidManifest.xml about android:hardwareAccelerated. Please rebuild the app.");
             }
         }
+    }
+
+    private static XmlElement SearchActivity(XmlDocument doc) {
+        foreach (XmlNode node0 in doc.DocumentElement.ChildNodes) {
+            if (node0.Name == "application") {
+                foreach (XmlNode node1 in node0.ChildNodes) {
+#if UNITYWEBVIEW_ANDROID_USE_ACTIVITY_NAME
+                    if (node1.Name == "activity"
+                        && ((XmlElement)node1).GetAttribute("android:name") == ACTIVITY_NAME) {
+                        return (XmlElement)node1;
+                    }
+#else
+                    if (node1.Name == "activity") {
+                        foreach (XmlNode node2 in node1.ChildNodes) {
+                            if (node2.Name == "intent-filter") {
+                                bool hasActionMain = false;
+                                bool hasCategoryLauncher = false;
+                                foreach (XmlNode node3 in node2.ChildNodes) {
+                                    if (node3.Name == "action"
+                                        && ((XmlElement)node3).GetAttribute("android:name") == "android.intent.action.MAIN") {
+                                        hasActionMain = true;
+                                    } else if (node3.Name == "category"
+                                               && ((XmlElement)node3).GetAttribute("android:name") == "android.intent.category.LAUNCHER") {
+                                        hasCategoryLauncher = true;
+                                    }
+                                }
+                                if (hasActionMain && hasCategoryLauncher) {
+                                    return (XmlElement)node1;
+                                }
+                            }
+                        }
+#endif
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
 #endif
