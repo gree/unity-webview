@@ -69,6 +69,8 @@ default. For enabling it, please set enableWKWebView as below:
 
 ### Android
 
+*NOTE: the following steps are now performed by Assets/Plugins/Android/Editor/UnityWebViewPostprocessBuild.cs.*
+
 Once you built an apk, please copy
 `sample/Temp/StatingArea/AndroidManifest-main.xml` to
 `sample/Assets/Plugins/Android/AndroidManifest.xml`, edit the latter to add
