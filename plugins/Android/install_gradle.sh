@@ -50,6 +50,7 @@ DEST_DIR=`cd ../../build/Packager/Assets/Plugins/Android && pwd -P`
 mkdir -p ${LIBS_DIR}
 mkdir -p ${BIN_DIR}
 mkdir -p ${DEST_DIR}
+mkdir -p ${JAVA_DIR}
 
 cp ${UNITY_JAVA_LIB} ${LIBS_DIR}
 cp -r src/net ${JAVA_DIR}
