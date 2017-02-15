@@ -45,7 +45,7 @@ rm -f ${BUILD_DIR}/src/main/AndroidManifest.xml
 pushd $CWD
 
 # copy unity library
-DEST_DIR=`cd ../../build/Packager/Assets/Plugins/Android && pwd -P`
+DEST_DIR='../../build/Packager/Assets/Plugins/Android'
 
 mkdir -p ${LIBS_DIR}
 mkdir -p ${BIN_DIR}
