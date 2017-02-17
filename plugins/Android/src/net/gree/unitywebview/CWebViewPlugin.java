@@ -208,7 +208,7 @@ public class CWebViewPlugin {
                     display.getSize(size);
                     h = size.y;
                 } catch (java.lang.NoSuchMethodError err) {
-                    h = display.getWidth();
+                    h = display.getHeight();
                 }
                 int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
                 //System.out.print(String.format("[NativeWebview] %d, %d\n", h, heightDiff));
