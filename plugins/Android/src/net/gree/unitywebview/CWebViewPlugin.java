@@ -201,11 +201,18 @@ public class CWebViewPlugin {
                 //r will be populated with the coordinates of your view that area still visible.
                 activityRootView.getWindowVisibleDisplayFrame(r);
                 android.view.Display display = a.getWindowManager().getDefaultDisplay();
-                Point size = new Point();
-                display.getSize(size);
+                // cf. http://stackoverflow.com/questions/9654016/getsize-giving-me-errors/10564149#10564149
+                int h = 0;
+                try {
+                    Point size = new Point();
+                    display.getSize(size);
+                    h = size.y;
+                } catch (java.lang.NoSuchMethodError err) {
+                    h = display.getWidth();
+                }
                 int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
-                //System.out.print(String.format("[NativeWebview] %d, %d\n", size.y, heightDiff));
-                if (heightDiff > size.y / 3) { // assume that this means that the keyboard is on
+                //System.out.print(String.format("[NativeWebview] %d, %d\n", h, heightDiff));
+                if (heightDiff > h / 3) { // assume that this means that the keyboard is on
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "true");
                 } else {
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "false");
