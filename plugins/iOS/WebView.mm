@@ -169,7 +169,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     if (webView == nil)
         return;
     
-    if ([keyPath isEqualToString:@"loading"]) {
+    if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0) {
         UnitySendMessage(
                          [gameObjectName UTF8String],
                          "CallOnLoaded",
