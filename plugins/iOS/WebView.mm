@@ -136,9 +136,12 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     webView.hidden = YES;
+    
+    [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
+    
     [view addSubview:webView];
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
-
+    
     return self;
 }
 
@@ -152,8 +155,27 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
     [webView stopLoading];
     [webView removeFromSuperview];
+    
+    [webView removeObserver:self forKeyPath:@"loading"];
+    
     webView = nil;
     gameObjectName = nil;
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context {
+    if (webView == nil)
+        return;
+    
+    if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0) {
+        UnitySendMessage(
+                         [gameObjectName UTF8String],
+                         "CallOnLoaded",
+                         [[[webView URL] absoluteString] UTF8String]);
+        
+    }
 }
 
 - (void)webView:(UIWebView *)uiWebView didFailLoadWithError:(NSError *)error
@@ -171,22 +193,6 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
             "CallOnLoaded",
             [[[webView URL] absoluteString] UTF8String]);
     }
-}
-
-- (void)webView:(WKWebView *)wkWebView didFinishNavigation:(WKNavigation *)navigation
-{
-    if (webView == nil)
-        return;
-    [wkWebView
-        evaluateJavaScript:@"document.readyState"
-         completionHandler:^(NSString *result, NSError *error) {
-            if (result != nil && error == nil && [result isEqualToString:@"complete"]) {
-                UnitySendMessage(
-                    [gameObjectName UTF8String],
-                    "CallOnLoaded",
-                    [[[webView URL] absoluteString] UTF8String]);
-            }
-         }];
 }
 
 - (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
