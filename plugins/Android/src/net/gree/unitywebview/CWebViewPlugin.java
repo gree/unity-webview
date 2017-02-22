@@ -27,7 +27,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
-import android.net.http.SslError;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
@@ -41,7 +40,6 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import android.webkit.SslErrorHandler;
 import com.unity3d.player.UnityPlayer;
 
 class CWebViewPluginInterface {
@@ -110,13 +108,6 @@ public class CWebViewPlugin {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
-                }
-                @Override
-                public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                    webView.loadUrl("about:blank");
-                    canGoBack = webView.canGoBack();
-                    canGoForward = webView.canGoForward();
-                    mWebViewPlugin.call("CallOnError", error.getPrimaryError() + "\t" + error.toString());
                 }
 
                 @Override
