@@ -50,11 +50,7 @@ public class SampleWebView : MonoBehaviour
                 webViewObject.EvaluateJS(@"
                   window.Unity = {
                     call: function(msg) {
-                      var iframe = document.createElement('IFRAME');
-                      iframe.setAttribute('src', 'unity:' + msg);
-                      document.documentElement.appendChild(iframe);
-                      iframe.parentNode.removeChild(iframe);
-                      iframe = null;
+                      window.location = 'unity:' + msg;
                     }
                   }
                 ");
