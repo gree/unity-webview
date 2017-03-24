@@ -76,9 +76,12 @@ static void UnitySendMessage(
         
         monoAssembly =
             mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
-        monoImage = mono_assembly_get_image(monoAssembly);
+
+        if (monoAssembly != 0) {
+            monoImage = mono_assembly_get_image(monoAssembly);
+            monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
+        }
         
-        monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
         
         if (monoMethod == 0) {
             if (inEditor) {
@@ -92,8 +95,11 @@ static void UnitySendMessage(
             }
             monoAssembly =
                 mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
-            monoImage = mono_assembly_get_image(monoAssembly);
-            monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
+
+            if (monoAssembly != 0) {
+                monoImage = mono_assembly_get_image(monoAssembly);
+                monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
+            }
         }
     }
     
