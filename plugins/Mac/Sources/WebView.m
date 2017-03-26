@@ -112,6 +112,8 @@ static void UnitySendMessage(
 
 @interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
+    NSWindow *window;
+    NSWindowController *windowController;
     WKWebView *webView;
     NSString *gameObject;
     NSString *ua;
@@ -133,12 +135,13 @@ static void UnitySendMessage(
     WKPreferences *preferences = [[WKPreferences alloc] init];
     preferences.javaScriptEnabled = true;
     preferences.plugInsEnabled = true;
-    preferences.minimumFontSize = 70;
     [controller addScriptMessageHandler:self name:@"unityControl"];
     configuration.userContentController = controller;
     // configuration.preferences = preferences;
-    webView = [[WKWebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)
+    NSRect frame = NSMakeRect(0, 0, width / 2, height / 2);
+    webView = [[WKWebView alloc] initWithFrame:frame
                                  configuration:configuration];
+    [[[webView configuration] preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
     webView.UIDelegate = self;
     webView.navigationDelegate = self;
     webView.hidden = NO;
@@ -155,6 +158,15 @@ static void UnitySendMessage(
         ua = [[NSString stringWithUTF8String:ua_] retain];
         [webView setCustomUserAgent:ua];
     }
+    
+    window = [[[NSWindow alloc] initWithContentRect:frame
+                                styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
+                                backing:NSBackingStoreBuffered
+                                defer:NO] autorelease];
+    [window setContentView:webView];
+    [window orderFront:NSApp];
+    windowController = [[NSWindowController alloc] initWithWindow:window];
+    
     return self;
 }
 
@@ -181,6 +193,14 @@ static void UnitySendMessage(
         if (bitmap != nil) {
             [bitmap release];
             bitmap = nil;
+        }
+        if (window != nil) {
+            [window release];
+            window = nil;
+        }
+        if (windowController != nil){
+            [windowController release];
+            windowController = nil;
         }
     }
     [super dealloc];
@@ -265,8 +285,8 @@ static void UnitySendMessage(
     if (webView == nil)
         return;
     NSRect frame;
-    frame.size.width = width;
-    frame.size.height = height;
+    frame.size.width = width / 2;
+    frame.size.height = height / 2;
     frame.origin.x = 0;
     frame.origin.y = 0;
     webView.frame = frame;
@@ -396,18 +416,11 @@ static void UnitySendMessage(
         CFRelease(cgEvent);
         [view scrollWheel:scrollEvent];
     }
-
+    
     @synchronized(self) {
         if (bitmap == nil)
             bitmap = [[webView bitmapImageRepForCachingDisplayInRect:webView.frame] retain];
         memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
-        
-        NSRect frame;
-        frame.size.width = webView.frame.size.width * 2;
-        frame.size.height = webView.frame.size.height * 2;
-        frame.origin.x = 900;
-        frame.origin.y = 0;
-        
         [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
         needsDisplay = YES; // TODO (bitmap == nil || [view needsDisplay]);
     }
