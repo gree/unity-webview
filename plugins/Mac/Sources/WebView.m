@@ -110,7 +110,7 @@ static void UnitySendMessage(
     mono_runtime_invoke(monoMethod, 0, args, 0);
 }
 
-@interface CWebViewPlugin : NSObject<WKScriptMessageHandler>
+@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
     WKWebView *webView;
     NSString *gameObject;
@@ -128,21 +128,28 @@ static void UnitySendMessage(
     self = [super init];
     monoMethod = 0;
     
-    WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc]
-                                             init];
-    WKUserContentController *controller = [[WKUserContentController alloc]
-                                           init];
+    WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
+    WKUserContentController *controller = [[WKUserContentController alloc] init];
+    WKPreferences *preferences = [[WKPreferences alloc] init];
+    preferences.javaScriptEnabled = true;
+    preferences.plugInsEnabled = true;
+    preferences.minimumFontSize = 70;
     [controller addScriptMessageHandler:self name:@"unityControl"];
     configuration.userContentController = controller;
+    // configuration.preferences = preferences;
     webView = [[WKWebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)
                                  configuration:configuration];
-    webView.hidden = YES;
+    webView.UIDelegate = self;
+    webView.navigationDelegate = self;
+    webView.hidden = NO;
     if (transparent) {
         // [webView setDrawsBackground:NO];
     }
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
     // [webView setFrameLoadDelegate:(id)self];
     // [webView setPolicyDelegate:(id)self];
+    webView.UIDelegate = self;
+    webView.navigationDelegate = self;
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
     if (ua_ != NULL && strcmp(ua_, "") != 0) {
         ua = [[NSString stringWithUTF8String:ua_] retain];
@@ -157,6 +164,8 @@ static void UnitySendMessage(
         if (webView != nil) {
             // [webView setFrameLoadDelegate:nil];
             // [webView setPolicyDelegate:nil];
+            webView.UIDelegate = nil;
+            webView.navigationDelegate = nil;
             [webView stopLoading:nil];
             [webView release];
             webView = nil;
@@ -177,6 +186,8 @@ static void UnitySendMessage(
     [super dealloc];
 }
 
+
+/*
 - (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
 {
     UnitySendMessage([gameObject UTF8String], "CallOnError", [[error description] UTF8String]);
@@ -197,12 +208,46 @@ static void UnitySendMessage(
         [listener use];
     }
 }
+*/
+
+- (void)webView:(WKWebView*)wkWebView didCommitNavigation:(null_unspecified WKNavigation *)navigation
+{
+    UnitySendMessage([gameObject UTF8String], "CallOnLoaded", "Unknown URL");
+    
+}
+
+- (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
+{
+    if (webView == nil) {
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    NSURL *url = [navigationAction.request URL];
+    //if ([url.absoluteString rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
+        // [[UIApplication sharedApplication] openURL:url];
+        // decisionHandler(WKNavigationActionPolicyCancel);
+    //} else
+    if ([url.absoluteString hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObject UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
+               && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
+        // cf. for target="_blank", cf. http://qiita.com/ShingoFukuyama/items/b3a1441025a36ab7659c
+        [webView loadRequest:navigationAction.request];
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else {
+        decisionHandler(WKNavigationActionPolicyAllow);
+    }
+}
+
 
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message {
     
     // Log out the message received
     NSLog(@"Received event %@", message.body);
+    UnitySendMessage([gameObject UTF8String], "CallFromJS",
+                     [[NSString stringWithFormat:@"%@", message.body] UTF8String]);
     
     /*
     // Then pull something from the device using the message body
@@ -235,7 +280,7 @@ static void UnitySendMessage(
 {
     if (webView == nil)
         return;
-    webView.hidden = visibility ? NO : YES;
+    // webView.hidden = visibility ? NO : YES;
 }
 
 - (void)loadURL:(const char *)url
@@ -245,7 +290,13 @@ static void UnitySendMessage(
     NSString *urlStr = [NSString stringWithUTF8String:url];
     NSURL *nsurl = [NSURL URLWithString:urlStr];
     NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
-    [[webView mainFrame] loadRequest:request];
+    
+    if ([nsurl.absoluteString hasPrefix:@"file:"]) {
+        NSURL *top = [NSURL URLWithString:[[nsurl absoluteString] stringByDeletingLastPathComponent]];
+        [webView loadFileURL:nsurl allowingReadAccessToURL:top];
+    } else {
+        [webView loadRequest:request];
+    }
 }
 
 - (void)loadHTML:(const char *)html baseURL:(const char *)baseUrl
@@ -255,7 +306,7 @@ static void UnitySendMessage(
     NSString *htmlStr = [NSString stringWithUTF8String:html];
     NSString *baseStr = [NSString stringWithUTF8String:baseUrl];
     NSURL *baseNSUrl = [NSURL URLWithString:baseStr];
-    [[webView mainFrame] loadHTMLString:htmlStr baseURL:baseNSUrl];
+    [webView loadHTMLString:htmlStr baseURL:baseNSUrl];
 }
 
 - (void)evaluateJS:(const char *)js
@@ -263,7 +314,7 @@ static void UnitySendMessage(
     if (webView == nil)
         return;
     NSString *jsStr = [NSString stringWithUTF8String:js];
-    [webView stringByEvaluatingJavaScriptFromString:jsStr];
+    [webView evaluateJavaScript:jsStr completionHandler:nil];
 }
 
 - (BOOL)canGoBack
@@ -299,7 +350,7 @@ static void UnitySendMessage(
     if (webView == nil)
         return;
 
-    NSView *view = [[[webView mainFrame] frameView] documentView];
+    NSView *view = webView;
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     NSEvent *event;
     NSString *characters;
@@ -350,6 +401,13 @@ static void UnitySendMessage(
         if (bitmap == nil)
             bitmap = [[webView bitmapImageRepForCachingDisplayInRect:webView.frame] retain];
         memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+        
+        NSRect frame;
+        frame.size.width = webView.frame.size.width * 2;
+        frame.size.height = webView.frame.size.height * 2;
+        frame.origin.x = 900;
+        frame.origin.y = 0;
+        
         [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
         needsDisplay = YES; // TODO (bitmap == nil || [view needsDisplay]);
     }

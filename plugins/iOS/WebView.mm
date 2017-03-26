@@ -174,6 +174,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     
     // Log out the message received
     NSLog(@"Received event %@", message.body);
+    UnitySendMessage([gameObjectName UTF8String], "CallFromJS",
+                     [[NSString stringWithFormat:@"%@", message.body] UTF8String]);
     
     /*
     // Then pull something from the device using the message body
