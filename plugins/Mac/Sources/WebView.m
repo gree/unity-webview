@@ -110,9 +110,9 @@ static void UnitySendMessage(
     mono_runtime_invoke(monoMethod, 0, args, 0);
 }
 
-@interface CWebViewPlugin : NSObject
+@interface CWebViewPlugin : NSObject<WKScriptMessageHandler>
 {
-    WebView *webView;
+    WKWebView *webView;
     NSString *gameObject;
     NSString *ua;
     NSBitmapImageRep *bitmap;
@@ -127,14 +127,22 @@ static void UnitySendMessage(
 {
     self = [super init];
     monoMethod = 0;
-    webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+    
+    WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc]
+                                             init];
+    WKUserContentController *controller = [[WKUserContentController alloc]
+                                           init];
+    [controller addScriptMessageHandler:self name:@"unityControl"];
+    configuration.userContentController = controller;
+    webView = [[WKWebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)
+                                 configuration:configuration];
     webView.hidden = YES;
     if (transparent) {
-        [webView setDrawsBackground:NO];
+        // [webView setDrawsBackground:NO];
     }
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
-    [webView setFrameLoadDelegate:(id)self];
-    [webView setPolicyDelegate:(id)self];
+    // [webView setFrameLoadDelegate:(id)self];
+    // [webView setPolicyDelegate:(id)self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
     if (ua_ != NULL && strcmp(ua_, "") != 0) {
         ua = [[NSString stringWithUTF8String:ua_] retain];
@@ -147,8 +155,8 @@ static void UnitySendMessage(
 {
     @synchronized(self) {
         if (webView != nil) {
-            [webView setFrameLoadDelegate:nil];
-            [webView setPolicyDelegate:nil];
+            // [webView setFrameLoadDelegate:nil];
+            // [webView setPolicyDelegate:nil];
             [webView stopLoading:nil];
             [webView release];
             webView = nil;
@@ -188,6 +196,23 @@ static void UnitySendMessage(
     } else {
         [listener use];
     }
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message {
+    
+    // Log out the message received
+    NSLog(@"Received event %@", message.body);
+    
+    /*
+    // Then pull something from the device using the message body
+    NSString *version = [[UIDevice currentDevice] valueForKey:message.body];
+    
+    // Execute some JavaScript using the result?
+    NSString *exec_template = @"set_headline(\"received: %@\");";
+    NSString *exec = [NSString stringWithFormat:exec_template, version];
+    [webView evaluateJavaScript:exec completionHandler:nil];
+    */
 }
 
 - (void)setRect:(int)width height:(int)height
