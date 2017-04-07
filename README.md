@@ -80,6 +80,14 @@ rebuilt the apk. Although some old/buggy devices may not work well
 with `android:hardwareAccelerated="true"`, the WebView runs very
 smoothly with this setting.
 
+For Unity 5.6 or newer, you also need to modify `android:name` from
+`com.unity3d.player.UnityPlayerActivity` to
+`net.gree.unitywebview.CUnityPlayerActivity`. This custom activity
+implementation will adjust Unity's SurfaceView z order. Please refer
+`plugins/Android/src/net/gree/unitywebview/CUnityPlayerActivity.java`
+and `plugins/Android/src/net/gree/unitywebview/CUnityPlayer.java` if
+you already have your own acitivity implementation.
+
 ### Web Player
 
 The implementation utilizes IFRAME so please put both
