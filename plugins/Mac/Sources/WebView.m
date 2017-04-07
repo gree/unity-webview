@@ -124,6 +124,7 @@ static void UnitySendMessage(
     NSBitmapImageRep *bitmap;
     int textureId;
     BOOL needsDisplay;
+    NSMutableDictionary *customRequestHeader;
 }
 @end
 
@@ -133,6 +134,7 @@ static void UnitySendMessage(
 {
     self = [super init];
     monoMethod = 0;
+    customRequestHeader = [[NSMutableDictionary alloc] init];
     webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
     webView.hidden = YES;
     if (transparent) {
@@ -192,6 +194,26 @@ static void UnitySendMessage(
         UnitySendMessage([gameObject UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         [listener ignore];
     } else {
+        if ([customRequestHeader count] > 0) {
+            bool isCustomized = YES;
+            
+            // Check for additional custom header.
+            for (NSString *key in [customRequestHeader allKeys])
+            {
+                if (![[[request allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
+                    isCustomized = NO;
+                    break;
+                }
+            }
+
+            // If the custom header is not attached, give it and make a request again.
+            if (!isCustomized) {
+                [listener ignore];
+                [frame loadRequest:[self constructionCustomHeader:request]];
+                return;
+            }
+        }
+        
         [listener use];
     }
 }
@@ -219,13 +241,22 @@ static void UnitySendMessage(
     webView.hidden = visibility ? NO : YES;
 }
 
+- (NSURLRequest *)constructionCustomHeader:(NSURLRequest *)originalRequest
+{
+    NSMutableURLRequest *convertedRequest = originalRequest.mutableCopy;
+    for (NSString *key in [customRequestHeader allKeys]) {
+        [convertedRequest setValue:customRequestHeader[key] forHTTPHeaderField:key];
+    }
+    return convertedRequest;
+}
+
 - (void)loadURL:(const char *)url
 {
     if (webView == nil)
         return;
     NSString *urlStr = [NSString stringWithUTF8String:url];
     NSURL *nsurl = [NSURL URLWithString:urlStr];
-    NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
+    NSURLRequest *request = [self constructionCustomHeader:[NSMutableURLRequest requestWithURL:nsurl]];
     [[webView mainFrame] loadRequest:request];
 }
 
@@ -392,6 +423,42 @@ static void UnitySendMessage(
     }
 }
 
+- (void)addCustomRequestHeader:(const char *)headerKey value:(const char *)headerValue
+{
+    NSString *keyString = [NSString stringWithUTF8String:headerKey];
+    NSString *valueString = [NSString stringWithUTF8String:headerValue];
+
+    [customRequestHeader setObject:valueString forKey:keyString];
+}
+
+- (void)removeCustomRequestHeader:(const char *)headerKey
+{
+    NSString *keyString = [NSString stringWithUTF8String:headerKey];
+
+    if ([[customRequestHeader allKeys]containsObject:keyString]) {
+        [customRequestHeader removeObjectForKey:keyString];
+    }
+}
+
+- (void)clearCustomRequestHeader
+{
+    [customRequestHeader removeAllObjects];
+}
+
+- (const char *)getCustomRequestHeaderValue:(const char *)headerKey
+{
+    NSString *keyString = [NSString stringWithUTF8String:headerKey];
+    NSString *result = [customRequestHeader objectForKey:keyString];
+    if (!result) {
+        return NULL;
+    }
+    
+    const char *s = [result UTF8String];
+    char *r = (char *)malloc(strlen(s) + 1);
+    strcpy(r, s);
+    return r;
+}
+
 @end
 
 typedef void (*UnityRenderEventFunc)(int eventId);
@@ -418,6 +485,10 @@ void _CWebViewPlugin_SetTextureId(void *instance, int textureId);
 void _CWebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventId);
 UnityRenderEventFunc GetRenderEventFunc();
+void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
+void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
+void _CWebViewPlugin_ClearCustomHeader(void *instance);
+const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
 }
 
 const char *_CWebViewPlugin_GetAppPath()
@@ -556,3 +627,29 @@ UnityRenderEventFunc GetRenderEventFunc()
 {
     return UnityRenderEvent;
 }
+
+void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    [webViewPlugin addCustomRequestHeader:headerKey value:headerValue];
+}
+
+void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    [webViewPlugin removeCustomRequestHeader:headerKey];
+}
+
+const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    return [webViewPlugin getCustomRequestHeaderValue:headerKey];
+}
+
+void _CWebViewPlugin_ClearCustomHeader(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    [webViewPlugin clearCustomRequestHeader];
+}
+
+

@@ -65,6 +65,15 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
 }
 
+- (NSURLRequest *)constructionCustomHeader:(NSURLRequest *)originalRequest with:(NSDictionary *)headerDictionary
+{
+    NSMutableURLRequest *convertedRequest = originalRequest.mutableCopy;
+    for (NSString *key in [headerDictionary allKeys]) {
+        [convertedRequest setValue:headerDictionary[key] forHTTPHeaderField:key];
+    }
+    return (NSURLRequest *)[convertedRequest copy];
+}
+
 - (void)loadHTML:(NSString *)html baseURL:(NSURL *)baseUrl
 {
     WKWebView *webView = (WKWebView *)self;
@@ -112,10 +121,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 {
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
+    NSMutableDictionary *customRequestHeader;
 }
+
 @end
 
 @implementation CWebViewPlugin
+
 
 - (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent enableWKWebView:(BOOL)enableWKWebView
 {
@@ -136,6 +148,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     webView.hidden = YES;
+    customRequestHeader = [[NSMutableDictionary alloc] init];
     
     [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
     
@@ -160,6 +173,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     
     webView = nil;
     gameObjectName = nil;
+    customRequestHeader = nil;
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
@@ -199,11 +213,16 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 {
     if (webView == nil)
         return YES;
+
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
         UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         return NO;
     } else {
+        if (![self isSetupedCustomHeader:request]) {
+            [uiWebView loadRequest:[self constructionCustomHeader:request]];
+            return NO;
+        }
         return YES;
     }
 }
@@ -227,8 +246,39 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         [webView load:navigationAction.request];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else {
-        decisionHandler(WKNavigationActionPolicyAllow);
+        if (navigationAction.targetFrame != nil && navigationAction.targetFrame.isMainFrame) {
+            // If the custom header is not attached, give it and make a request again.
+            if (![self isSetupedCustomHeader:[navigationAction request]]) {
+                NSLog(@"navi ... %@", navigationAction);
+                [wkWebView loadRequest:[self constructionCustomHeader:navigationAction.request]];
+                decisionHandler(WKNavigationActionPolicyCancel);
+                return;
+            }
+        }
     }
+    decisionHandler(WKNavigationActionPolicyAllow);
+}
+
+- (BOOL)isSetupedCustomHeader:(NSURLRequest *)targetRequest
+{
+    // Check for additional custom header.
+    for (NSString *key in [customRequestHeader allKeys])
+    {
+        if (![[[targetRequest allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
+
+- (NSURLRequest *)constructionCustomHeader:(NSURLRequest *)originalRequest
+{
+    NSMutableURLRequest *convertedRequest = originalRequest.mutableCopy;
+    for (NSString *key in [customRequestHeader allKeys]) {
+        [convertedRequest setValue:customRequestHeader[key] forHTTPHeaderField:key];
+    }
+    return (NSURLRequest *)[convertedRequest copy];
 }
 
 - (void)setFrame:(NSInteger)x positionY:(NSInteger)y width:(NSInteger)width height:(NSInteger)height
@@ -330,6 +380,41 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     [webView goForward];
 }
 
+- (void)addCustomRequestHeader:(const char *)headerKey value:(const char *)headerValue
+{
+    NSString *keyString = [NSString stringWithUTF8String:headerKey];
+    NSString *valueString = [NSString stringWithUTF8String:headerValue];
+    
+    [customRequestHeader setObject:valueString forKey:keyString];
+}
+
+- (void)removeCustomRequestHeader:(const char *)headerKey
+{
+    NSString *keyString = [NSString stringWithUTF8String:headerKey];
+    
+    if ([[customRequestHeader allKeys]containsObject:keyString]) {
+        [customRequestHeader removeObjectForKey:keyString];
+    }
+}
+
+- (void)clearCustomRequestHeader
+{
+    [customRequestHeader removeAllObjects];
+}
+
+- (const char *)getCustomRequestHeaderValue:(const char *)headerKey
+{
+    NSString *keyString = [NSString stringWithUTF8String:headerKey];
+    NSString *result = [customRequestHeader objectForKey:keyString];
+    if (!result) {
+        return NULL;
+    }
+    
+    const char *s = [result UTF8String];
+    char *r = (char *)malloc(strlen(s) + 1);
+    strcpy(r, s);
+    return r;
+}
 @end
 
 extern "C" {
@@ -346,6 +431,10 @@ extern "C" {
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
     void _CWebViewPlugin_GoBack(void *instance);
     void _CWebViewPlugin_GoForward(void *instance);
+    void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
+    void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
+    void _CWebViewPlugin_ClearCustomHeader(void *instance);
+    const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
 }
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL enableWKWebView)
@@ -427,3 +516,29 @@ void _CWebViewPlugin_GoForward(void *instance)
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goForward];
 }
+
+void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin addCustomRequestHeader:headerKey value:headerValue];
+}
+
+void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin removeCustomRequestHeader:headerKey];
+}
+
+void _CWebViewPlugin_ClearCustomHeader(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin clearCustomRequestHeader];
+}
+
+const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    return [webViewPlugin getCustomRequestHeaderValue:headerKey];
+}
+
+

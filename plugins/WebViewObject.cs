@@ -131,6 +131,15 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_SetCurrentInstance(IntPtr instance);
     [DllImport("WebView")]
     private static extern IntPtr GetRenderEventFunc();
+    [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
+    [DllImport("WebView")]
+    private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
+    [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
+    [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
+
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
     private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool enableWKWebView);
@@ -166,6 +175,14 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetFrame(
         IntPtr instance, int x , int y , int width , int height);
+    [DllImport("__Internal")]
+    private static extern void   _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
+    [DllImport("__Internal")]
+    private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
+    [DllImport("__Internal")]
+    private static extern void   _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
+    [DllImport("__Internal")]
+    private static extern void   _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
 #endif
 
     public void Init(Callback cb = null, bool transparent = false, string ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53", Callback err = null, Callback ld = null, bool enableWKWebView = false)
@@ -427,6 +444,64 @@ public class WebViewObject : MonoBehaviour
             onJS(message);
         }
     }
+
+
+    public void AddCustomHeader(string headerKey, string headerValue)
+    {
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+
+        _CWebViewPlugin_AddCustomHeader(webView, headerKey, headerValue);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("AddCustomHeader", headerKey, headerValue);
+#endif
+    }
+
+    public string GetCustomHeaderValue(string headerKey)
+    {
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+          return null;
+        
+        return _CWebViewPlugin_GetCustomHeaderValue(webView, headerKey);  
+#elif UNITY_ANDROID
+        if (webView == null)
+            return null;
+        return webView.Call<string>("GetCustomHeaderValue", headerKey);
+#endif
+    }
+
+    public void RemoveCustomHeader(string headerKey)
+    {
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+
+        _CWebViewPlugin_RemoveCustomHeader(webView, headerKey);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("RemoveCustomHeader", headerKey);
+#endif
+    }
+
+    public void ClearCustomHeader()
+    {
+#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+
+        _CWebViewPlugin_ClearCustomHeader(webView);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("ClearCustomHeader");
+#endif
+    }
+
 
 #if UNITY_WEBPLAYER
 #elif UNITY_EDITOR || UNITY_STANDALONE_OSX
