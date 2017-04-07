@@ -34,6 +34,14 @@ public class UnityWebViewPostprocessBuild {
                 doc.Save(manifest);
                 Debug.LogError("adjusted AndroidManifest.xml about android:hardwareAccelerated. Please rebuild the app.");
             }
+#if UNITY_5_6_OR_NEWER
+            if (activity != null
+                && activity.GetAttribute("android:name") == "com.unity3d.player.UnityPlayerActivity") {
+                activity.SetAttribute("name", "http://schemas.android.com/apk/res/android", "net.gree.unitywebview.CUnityPlayerActivity");
+                doc.Save(manifest);
+                Debug.LogError("adjusted AndroidManifest.xml about android:name. Please rebuild the app.");
+            }
+#endif
         }
     }
 
