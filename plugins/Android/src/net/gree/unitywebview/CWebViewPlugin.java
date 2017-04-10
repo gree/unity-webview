@@ -22,19 +22,24 @@
 package net.gree.unitywebview;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.net.http.SslError;
 import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
+import android.R;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.JavascriptInterface;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -110,6 +115,26 @@ public class CWebViewPlugin {
                     mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
                 }
 
+				@Override
+				public void onReceivedSslError(WebView view, final SslErrorHandler handler, SslError error) {
+					final AlertDialog.Builder builder = new AlertDialog.Builder(a);
+					builder.setMessage("Server security SSL Certificate seems invalid. Do you want to continue (download of files would not be possible) ?");
+					builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							handler.proceed();
+						}
+					});
+					builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							handler.cancel();
+						}
+					});
+					final AlertDialog dialog = builder.create();
+					dialog.show();
+				}
+				
                 @Override
                 public void onPageStarted(WebView view, String url, Bitmap favicon) {
                     canGoBack = webView.canGoBack();
