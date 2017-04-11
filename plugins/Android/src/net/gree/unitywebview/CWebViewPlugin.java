@@ -28,18 +28,22 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
-import android.os.SystemClock;
-import android.util.Log;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Hashtable;
+
 import com.unity3d.player.UnityPlayer;
 
 class CWebViewPluginInterface {
@@ -72,6 +76,7 @@ public class CWebViewPlugin {
     private CWebViewPluginInterface mWebViewPlugin;
     private boolean canGoBack;
     private boolean canGoForward;
+    private Hashtable<String, String> mCustomHeaders;
 
     public CWebViewPlugin() {
     }
@@ -87,6 +92,8 @@ public class CWebViewPlugin {
             if (mWebView != null) {
                 return;
             }
+            mCustomHeaders = new Hashtable<String, String>();
+            
             final WebView webView = new WebView(a);
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
@@ -127,6 +134,32 @@ public class CWebViewPlugin {
                 public void onLoadResource(WebView view, String url) {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
+                }
+
+                @Override
+                public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                    if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
+                        return super.shouldInterceptRequest(view, url);
+                    }
+
+                    try {
+                        HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
+
+                        for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
+                            urlCon.setRequestProperty(entry.getKey(), entry.getValue());
+                        }
+
+                        urlCon.connect();
+
+                        return new WebResourceResponse(
+                            urlCon.getContentType(),
+                            urlCon.getContentEncoding(),
+                            urlCon.getInputStream()
+                        );
+
+                    } catch (Exception e) {
+                        return super.shouldInterceptRequest(view, url);
+                    }
                 }
 
                 @Override
@@ -231,7 +264,12 @@ public class CWebViewPlugin {
             if (mWebView == null) {
                 return;
             }
-            mWebView.loadUrl(url);
+            if (mCustomHeaders != null &&
+            		!mCustomHeaders.isEmpty()) {
+                mWebView.loadUrl(url, mCustomHeaders);
+            } else {
+                mWebView.loadUrl(url);;
+            }
         }});
     }
 
@@ -306,5 +344,45 @@ public class CWebViewPlugin {
                 mWebView.setVisibility(View.GONE);
             }
         }});
+    }
+
+    public void AddCustomHeader(final String headerKey, final String headerValue)
+    {
+        if (mCustomHeaders == null) {
+            return;
+        }
+        mCustomHeaders.put(headerKey, headerValue);
+    }
+
+    public String GetCustomHeaderValue(final String headerKey)
+    {
+        if (mCustomHeaders == null) {
+            return null;
+        }
+
+        if (!mCustomHeaders.containsKey(headerKey)) {
+            return null;
+        }
+        return this.mCustomHeaders.get(headerKey);
+    }
+
+    public void RemoveCustomHeader(final String headerKey)
+    {
+        if (mCustomHeaders == null) {
+            return;
+        }
+
+        if (this.mCustomHeaders.containsKey(headerKey)) {
+            this.mCustomHeaders.remove(headerKey);
+        }
+    }
+
+    public void ClearCustomHeader()
+    {
+        if (mCustomHeaders == null) {
+            return;
+        }
+
+        this.mCustomHeaders.clear();
     }
 }
