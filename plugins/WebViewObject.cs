@@ -49,8 +49,7 @@ public class WebViewObject : MonoBehaviour
     Callback onError;
     Callback onLoaded;
     bool visibility;
-#if UNITY_WEBPLAYER
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     IntPtr webView;
     Rect rect;
     Texture2D texture;
@@ -68,6 +67,8 @@ public class WebViewObject : MonoBehaviour
     {
         mIsKeyboardVisible = (pIsVisible == "true");
     }
+#else
+    IntPtr webView;
 #endif
 
     public bool IsKeyboardVisible
@@ -459,7 +460,7 @@ public class WebViewObject : MonoBehaviour
 
     public void AddCustomHeader(string headerKey, string headerValue)
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
 
@@ -473,7 +474,7 @@ public class WebViewObject : MonoBehaviour
 
     public string GetCustomHeaderValue(string headerKey)
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
           return null;
         
@@ -482,12 +483,14 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return null;
         return webView.Call<string>("GetCustomHeaderValue", headerKey);
+#else
+        return null;
 #endif
     }
 
     public void RemoveCustomHeader(string headerKey)
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
 
@@ -501,7 +504,7 @@ public class WebViewObject : MonoBehaviour
 
     public void ClearCustomHeader()
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
 
