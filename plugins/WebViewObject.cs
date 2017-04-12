@@ -459,7 +459,7 @@ public class WebViewObject : MonoBehaviour
 
     public void AddCustomHeader(string headerKey, string headerValue)
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
 
@@ -473,7 +473,7 @@ public class WebViewObject : MonoBehaviour
 
     public string GetCustomHeaderValue(string headerKey)
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
           return null;
         
@@ -487,7 +487,7 @@ public class WebViewObject : MonoBehaviour
 
     public void RemoveCustomHeader(string headerKey)
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
 
@@ -501,7 +501,7 @@ public class WebViewObject : MonoBehaviour
 
     public void ClearCustomHeader()
     {
-#if UNITY_EDITOR || UNITY_STANDALONE_OSX || UNITY_IPHONE
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
 
