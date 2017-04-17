@@ -3,10 +3,16 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 46;
+	objectVersion = 48;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		183C36501EA488E50071D97B /* WebViewSeparated.m in Sources */ = {isa = PBXBuildFile; fileRef = 183C364F1EA488E50071D97B /* WebViewSeparated.m */; };
+		18E975FA1EA4873F00083D49 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C53715108B89000C56DC /* Carbon.framework */; };
+		18E975FB1EA4873F00083D49 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C534151078DB000C56DC /* WebKit.framework */; };
+		18E975FC1EA4873F00083D49 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81F81AEC14D76D2400845D4C /* OpenGL.framework */; };
+		18E975FD1EA4873F00083D49 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81E2C20B14C5684A004CE5C2 /* Cocoa.framework */; };
+		18E975FF1EA4873F00083D49 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8102525514C569D80022296D /* InfoPlist.strings */; };
 		8102525814C569D80022296D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8102525514C569D80022296D /* InfoPlist.strings */; };
 		81B8C535151078DB000C56DC /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C534151078DB000C56DC /* WebKit.framework */; };
 		81B8C53815108B89000C56DC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C53715108B89000C56DC /* Carbon.framework */; };
@@ -16,6 +22,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		183C364F1EA488E50071D97B /* WebViewSeparated.m */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.objc; fileEncoding = 4; name = WebViewSeparated.m; path = Sources/WebViewSeparated.m; sourceTree = "<group>"; };
+		18E976041EA4873F00083D49 /* WebViewSeparated.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WebViewSeparated.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		18E976051EA4873F00083D49 /* Info-WebViewSeparated.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = "Info-WebViewSeparated.plist"; path = "Resources/Info-WebViewSeparated.plist"; sourceTree = "<group>"; };
 		8102525414C569D80022296D /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Resources/Info.plist; sourceTree = SOURCE_ROOT; };
 		8102525514C569D80022296D /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = Resources/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
 		8102525614C569D80022296D /* Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Prefix.pch; path = Resources/Prefix.pch; sourceTree = SOURCE_ROOT; };
@@ -30,6 +39,17 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		18E975F91EA4873F00083D49 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18E975FA1EA4873F00083D49 /* Carbon.framework in Frameworks */,
+				18E975FB1EA4873F00083D49 /* WebKit.framework in Frameworks */,
+				18E975FC1EA4873F00083D49 /* OpenGL.framework in Frameworks */,
+				18E975FD1EA4873F00083D49 /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81E2C20514C5684A004CE5C2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -48,6 +68,7 @@
 			isa = PBXGroup;
 			children = (
 				81F4B4D814C6888B001B4465 /* WebView.m */,
+				183C364F1EA488E50071D97B /* WebViewSeparated.m */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -66,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				81E2C20814C5684A004CE5C2 /* WebView.bundle */,
+				18E976041EA4873F00083D49 /* WebViewSeparated.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -87,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				8102525414C569D80022296D /* Info.plist */,
+				18E976051EA4873F00083D49 /* Info-WebViewSeparated.plist */,
 				8102525514C569D80022296D /* InfoPlist.strings */,
 				8102525614C569D80022296D /* Prefix.pch */,
 			);
@@ -97,6 +120,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		18E975F61EA4873F00083D49 /* WebViewSeparated */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 18E976011EA4873F00083D49 /* Build configuration list for PBXNativeTarget "WebViewSeparated" */;
+			buildPhases = (
+				18E975F71EA4873F00083D49 /* Sources */,
+				18E975F91EA4873F00083D49 /* Frameworks */,
+				18E975FE1EA4873F00083D49 /* Resources */,
+				18E976001EA4873F00083D49 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WebViewSeparated;
+			productName = WebView;
+			productReference = 18E976041EA4873F00083D49 /* WebViewSeparated.bundle */;
+			productType = "com.apple.product-type.bundle";
+		};
 		81E2C20714C5684A004CE5C2 /* WebView */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81E2C21A14C5684A004CE5C2 /* Build configuration list for PBXNativeTarget "WebView" */;
@@ -121,14 +162,15 @@
 		81E2C1FF14C5684A004CE5C2 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0420;
+				LastUpgradeCheck = 0820;
 			};
 			buildConfigurationList = 81E2C20214C5684A004CE5C2 /* Build configuration list for PBXProject "WebView" */;
-			compatibilityVersion = "Xcode 3.2";
+			compatibilityVersion = "Xcode 8.0";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 81E2C1FD14C5684A004CE5C2;
 			productRefGroup = 81E2C20914C5684A004CE5C2 /* Products */;
@@ -136,11 +178,20 @@
 			projectRoot = "";
 			targets = (
 				81E2C20714C5684A004CE5C2 /* WebView */,
+				18E975F61EA4873F00083D49 /* WebViewSeparated */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		18E975FE1EA4873F00083D49 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18E975FF1EA4873F00083D49 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81E2C20614C5684A004CE5C2 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -152,6 +203,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		18E976001EA4873F00083D49 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "";
+		};
 		81F4B4F514C696C4001B4465 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -168,6 +232,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		18E975F71EA4873F00083D49 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				183C36501EA488E50071D97B /* WebViewSeparated.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81E2C20414C5684A004CE5C2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -179,15 +251,58 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		18E976021EA4873F00083D49 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Resources/Prefix.pch;
+				INFOPLIST_FILE = "Resources/Info-WebViewSeparated.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				LD_RUNPATH_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALID_ARCHS = x86_64;
+				WRAPPER_EXTENSION = bundle;
+			};
+			name = Debug;
+		};
+		18E976031EA4873F00083D49 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = Resources/Prefix.pch;
+				INFOPLIST_FILE = "Resources/Info-WebViewSeparated.plist";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
+				LD_RUNPATH_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALID_ARCHS = x86_64;
+				WRAPPER_EXTENSION = bundle;
+			};
+			name = Release;
+		};
 		81E2C21814C5684A004CE5C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = YES;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -198,6 +313,9 @@
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
@@ -214,15 +332,28 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = YES;
-				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
@@ -237,13 +368,13 @@
 		81E2C21B14C5684A004CE5C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Resources/Prefix.pch;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
 				LD_RUNPATH_SEARCH_PATHS = "";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = bundle;
 			};
@@ -252,13 +383,13 @@
 		81E2C21C14C5684A004CE5C2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Resources/Prefix.pch;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
 				LD_RUNPATH_SEARCH_PATHS = "";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = bundle;
 			};
@@ -267,6 +398,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		18E976011EA4873F00083D49 /* Build configuration list for PBXNativeTarget "WebViewSeparated" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18E976021EA4873F00083D49 /* Debug */,
+				18E976031EA4873F00083D49 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		81E2C20214C5684A004CE5C2 /* Build configuration list for PBXProject "WebView" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
