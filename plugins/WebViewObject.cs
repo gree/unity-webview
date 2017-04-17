@@ -49,8 +49,7 @@ public class WebViewObject : MonoBehaviour
     Callback onError;
     Callback onLoaded;
     bool visibility;
-#if UNITY_WEBPLAYER
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     IntPtr webView;
     Rect rect;
     Texture2D texture;
@@ -68,6 +67,8 @@ public class WebViewObject : MonoBehaviour
     {
         mIsKeyboardVisible = (pIsVisible == "true");
     }
+#else
+    IntPtr webView;
 #endif
 
     public bool IsKeyboardVisible
@@ -482,6 +483,8 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return null;
         return webView.Call<string>("GetCustomHeaderValue", headerKey);
+#else
+        return null;
 #endif
     }
 
