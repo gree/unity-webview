@@ -21,6 +21,8 @@ below:
 
 ### OS X (Editor)
 
+#### App Transport Security
+
 Since Unity 5.3.0, Unity.app is built with ATS (App Transport
 Security) enabled and non-secured connection (HTTP) is not
 permitted. If you want to open `http://foo/bar.html` with this plugin
@@ -50,10 +52,18 @@ or invoke the following from your terminal,
 /usr/libexec/PlistBuddy -c "Add NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" /Applications/Unity/Unity.app/Contents/Info.plist
 ```
 
-#### References
+##### References
 
 * https://github.com/gree/unity-webview/issues/64
 * https://onevcat.zendesk.com/hc/en-us/articles/215527307-I-cannot-open-the-web-page-in-Unity-Editor-
+
+#### WebViewSeparated.bundle
+
+WebViewSeparated.bundle is a variation of WebView.bundle. It is based
+on https://github.com/gree/unity-webview/pull/161 . As noted in the
+pull-request, it shows a separate window and allows a developer to
+utilize the Safari debugger. For enabling it, please define
+`WEBVIEW_SEPARATED`.
 
 ### iOS
 

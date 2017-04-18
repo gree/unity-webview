@@ -117,7 +117,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @end
 
-@interface CWebViewPlugin : NSObject<UIWebViewDelegate, WKUIDelegate, WKNavigationDelegate>
+@interface CWebViewPlugin : NSObject<UIWebViewDelegate, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
@@ -135,7 +135,11 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
     UIView *view = UnityGetGLViewController().view;
     if (enableWKWebView && [WKWebView class]) {
-        webView = [[WKWebView alloc] initWithFrame:view.frame];
+        WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
+        WKUserContentController *controller = [[WKUserContentController alloc] init];
+        [controller addScriptMessageHandler:self name:@"unityControl"];
+        configuration.userContentController = controller;
+        webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
     } else {
@@ -174,6 +178,25 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     webView = nil;
     gameObjectName = nil;
     customRequestHeader = nil;
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message {
+
+    // Log out the message received
+    NSLog(@"Received event %@", message.body);
+    UnitySendMessage([gameObjectName UTF8String], "CallFromJS",
+                     [[NSString stringWithFormat:@"%@", message.body] UTF8String]);
+
+    /*
+    // Then pull something from the device using the message body
+    NSString *version = [[UIDevice currentDevice] valueForKey:message.body];
+
+    // Execute some JavaScript using the result?
+    NSString *exec_template = @"set_headline(\"received: %@\");";
+    NSString *exec = [NSString stringWithFormat:exec_template, version];
+    [webView evaluateJavaScript:exec completionHandler:nil];
+    */
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
