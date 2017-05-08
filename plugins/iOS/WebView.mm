@@ -122,8 +122,9 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
-}
 
+}
+- (void)dispose;
 @end
 
 @implementation CWebViewPlugin
@@ -162,7 +163,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     return self;
 }
 
-- (void)dealloc
+- (void)dispose
 {
     if ([webView isKindOfClass:[WKWebView class]]) {
         webView.UIDelegate = nil;
@@ -172,9 +173,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
     [webView stopLoading];
     [webView removeFromSuperview];
-    
     [webView removeObserver:self forKeyPath:@"loading"];
-    
     webView = nil;
     gameObjectName = nil;
     customRequestHeader = nil;
@@ -469,6 +468,7 @@ void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL en
 void _CWebViewPlugin_Destroy(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
+    [webViewPlugin dispose];
     webViewPlugin = nil;
 }
 
