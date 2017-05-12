@@ -134,6 +134,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 {
     self = [super init];
 
+    gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
+    customRequestHeader = [[NSMutableDictionary alloc] init];
     UIView *view = UnityGetGLViewController().view;
     if (enableWKWebView && [WKWebView class]) {
         WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
@@ -153,30 +155,29 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     webView.hidden = YES;
-    customRequestHeader = [[NSMutableDictionary alloc] init];
     
     [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
     
     [view addSubview:webView];
-    gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
     
     return self;
 }
 
 - (void)dispose
 {
-    if ([webView isKindOfClass:[WKWebView class]]) {
-        webView.UIDelegate = nil;
-        webView.navigationDelegate = nil;
-    } else {
-        webView.delegate = nil;
-    }
-    [webView stopLoading];
-    [webView removeFromSuperview];
-    [webView removeObserver:self forKeyPath:@"loading"];
+    UIView <WebViewProtocol> *webView0 = webView;
     webView = nil;
-    gameObjectName = nil;
+    if ([webView0 isKindOfClass:[WKWebView class]]) {
+        webView0.UIDelegate = nil;
+        webView0.navigationDelegate = nil;
+    } else {
+        webView0.delegate = nil;
+    }
+    [webView0 stopLoading];
+    [webView0 removeFromSuperview];
+    [webView0 removeObserver:self forKeyPath:@"loading"];
     customRequestHeader = nil;
+    gameObjectName = nil;
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController
