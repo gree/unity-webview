@@ -55,7 +55,9 @@ public class SampleWebView : MonoBehaviour
                   }
                 ");
 #endif
+                webViewObject.EvaluateJS(@"Unity.call('ua=' + navigator.userAgent)");
             },
+            //ua: "custom user agent string",
             enableWKWebView: true);
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
