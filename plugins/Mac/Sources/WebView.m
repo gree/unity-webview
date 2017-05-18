@@ -120,7 +120,6 @@ static void UnitySendMessage(
 {
     WebView *webView;
     NSString *gameObject;
-    NSString *ua;
     NSBitmapImageRep *bitmap;
     int textureId;
     BOOL needsDisplay;
@@ -130,7 +129,7 @@ static void UnitySendMessage(
 
 @implementation CWebViewPlugin
 
-- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua_
+- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
 {
     self = [super init];
     monoMethod = 0;
@@ -144,9 +143,8 @@ static void UnitySendMessage(
     [webView setFrameLoadDelegate:(id)self];
     [webView setPolicyDelegate:(id)self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
-    if (ua_ != NULL && strcmp(ua_, "") != 0) {
-        ua = [[NSString stringWithUTF8String:ua_] retain];
-        [webView setCustomUserAgent:ua];
+    if (ua != NULL && strcmp(ua, "") != 0) {
+        [webView setCustomUserAgent:[[NSString stringWithUTF8String:ua] autorelease]];
     }
     return self;
 }
@@ -164,10 +162,6 @@ static void UnitySendMessage(
         if (gameObject != nil) {
             [gameObject release];
             gameObject = nil;
-        }
-        if (ua != nil) {
-            [ua release];
-            ua = nil;
         }
         if (bitmap != nil) {
             [bitmap release];

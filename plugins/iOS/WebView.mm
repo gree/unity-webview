@@ -122,7 +122,6 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
-
 }
 - (void)dispose;
 @end
@@ -130,12 +129,16 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @implementation CWebViewPlugin
 
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent enableWKWebView:(BOOL)enableWKWebView
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView
 {
     self = [super init];
 
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
     customRequestHeader = [[NSMutableDictionary alloc] init];
+    if (ua != NULL && strcmp(ua, "") != 0) {
+        [[NSUserDefaults standardUserDefaults]
+            registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
+    }
     UIView *view = UnityGetGLViewController().view;
     if (enableWKWebView && [WKWebView class]) {
         WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
@@ -441,7 +444,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @end
 
 extern "C" {
-    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL enableWKWebView);
+    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _CWebViewPlugin_SetMargins(
@@ -460,9 +463,9 @@ extern "C" {
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
 }
 
-void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL enableWKWebView)
+void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
 {
-    id instance = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent enableWKWebView:enableWKWebView];
+    id instance = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
     return (__bridge_retained void *)instance;
 }
 

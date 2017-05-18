@@ -85,7 +85,7 @@ public class CWebViewPlugin {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject, final boolean transparent) {
+    public void Init(final String gameObject, final boolean transparent, final String ua) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
@@ -183,6 +183,9 @@ public class CWebViewPlugin {
             webView.addJavascriptInterface(mWebViewPlugin , "Unity");
 
             WebSettings webSettings = webView.getSettings();
+            if (ua != null && ua.length() > 0) {
+                webSettings.setUserAgentString(ua);
+            }
             webSettings.setSupportZoom(true);
             webSettings.setBuiltInZoomControls(true);
             webSettings.setDisplayZoomControls(false);
