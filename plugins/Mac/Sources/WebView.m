@@ -144,7 +144,7 @@ static void UnitySendMessage(
     [webView setPolicyDelegate:(id)self];
     gameObject = [[NSString stringWithUTF8String:gameObject_] retain];
     if (ua != NULL && strcmp(ua, "") != 0) {
-        [webView setCustomUserAgent:[[NSString stringWithUTF8String:ua] autorelease]];
+        [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
     return self;
 }
