@@ -152,7 +152,7 @@ public class CWebViewPlugin {
                         urlCon.connect();
 
                         return new WebResourceResponse(
-                            urlCon.getContentType(),
+                            urlCon.getContentType().split(";", 2)[0],
                             urlCon.getContentEncoding(),
                             urlCon.getInputStream()
                         );
