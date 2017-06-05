@@ -209,7 +209,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     if (webView == nil)
         return;
     
-    if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0) {
+    if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0
+        && [webView URL] != nil) {
         UnitySendMessage(
                          [gameObjectName UTF8String],
                          "CallOnLoaded",
@@ -223,11 +224,22 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
+{
+    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
+- (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
+{
+    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
 - (void)webViewDidFinishLoad:(UIWebView *)uiWebView {
     if (webView == nil)
         return;
     // cf. http://stackoverflow.com/questions/10996028/uiwebview-when-did-a-page-really-finish-loading/15916853#15916853
-    if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]) {
+    if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]
+        && [webView URL] != nil) {
         UnitySendMessage(
             [gameObjectName UTF8String],
             "CallOnLoaded",
