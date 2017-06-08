@@ -275,14 +275,17 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     if ([url.absoluteString rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
         [[UIApplication sharedApplication] openURL:url];
         decisionHandler(WKNavigationActionPolicyCancel);
+        return;
     } else if ([url.absoluteString hasPrefix:@"unity:"]) {
         UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
         decisionHandler(WKNavigationActionPolicyCancel);
+        return;
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
         // cf. for target="_blank", cf. http://qiita.com/ShingoFukuyama/items/b3a1441025a36ab7659c
         [webView load:navigationAction.request];
         decisionHandler(WKNavigationActionPolicyCancel);
+        return;
     } else {
         if (navigationAction.targetFrame != nil && navigationAction.targetFrame.isMainFrame) {
             // If the custom header is not attached, give it and make a request again.
