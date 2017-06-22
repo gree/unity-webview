@@ -43,6 +43,14 @@ public class UnitySendMessageDispatcher
 }
 #endif
 
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class MonoPInvokeCallbackAttribute : Attribute
+{
+    public MonoPInvokeCallbackAttribute(Type t)
+    {
+    }
+}
+
 public class WebViewObject : MonoBehaviour
 {
     Callback onJS;
@@ -71,6 +79,16 @@ public class WebViewObject : MonoBehaviour
     IntPtr webView;
 #endif
 
+    public delegate void CallMethodDelegate(string name, string method, string message);
+
+	[MonoPInvokeCallback(typeof(CallMethodDelegate))]
+    public static void CallMethod(string name, string method, string message)
+    {
+        GameObject obj = GameObject.Find(name);
+        if (obj != null)
+            obj.SendMessage(method, message);
+    }
+
     public bool IsKeyboardVisible
     {
         get
@@ -91,6 +109,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetAppPath();
     [DllImport("WebViewSeparated")]
     private static extern IntPtr _CWebViewPlugin_Init(
+        CallMethodDelegate callMethod,
         string gameObject, bool transparent, int width, int height, string ua, bool ineditor);
     [DllImport("WebViewSeparated")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
@@ -148,6 +167,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetAppPath();
     [DllImport("WebView")]
     private static extern IntPtr _CWebViewPlugin_Init(
+        CallMethodDelegate callMethod,
         string gameObject, bool transparent, int width, int height, string ua, bool ineditor);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
@@ -203,7 +223,9 @@ public class WebViewObject : MonoBehaviour
 #endif
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, string ua, bool enableWKWebView);
+    private static extern IntPtr _CWebViewPlugin_Init(
+        CallMethodDelegate callMethod,
+        string gameObject, bool transparent, string ua, bool enableWKWebView);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -268,6 +290,7 @@ public class WebViewObject : MonoBehaviour
         }
 #endif
         webView = _CWebViewPlugin_Init(
+            CallMethod,
             name,
             transparent,
             Screen.width,
@@ -289,7 +312,9 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, ua, enableWKWebView);
+        webView = _CWebViewPlugin_Init(
+            CallMethod,
+            name, transparent, ua, enableWKWebView);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
         webView.Call("Init", name, transparent, ua);

@@ -27,6 +27,18 @@
 extern "C" UIViewController *UnityGetGLViewController();
 extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
+typedef void (*CallMethod)(const char *, const char *, const char *);
+static CallMethod _callMethod;
+
+void unitySendMessage(const char *name, const char *method, const char *message)
+{
+    if (_callMethod) {
+        _callMethod(name, method, message);
+    } else {
+        UnitySendMessage(name, method, message);
+    }
+}
+
 @protocol WebViewProtocol <NSObject>
 @property (nonatomic, getter=isOpaque) BOOL opaque;
 @property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
@@ -188,7 +200,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
     // Log out the message received
     NSLog(@"Received event %@", message.body);
-    UnitySendMessage([gameObjectName UTF8String], "CallFromJS",
+    unitySendMessage([gameObjectName UTF8String], "CallFromJS",
                      [[NSString stringWithFormat:@"%@", message.body] UTF8String]);
 
     /*
@@ -211,7 +223,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     
     if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0
         && [webView URL] != nil) {
-        UnitySendMessage(
+        unitySendMessage(
                          [gameObjectName UTF8String],
                          "CallOnLoaded",
                          [[[webView URL] absoluteString] UTF8String]);
@@ -221,17 +233,17 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 - (void)webView:(UIWebView *)uiWebView didFailLoadWithError:(NSError *)error
 {
-    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+    unitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+    unitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+    unitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
 - (void)webViewDidFinishLoad:(UIWebView *)uiWebView {
@@ -240,7 +252,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     // cf. http://stackoverflow.com/questions/10996028/uiwebview-when-did-a-page-really-finish-loading/15916853#15916853
     if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]
         && [webView URL] != nil) {
-        UnitySendMessage(
+        unitySendMessage(
             [gameObjectName UTF8String],
             "CallOnLoaded",
             [[[webView URL] absoluteString] UTF8String]);
@@ -254,7 +266,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        unitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         return NO;
     } else {
         if (![self isSetupedCustomHeader:request]) {
@@ -277,7 +289,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if ([url.absoluteString hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
+        unitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
@@ -459,7 +471,9 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @end
 
 extern "C" {
-    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView);
+    void *_CWebViewPlugin_Init(
+        CallMethod callMethod,
+        const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _CWebViewPlugin_SetMargins(
@@ -478,8 +492,11 @@ extern "C" {
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
 }
 
-void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
+void *_CWebViewPlugin_Init(
+    CallMethod callMethod,
+    const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
 {
+    _callMethod = callMethod;
     id instance = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
     return (__bridge_retained void *)instance;
 }

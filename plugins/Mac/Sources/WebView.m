@@ -116,6 +116,18 @@ static void UnitySendMessage(
     mono_runtime_invoke(monoMethod, 0, args, 0);
 }
 
+typedef void (*CallMethod)(const char *, const char *, const char *);
+static CallMethod _callMethod;
+
+void unitySendMessage(const char *name, const char *method, const char *message)
+{
+    if (_callMethod) {
+        _callMethod(name, method, message);
+    } else {
+        UnitySendMessage(name, method, message);
+    }
+}
+
 @interface CWebViewPlugin : NSObject
 {
     WebView *webView;
@@ -173,19 +185,19 @@ static void UnitySendMessage(
 
 - (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
 {
-    UnitySendMessage([gameObject UTF8String], "CallOnError", [[error description] UTF8String]);
+    unitySendMessage([gameObject UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
 - (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
 {
-    UnitySendMessage([gameObject UTF8String], "CallOnLoaded", [[[[[frame dataSource] request] URL] absoluteString] UTF8String]);
+    unitySendMessage([gameObject UTF8String], "CallOnLoaded", [[[[[frame dataSource] request] URL] absoluteString] UTF8String]);
 }
 
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObject UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        unitySendMessage([gameObject UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         [listener ignore];
     } else {
         if ([customRequestHeader count] > 0) {
@@ -461,6 +473,7 @@ extern "C" {
 #endif
 const char *_CWebViewPlugin_GetAppPath();
 void *_CWebViewPlugin_Init(
+    CallMethod callMethod,
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
 void _CWebViewPlugin_Destroy(void *instance);
 void _CWebViewPlugin_SetRect(void *instance, int width, int height);
@@ -500,8 +513,10 @@ const char *_CWebViewPlugin_GetAppPath()
 static NSMutableSet *pool;
 
 void *_CWebViewPlugin_Init(
+    CallMethod callMethod,
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor)
 {
+    _callMethod = callMethod;
     if (pool == 0)
         pool = [[NSMutableSet alloc] init];
 
