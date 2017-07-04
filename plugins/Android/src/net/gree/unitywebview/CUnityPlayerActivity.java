@@ -1,10 +1,11 @@
 package net.gree.unitywebview;
 
+import com.google.firebase.MessagingUnityPlayerActivity;
 import com.unity3d.player.*;
 import android.os.Bundle;
 
 public class CUnityPlayerActivity
-    extends UnityPlayerActivity
+    extends MessagingUnityPlayerActivity
 {
     @Override
     public void onCreate(Bundle bundle) {
