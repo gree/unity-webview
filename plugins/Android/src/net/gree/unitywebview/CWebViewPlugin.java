@@ -28,7 +28,9 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
+import android.view.Display;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.JavascriptInterface;
@@ -38,6 +40,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.PopupWindow;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -71,6 +74,7 @@ class CWebViewPluginInterface {
 }
 
 public class CWebViewPlugin {
+    private static PopupWindow popup = null;
     private static FrameLayout layout = null;
     private WebView mWebView;
     private CWebViewPluginInterface mWebViewPlugin;
@@ -204,14 +208,31 @@ public class CWebViewPlugin {
             }
 
             if (layout == null) {
+                //Get width & height of Display
+                Display display = a.getWindowManager().getDefaultDisplay();
+                Point screen = new Point();
+                display.getSize(screen);
+
                 layout = new FrameLayout(a);
-                a.addContentView(
-                    layout,
-                    new LayoutParams(
-                        LayoutParams.MATCH_PARENT,
-                        LayoutParams.MATCH_PARENT));
                 layout.setFocusable(true);
                 layout.setFocusableInTouchMode(true);
+
+                //Create a fullscreen popup
+                popup = new PopupWindow(layout, screen.x, screen.y);
+                popup.setTouchInterceptor( new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        //Bubble trough the popup
+                        a.dispatchTouchEvent(event);
+                        return false;
+                    }
+                });
+
+                //See: https://github.com/googleads/googleads-mobile-unity/blob/master/source/android-library/app/src/main/java/com/google/unity/ads/Banner.java#L195
+                int visibilityFlags = a.getWindow().getAttributes().flags;
+                popup.getContentView().setSystemUiVisibility(visibilityFlags);
+
+                popup.showAtLocation(a.getWindow().getDecorView().getRootView(), Gravity.NO_GRAVITY, 0, 0);
             }
             layout.addView(
                 webView,
@@ -260,6 +281,12 @@ public class CWebViewPlugin {
             layout.removeView(mWebView);
             mWebView.destroy();
             mWebView = null;
+
+            if(layout.getChildCount() == 0) {
+                popup.dismiss();
+                popup = null;
+                layout = null;
+            }
         }});
     }
 
