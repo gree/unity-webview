@@ -90,7 +90,9 @@ rebuilt the apk. Although some old/buggy devices may not work well
 with `android:hardwareAccelerated="true"`, the WebView runs very
 smoothly with this setting.
 
-For Unity 5.6 or newer, you also need to modify `android:name` from
+*NOTE: Unity 5.6.1p4 or newer (including 2017 1.0) seems to fix the issue. cf. https://github.com/gree/unity-webview/pull/212#issuecomment-314952793*
+
+For Unity 5.6.0 and 5.6.1 (except 5.6.1p4), you also need to modify `android:name` from
 `com.unity3d.player.UnityPlayerActivity` to
 `net.gree.unitywebview.CUnityPlayerActivity`. This custom activity
 implementation will adjust Unity's SurfaceView z order. Please refer
