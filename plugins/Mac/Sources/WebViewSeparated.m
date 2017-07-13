@@ -401,7 +401,7 @@ static void UnitySendMessage(
     if (webView == nil)
         return;
 
-    NSView *view = [[[webView mainFrame] frameView] documentView];
+    NSView *view = webView;
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     NSEvent *event;
     NSString *characters;
