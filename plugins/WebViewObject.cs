@@ -124,7 +124,8 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebViewSeparated")]
     private static extern void _CWebViewPlugin_Update(IntPtr instance,
         int x, int y, float deltaY, bool down, bool press, bool release,
-        bool keyPress, short keyCode, string keyChars);
+        bool keyPress, short keyCode, string keyChars,
+        bool refreshBitmap);
     [DllImport("WebViewSeparated")]
     private static extern int _CWebViewPlugin_BitmapWidth(IntPtr instance);
     [DllImport("WebViewSeparated")]
@@ -181,7 +182,8 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_Update(IntPtr instance,
         int x, int y, float deltaY, bool down, bool press, bool release,
-        bool keyPress, short keyCode, string keyChars);
+        bool keyPress, short keyCode, string keyChars,
+        bool refreshBitmap);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapWidth(IntPtr instance);
     [DllImport("WebView")]
@@ -594,6 +596,8 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    public int bitmapRefreshCycle = 1;
+
     void OnGUI()
     {
         if (webView == IntPtr.Zero || !visibility)
@@ -613,30 +617,39 @@ public class WebViewObject : MonoBehaviour
             keyCode = (short)inputString[0];
             inputString = inputString.Substring(1);
         }
+        bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
         _CWebViewPlugin_Update(webView,
             (int)(pos.x - rect.x), (int)(pos.y - rect.y), deltaY,
-            down, press, release, keyPress, keyCode, keyChars);
-        {
-            var w = _CWebViewPlugin_BitmapWidth(webView);
-            var h = _CWebViewPlugin_BitmapHeight(webView);
-            if (texture == null || texture.width != w || texture.height != h) {
-                texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true);
-                texture.filterMode = FilterMode.Bilinear;
-                texture.wrapMode = TextureWrapMode.Clamp;
+            down, press, release, keyPress, keyCode, keyChars,
+            refreshBitmap);
+        if (refreshBitmap) {
+            {
+                var w = _CWebViewPlugin_BitmapWidth(webView);
+                var h = _CWebViewPlugin_BitmapHeight(webView);
+                if (texture == null || texture.width != w || texture.height != h) {
+                    texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true);
+                    texture.filterMode = FilterMode.Bilinear;
+                    texture.wrapMode = TextureWrapMode.Clamp;
+                }
             }
-        }
-        _CWebViewPlugin_SetTextureId(webView, (int)texture.GetNativeTexturePtr());
-        _CWebViewPlugin_SetCurrentInstance(webView);
+            _CWebViewPlugin_SetTextureId(webView, (int)texture.GetNativeTexturePtr());
+            _CWebViewPlugin_SetCurrentInstance(webView);
 #if UNITY_4_6 || UNITY_5_0 || UNITY_5_1
-        GL.IssuePluginEvent(-1);
+            GL.IssuePluginEvent(-1);
 #else
-        GL.IssuePluginEvent(GetRenderEventFunc(), -1);
+            GL.IssuePluginEvent(GetRenderEventFunc(), -1);
 #endif
-        Matrix4x4 m = GUI.matrix;
-        GUI.matrix = Matrix4x4.TRS(new Vector3(0, Screen.height, 0),
-            Quaternion.identity, new Vector3(1, -1, 1));
-        GUI.DrawTexture(rect, texture);
-        GUI.matrix = m;
+        }
+        if (texture != null) {
+            Matrix4x4 m = GUI.matrix;
+            GUI.matrix
+                = Matrix4x4.TRS(
+                    new Vector3(0, Screen.height, 0),
+                    Quaternion.identity,
+                    new Vector3(1, -1, 1));
+            GUI.DrawTexture(rect, texture);
+            GUI.matrix = m;
+        }
     }
 #endif
 }
