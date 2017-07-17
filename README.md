@@ -21,6 +21,17 @@ below:
 
 ### OS X (Editor)
 
+#### Unity 2017.1
+
+The plugin cannot be loaded in Unity 2017.1. Please perform the following to solve the issue:
+
+```bash
+$ cd /Applications/Unity/Unity.app/Contents/Frameworks/
+$ ln -s Mono/MonoEmbedRuntime .
+```
+
+cf. https://github.com/gree/unity-webview/issues/219#issuecomment-315760749
+
 #### App Transport Security
 
 Since Unity 5.3.0, Unity.app is built with ATS (App Transport
