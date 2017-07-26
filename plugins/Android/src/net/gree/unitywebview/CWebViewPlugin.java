@@ -400,6 +400,7 @@ public class CWebViewPlugin {
            CookieManager.getInstance().removeAllCookies(null);
            CookieManager.getInstance().flush();
         } else {
+           final Activity a = UnityPlayer.currentActivity;
            CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(a);
            cookieSyncManager.startSync();
            CookieManager cookieManager=CookieManager.getInstance();
