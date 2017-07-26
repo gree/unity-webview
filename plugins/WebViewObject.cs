@@ -246,6 +246,8 @@ public class WebViewObject : MonoBehaviour
     private static extern void   _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
+    [DllImport("__Internal")]
+    private static extern void   _CWebViewPlugin_ResetCookies();
 #endif
 
     public void Init(Callback cb = null, bool transparent = false, string ua = "", Callback err = null, Callback ld = null, bool enableWKWebView = false)
@@ -578,6 +580,20 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("ClearCustomHeader");
+#endif
+    }
+
+    public void ClearCookies()
+    {
+#if UNITY_IPHONE && !UNITY_EDITOR
+        if (webView == IntPtr.Zero)
+            return;
+
+        _CWebViewPlugin_ResetCookies();
+#elif UNITY_ANDROID !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("ClearCookies");
 #endif
     }
 

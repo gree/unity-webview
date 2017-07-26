@@ -124,6 +124,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     NSMutableDictionary *customRequestHeader;
 }
 - (void)dispose;
++ (void)clearCookies;
 @end
 
 @implementation CWebViewPlugin
@@ -181,6 +182,14 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     [webView0 removeObserver:self forKeyPath:@"loading"];
     customRequestHeader = nil;
     gameObjectName = nil;
+}
+
++(void)clearCookies
+{
+    NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+    [[cookieStorage cookies] enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+        [cookieStorage deleteCookie:cookie];
+    }];
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController
@@ -475,6 +484,7 @@ extern "C" {
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
+    void _CWebViewPlugin_ResetCookies();
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
 }
 
@@ -575,6 +585,11 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin clearCustomRequestHeader];
+}
+
+void _CWebViewPlugin_ResetCookies()
+{
+    [CWebViewPlugin clearCookies];
 }
 
 const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey)
