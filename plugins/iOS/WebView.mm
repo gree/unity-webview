@@ -587,7 +587,7 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
     [webViewPlugin clearCustomRequestHeader];
 }
 
-void _CWebViewPlugin_ResetCookies()
+void _CWebViewPlugin_ClearCookies()
 {
     [CWebViewPlugin clearCookies];
 }

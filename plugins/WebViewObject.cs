@@ -247,7 +247,7 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_ResetCookies();
+    private static extern void   _CWebViewPlugin_ClearCookies();
 #endif
 
     public void Init(Callback cb = null, bool transparent = false, string ua = "", Callback err = null, Callback ld = null, bool enableWKWebView = false)
@@ -589,7 +589,7 @@ public class WebViewObject : MonoBehaviour
         if (webView == IntPtr.Zero)
             return;
 
-        _CWebViewPlugin_ResetCookies();
+        _CWebViewPlugin_ClearCookies();
 #elif UNITY_ANDROID !UNITY_EDITOR
         if (webView == null)
             return;
