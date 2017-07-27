@@ -590,7 +590,7 @@ public class WebViewObject : MonoBehaviour
             return;
 
         _CWebViewPlugin_ClearCookies();
-#elif UNITY_ANDROID !UNITY_EDITOR
+#elif UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
         webView.Call("ClearCookies");
