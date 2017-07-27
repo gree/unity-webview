@@ -484,7 +484,7 @@ extern "C" {
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
-    void _CWebViewPlugin_ResetCookies();
+    void _CWebViewPlugin_ClearCookies();
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
 }
 
