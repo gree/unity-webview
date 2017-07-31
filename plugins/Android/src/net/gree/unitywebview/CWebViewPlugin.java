@@ -191,6 +191,8 @@ public class CWebViewPlugin {
             webSettings.setSupportZoom(true);
             webSettings.setBuiltInZoomControls(true);
             webSettings.setDisplayZoomControls(false);
+            webSettings.setLoadWithOverviewMode(true);
+            webSettings.setUseWideViewPort(true);
             webSettings.setJavaScriptEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
