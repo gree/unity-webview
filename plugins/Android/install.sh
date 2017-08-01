@@ -19,7 +19,7 @@ fi
 
 DSTDIR="../../build/Packager/Assets/Plugins/Android"
 export ANT_OPTS=-Dfile.encoding=UTF8
-android update project -t android-18 -p .
+android update project -t android-21 -p .
 mkdir -p libs
 cp "$UNITYLIBS" libs
 ant "-Djava.compilerargs=-Xlint:deprecation" release
