@@ -98,7 +98,7 @@ For Unity 5.6.0 and 5.6.1 (except 5.6.1p4), you also need to modify `android:nam
 implementation will adjust Unity's SurfaceView z order. Please refer
 `plugins/Android/src/net/gree/unitywebview/CUnityPlayerActivity.java`
 and `plugins/Android/src/net/gree/unitywebview/CUnityPlayer.java` if
-you already have your own acitivity implementation.
+you already have your own activity implementation.
 
 ### Web Player
 
