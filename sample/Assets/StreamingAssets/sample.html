@@ -2,10 +2,22 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Unity WebView</title>
+    <script>
+      window.addEventListener(
+        'load',
+        function() {
+          if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+              document.getElementById('msg').innerHTML = '[' + position.coords.latitude + ', ' + position.coords.longitude + ']';
+            });
+          }
+        });
+    </script>
   </head>
   <body>
     <h1>Hello Unity WebView!</h1>
     <hr/>
+    <div id="msg">[]</div>
     <p><a href="https://google.com">https://google.com</a> (for testing go/back buttons)</p>
     <p><a href="http://httpbin.org/headers">http://httpbin.org/headers</a> (for testing custom headers.)</p>
     <p><img src="sample.jpg"/> (local image)</p>
