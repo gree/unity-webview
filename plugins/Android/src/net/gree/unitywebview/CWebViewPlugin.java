@@ -39,6 +39,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
+import android.webkit.GeolocationPermissions.Callback;
 import android.widget.FrameLayout;
 
 import java.net.HttpURLConnection;
@@ -107,7 +108,12 @@ public class CWebViewPlugin {
             //         return true;
             //     }
             // });
-            webView.setWebChromeClient(new WebChromeClient());
+            webView.setWebChromeClient(new WebChromeClient() {
+                    @Override
+                    public void onGeolocationPermissionsShowPrompt(String origin, Callback callback) {
+                        callback.invoke(origin, true, false);
+                    }
+                });
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
             webView.setWebViewClient(new WebViewClient() {
@@ -194,6 +200,7 @@ public class CWebViewPlugin {
             webSettings.setLoadWithOverviewMode(true);
             webSettings.setUseWideViewPort(true);
             webSettings.setJavaScriptEnabled(true);
+            webSettings.setGeolocationEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
