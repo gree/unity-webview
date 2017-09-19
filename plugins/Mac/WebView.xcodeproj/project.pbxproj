@@ -325,8 +325,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
-					"-L/Applications/Unity/Unity.app/Contents/Frameworks/MonoEmbedRuntime/osx",
-					"-lmono.0",
+					"-L/Applications/Unity/Unity.app/Contents/Frameworks/MonoBleedingEdge/MonoEmbedRuntime/osx",
+					"-lmonobdwgc-2.0",
 				);
 				SDKROOT = macosx;
 			};
@@ -362,8 +362,8 @@
 				HEADER_SEARCH_PATHS = "";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				OTHER_LDFLAGS = (
-					"-L/Applications/Unity/Unity.app/Contents/Frameworks/MonoEmbedRuntime/osx",
-					"-lmono.0",
+					"-L/Applications/Unity/Unity.app/Contents/Frameworks/MonoBleedingEdge/MonoEmbedRuntime/osx",
+					"-lmonobdwgc-2.0",
 				);
 				SDKROOT = macosx;
 			};
