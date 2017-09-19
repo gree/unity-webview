@@ -30,7 +30,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup.LayoutParams;
+import android.view.WindowManager.LayoutParams;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceResponse;
@@ -100,6 +100,7 @@ public class CWebViewPlugin {
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
+            a.getWindow().clearFlags(LayoutParams.FLAG_FULLSCREEN);
 
             // webView.setWebChromeClient(new WebChromeClient() {
             //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
@@ -216,6 +217,7 @@ public class CWebViewPlugin {
                         LayoutParams.MATCH_PARENT));
                 layout.setFocusable(true);
                 layout.setFocusableInTouchMode(true);
+                layout.setFitsSystemWindows(true);
             }
             layout.addView(
                 webView,
