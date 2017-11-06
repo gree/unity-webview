@@ -100,6 +100,9 @@ public class CWebViewPlugin {
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
+            // The following should make HttpURLConnection have a same user-agent of webView)
+            // cf. https://qiita.com/hayakawatomoaki/items/b6aa6678733b20d96cca (in Japanese)
+            System.setProperty("http.agent", webView.getSettings().getUserAgentString());
 
             // webView.setWebChromeClient(new WebChromeClient() {
             //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
