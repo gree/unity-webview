@@ -100,9 +100,6 @@ public class CWebViewPlugin {
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
-            // The following should make HttpURLConnection have a same user-agent of webView)
-            // cf. https://qiita.com/hayakawatomoaki/items/b6aa6678733b20d96cca (in Japanese)
-            System.setProperty("http.agent", webView.getSettings().getUserAgentString());
 
             // webView.setWebChromeClient(new WebChromeClient() {
             //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
@@ -149,6 +146,9 @@ public class CWebViewPlugin {
 
                     try {
                         HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
+                        // The following should make HttpURLConnection have a same user-agent of webView)
+                        // cf. http://d.hatena.ne.jp/faw/20070903/1188796959 (in Japanese)
+                        urlCon.setRequestProperty("User-Agent", view.getSettings().getUserAgentString());
 
                         for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
                             urlCon.setRequestProperty(entry.getKey(), entry.getValue());
