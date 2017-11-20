@@ -79,6 +79,7 @@ public class CWebViewPlugin {
     private boolean canGoBack;
     private boolean canGoForward;
     private Hashtable<String, String> mCustomHeaders;
+    private String mWebViewUA;
 
     public CWebViewPlugin() {
     }
@@ -148,7 +149,7 @@ public class CWebViewPlugin {
                         HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
                         // The following should make HttpURLConnection have a same user-agent of webView)
                         // cf. http://d.hatena.ne.jp/faw/20070903/1188796959 (in Japanese)
-                        urlCon.setRequestProperty("User-Agent", view.getSettings().getUserAgentString());
+                        urlCon.setRequestProperty("User-Agent", mWebViewUA);
 
                         for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
                             urlCon.setRequestProperty(entry.getKey(), entry.getValue());
@@ -191,6 +192,7 @@ public class CWebViewPlugin {
             if (ua != null && ua.length() > 0) {
                 webSettings.setUserAgentString(ua);
             }
+            mWebViewUA = webSettings.getUserAgentString();
             webSettings.setSupportZoom(true);
             webSettings.setBuiltInZoomControls(true);
             webSettings.setDisplayZoomControls(false);
