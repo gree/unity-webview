@@ -88,6 +88,7 @@ public class SampleWebView : MonoBehaviour
         } else {
             var exts = new string[]{
                 ".jpg",
+                ".js",
                 ".html"  // should be last
             };
             foreach (var ext in exts) {
