@@ -309,6 +309,62 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
+// alert
+- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler
+{
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
+                                                                             message:message
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addAction: [UIAlertAction actionWithTitle:@"OK"
+                                                         style:UIAlertActionStyleCancel
+                                                       handler:^(UIAlertAction *action) {
+                                                           completionHandler();
+                                                       }]];
+    [UnityGetGLViewController() presentViewController:alertController animated:YES completion:^{}];
+}
+
+// confirm
+- (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL))completionHandler
+{
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
+                                                                             message:message
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"OK"
+                                                        style:UIAlertActionStyleDefault
+                                                      handler:^(UIAlertAction *action) {
+                                                          completionHandler(YES);
+                                                      }]];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                        style:UIAlertActionStyleCancel
+                                                      handler:^(UIAlertAction *action) {
+                                                          completionHandler(NO);
+                                                      }]];
+    [UnityGetGLViewController() presentViewController:alertController animated:YES completion:^{}];
+}
+
+// prompt
+- (void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString *))completionHandler
+{
+    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
+                                                                             message:prompt
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+    [alertController addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+        textField.text = defaultText;
+    }];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"OK"
+                                                        style:UIAlertActionStyleDefault
+                                                      handler:^(UIAlertAction *action) {
+                                                          NSString *input = ((UITextField *)alertController.textFields.firstObject).text;
+                                                          completionHandler(input);
+                                                      }]];
+    [alertController addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                        style:UIAlertActionStyleCancel
+                                                      handler:^(UIAlertAction *action) {
+                                                          completionHandler(nil);
+                                                      }]];
+    [UnityGetGLViewController() presentViewController:alertController animated:YES completion:^{}];
+}
+
 - (BOOL)isSetupedCustomHeader:(NSURLRequest *)targetRequest
 {
     // Check for additional custom header.
@@ -320,7 +376,6 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
     return YES;
 }
-
 
 - (NSURLRequest *)constructionCustomHeader:(NSURLRequest *)originalRequest
 {
@@ -597,5 +652,3 @@ const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *hea
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin getCustomRequestHeaderValue:headerKey];
 }
-
-
