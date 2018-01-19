@@ -52,21 +52,37 @@ public class SampleWebView : MonoBehaviour
                 // cf. https://github.com/gree/unity-webview/issues/189
 #if true
                 webViewObject.EvaluateJS(@"
-                  window.Unity = {
-                    call: function(msg) {
-                      window.location = 'unity:' + msg;
+                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
+                    window.Unity = {
+                      call: function(msg) {
+                        window.webkit.messageHandlers.unityControl.postMessage(msg);
+                      }
+                    }
+                  } else {
+                    window.Unity = {
+                      call: function(msg) {
+                        window.location = 'unity:' + msg;
+                      }
                     }
                   }
                 ");
 #else
                 webViewObject.EvaluateJS(@"
-                  window.Unity = {
-                    call: function(msg) {
-                      var iframe = document.createElement('IFRAME');
-                      iframe.setAttribute('src', 'unity:' + msg);
-                      document.documentElement.appendChild(iframe);
-                      iframe.parentNode.removeChild(iframe);
-                      iframe = null;
+                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
+                    window.Unity = {
+                      call: function(msg) {
+                        window.webkit.messageHandlers.unityControl.postMessage(msg);
+                      }
+                    }
+                  } else {
+                    window.Unity = {
+                      call: function(msg) {
+                        var iframe = document.createElement('IFRAME');
+                        iframe.setAttribute('src', 'unity:' + msg);
+                        document.documentElement.appendChild(iframe);
+                        iframe.parentNode.removeChild(iframe);
+                        iframe = null;
+                      }
                     }
                   }
                 ");
