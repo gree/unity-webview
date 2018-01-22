@@ -76,6 +76,7 @@ public class CWebViewPlugin {
     private static FrameLayout layout = null;
     private WebView mWebView;
     private CWebViewPluginInterface mWebViewPlugin;
+    private int progress;
     private boolean canGoBack;
     private boolean canGoForward;
     private Hashtable<String, String> mCustomHeaders;
@@ -108,7 +109,12 @@ public class CWebViewPlugin {
             //         return true;
             //     }
             // });
-            webView.setWebChromeClient(new WebChromeClient());
+            webView.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public void onProgressChanged(WebView view, int newProgress) {
+                    progress = newProgress;
+                }
+            });
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
             webView.setWebViewClient(new WebViewClient() {

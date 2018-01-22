@@ -110,6 +110,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_EvaluateJS(
         IntPtr instance, string url);
     [DllImport("WebViewSeparated")]
+    private static extern int _CWebViewPlugin_Progress(
+        IntPtr instance);
+    [DllImport("WebViewSeparated")]
     private static extern bool _CWebViewPlugin_CanGoBack(
         IntPtr instance);
     [DllImport("WebViewSeparated")]
@@ -168,6 +171,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_EvaluateJS(
         IntPtr instance, string url);
     [DllImport("WebView")]
+    private static extern int _CWebViewPlugin_Progress(
+        IntPtr instance);
+    [DllImport("WebView")]
     private static extern bool _CWebViewPlugin_CanGoBack(
         IntPtr instance);
     [DllImport("WebView")]
@@ -223,6 +229,9 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_EvaluateJS(
         IntPtr instance, string url);
+    [DllImport("__Internal")]
+    private static extern int _CWebViewPlugin_Progress(
+        IntPtr instance);
     [DllImport("__Internal")]
     private static extern bool _CWebViewPlugin_CanGoBack(
         IntPtr instance);
@@ -437,9 +446,25 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public int Progress()
+    {
+#if UNITY_WEBPLAYER
+        return 0;
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return 0;
+        return _CWebViewPlugin_Progress(webView);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return 0;
+        return webView.Get<int>("progress");
+#endif
+    }
+
     public bool CanGoBack()
     {
 #if UNITY_WEBPLAYER
+        return false;
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return false;
@@ -448,14 +473,13 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return false;
         return webView.Get<bool>("canGoBack");
-#else
-        return false;
 #endif
     }
 
     public bool CanGoForward()
     {
 #if UNITY_WEBPLAYER
+        return false;
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return false;
@@ -464,8 +488,6 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return false;
         return webView.Get<bool>("canGoForward");
-#else
-        return false;
 #endif
     }
 

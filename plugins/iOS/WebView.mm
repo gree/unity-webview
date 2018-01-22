@@ -457,6 +457,17 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     [webView evaluateJavaScript:jsStr completionHandler:^(NSString *result, NSError *error) {}];
 }
 
+- (int)progress
+{
+    if (webView == nil)
+        return 0;
+    if ([webView isKindOfClass:[WKWebView class]]) {
+        return (int)([(WKWebView *)webView estimatedProgress] * 100);
+    } else {
+        return 0;
+    }
+}
+
 - (BOOL)canGoBack
 {
     if (webView == nil)
@@ -532,6 +543,7 @@ extern "C" {
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
+    int _CWebViewPlugin_Progress(void *instance);
     BOOL _CWebViewPlugin_CanGoBack(void *instance);
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
     void _CWebViewPlugin_GoBack(void *instance);
@@ -598,6 +610,12 @@ void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
+}
+
+int _CWebViewPlugin_Progress(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    return [webViewPlugin progress];
 }
 
 BOOL _CWebViewPlugin_CanGoBack(void *instance)

@@ -158,6 +158,8 @@ public class SampleWebView : MonoBehaviour
             webViewObject.GoForward();
         }
         GUI.enabled = true;
+
+        GUI.TextField(new Rect(200, 10, 300, 80), "" + webViewObject.Progress());
     }
 #endif
 }
