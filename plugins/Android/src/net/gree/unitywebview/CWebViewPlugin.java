@@ -110,9 +110,31 @@ public class CWebViewPlugin {
             //     }
             // });
             webView.setWebChromeClient(new WebChromeClient() {
+                View videoView;
+
                 @Override
                 public void onProgressChanged(WebView view, int newProgress) {
                     progress = newProgress;
+                }
+
+                @Override
+                public void onShowCustomView(View view, CustomViewCallback callback) {
+                    super.onShowCustomView(view, callback);
+                    if (layout != null) {
+                        videoView = view;
+                        layout.setBackgroundColor(0xff000000);
+                        layout.addView(videoView);
+                    }
+                }
+
+                @Override
+                public void onHideCustomView() {
+                    super.onHideCustomView();
+                    if (layout != null) {
+                        layout.removeView(videoView);
+                        layout.setBackgroundColor(0x00000000);
+                        videoView = null;
+                    }
                 }
             });
 
