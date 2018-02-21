@@ -21,6 +21,13 @@ below:
 
 ### OS X (Editor)
 
+#### Auto Graphics API
+
+The current implementation reiles on several OpenGL APIs so you need to disable "Auto graphics API"
+and specify OpenGLCore as below.
+
+![auto-graphics-api-setting-for-mac.png](doc/img/auto-graphics-api-setting-for-mac.png)
+
 #### App Transport Security
 
 Since Unity 5.3.0, Unity.app is built with ATS (App Transport
