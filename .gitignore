@@ -4,3 +4,6 @@ Temp
 *.sln
 *.pidb
 *.userprefs
+**/*.xcodeproj/*
+!**/*.xcodeproj/project.pbxproj
+!**/*.xcworkspace/contents.xcworkspacedata

@@ -1,17 +1,21 @@
 <html>
-	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<title>Unity WebView</title>
-	</head>
-	<body>
-		<h1>Hello Unity WebView!</h1>
-		<hr/>
-		<h2><a href="javascript:void(0)" onclick="Unity.call('anchor');">[Send Message!]</a><h2>
-		<hr/>
-		<form method="get" action="form">
-			<input type="file" name="datafile"/>
-			<input id="input1" type="text" value="hoge" name="msg"/>
-			<input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/>
-		</form>
-	</body>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Unity WebView</title>
+    <script src="sample.js"></script>
+  </head>
+  <body>
+    <h1>Hello Unity WebView!</h1>
+    <hr/>
+    <p id="msg">()</p>
+    <p><a href="https://google.com">https://google.com</a> (for testing go/back buttons)</p>
+    <p><a href="http://httpbin.org/headers">http://httpbin.org/headers</a> (for testing custom headers.)</p>
+    <p><img src="sample.jpg"/> (local image)</p>
+    <hr/>
+    <p><a href="javascript:void(0)" onclick="Unity.call('anchor');">[Send Message!]</a></p>
+    <form method="get" action="form">
+      <input id="input1" type="text" value="hoge" name="msg"/>
+      <input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/>
+    </form>
+  </body>
 </html>
