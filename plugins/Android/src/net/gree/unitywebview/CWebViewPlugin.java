@@ -97,9 +97,9 @@ public class CWebViewPlugin {
                 return;
             }
             mCustomHeaders = new Hashtable<String, String>();
-            
+
             final WebView webView = new WebView(a);
-            webView.setVisibility(View.GONE);
+            webView.setAlpha(0);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
 
@@ -379,11 +379,11 @@ public class CWebViewPlugin {
                 return;
             }
             if (visibility) {
-                mWebView.setVisibility(View.VISIBLE);
+                mWebView.setAlpha(1);
                 layout.requestFocus();
                 mWebView.requestFocus();
             } else {
-                mWebView.setVisibility(View.GONE);
+                mWebView.setAlpha(0);
             }
         }});
     }
