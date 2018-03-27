@@ -97,9 +97,9 @@ public class CWebViewPlugin {
                 return;
             }
             mCustomHeaders = new Hashtable<String, String>();
-            
+
             final WebView webView = new WebView(a);
-            webView.setVisibility(View.GONE);
+            webView.setAlpha(0);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
 
@@ -222,22 +222,34 @@ public class CWebViewPlugin {
             }
             mWebViewUA = webSettings.getUserAgentString();
             webSettings.setSupportZoom(true);
-            webSettings.setBuiltInZoomControls(true);
+            webSettings.setBuiltInZoomControls(false);
             webSettings.setDisplayZoomControls(false);
             webSettings.setLoadWithOverviewMode(true);
             webSettings.setUseWideViewPort(true);
+            webSettings.setAppCacheEnabled(true);
             webSettings.setJavaScriptEnabled(true);
+            webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
+            webSettings.enableSmoothTransition();
+            //webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
             }
-            webSettings.setDatabaseEnabled(true);
+            //webSettings.setDatabaseEnabled(true);
             webSettings.setDomStorageEnabled(true);
-            String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
-            webSettings.setDatabasePath(databasePath);
+            //String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
+            //webSettings.setDatabasePath(databasePath);
 
+            webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+            webView.setScrollbarFadingEnabled(true);
             if (transparent) {
                 webView.setBackgroundColor(0x00000000);
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            } else {
+                webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
             }
 
             if (layout == null) {
@@ -248,6 +260,7 @@ public class CWebViewPlugin {
                         LayoutParams.MATCH_PARENT,
                         LayoutParams.MATCH_PARENT));
                 layout.setFocusable(true);
+                layout.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 layout.setFocusableInTouchMode(true);
             }
             layout.addView(
@@ -379,11 +392,11 @@ public class CWebViewPlugin {
                 return;
             }
             if (visibility) {
-                mWebView.setVisibility(View.VISIBLE);
+                mWebView.setAlpha(1);
                 layout.requestFocus();
                 mWebView.requestFocus();
             } else {
-                mWebView.setVisibility(View.GONE);
+                mWebView.setAlpha(0);
             }
         }});
     }
