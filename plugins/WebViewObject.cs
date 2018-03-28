@@ -86,12 +86,17 @@ public class WebViewObject : MonoBehaviour
     }
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void ManagedCallbackEvent(string message);
 #if WEBVIEW_SEPARATED
     [DllImport("WebViewSeparated")]
     private static extern string _CWebViewPlugin_GetAppPath();
     [DllImport("WebViewSeparated")]
     private static extern IntPtr _CWebViewPlugin_Init(
         string gameObject, bool transparent, int width, int height, string ua, bool ineditor);
+    [DllImport("WebViewSeparated")]
+    private static extern void _CWebViewPlugin_SetHandler(
+        IntPtr instance, ManagedCallbackEvent error, ManagedCallbackEvent loaded, ManagedCallbackEvent fromjs);
     [DllImport("WebViewSeparated")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("WebViewSeparated")]
@@ -153,6 +158,9 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern IntPtr _CWebViewPlugin_Init(
         string gameObject, bool transparent, int width, int height, string ua, bool ineditor);
+    [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_SetHandler(
+        IntPtr instance, ManagedCallbackEvent error, ManagedCallbackEvent loaded, ManagedCallbackEvent fromjs);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("WebView")]
@@ -290,6 +298,7 @@ public class WebViewObject : MonoBehaviour
             Screen.height,
             ua,
             Application.platform == RuntimePlatform.OSXEditor);
+        _CWebViewPlugin_SetHandler(webView, CallOnError, CallOnLoaded, CallFromJS);
         // define pseudo requestAnimationFrame.
         EvaluateJS(@"(function() {
             var vsync = 1000 / 60;
@@ -555,6 +564,9 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+    [AOT.MonoPInvokeCallback(typeof(WebViewObject.ManagedCallbackEvent))]
+#endif
     public void CallOnError(string error)
     {
         if (onError != null)
@@ -563,6 +575,9 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+    [AOT.MonoPInvokeCallback(typeof(WebViewObject.ManagedCallbackEvent))]
+#endif
     public void CallOnLoaded(string url)
     {
         if (onLoaded != null)
@@ -571,6 +586,9 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+    [AOT.MonoPInvokeCallback(typeof(WebViewObject.ManagedCallbackEvent))]
+#endif
     public void CallFromJS(string message)
     {
         if (onJS != null)
