@@ -49,6 +49,10 @@ public class WebViewObject : MonoBehaviour
     Callback onError;
     Callback onLoaded;
     bool visibility;
+    int mMarginLeft;
+    int mMarginTop;
+    int mMarginRight;
+    int mMarginBottom;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     IntPtr webView;
     Rect rect;
@@ -60,12 +64,40 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
     AndroidJavaObject webView;
     
+    bool mIsKeyboardVisible0 = false;
     bool mIsKeyboardVisible = false;
     
     /// Called from Java native plugin to set when the keyboard is opened
     public void SetKeyboardVisible(string pIsVisible)
     {
         mIsKeyboardVisible = (pIsVisible == "true");
+        if (mIsKeyboardVisible != mIsKeyboardVisible0)
+        {
+            mIsKeyboardVisible0 = mIsKeyboardVisible;
+            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
+        }
+    }
+    
+    public int AdjustBottomMargin(int bottom)
+    {
+        if (!mIsKeyboardVisible)
+        {
+            return bottom;
+        }
+        else
+        {
+            int keyboardHeight = 0;
+            using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            {
+                AndroidJavaObject View = UnityClass.GetStatic<AndroidJavaObject>("currentActivity").Get<AndroidJavaObject>("mUnityPlayer").Call<AndroidJavaObject>("getView");
+                using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
+                {
+                    View.Call("getWindowVisibleDisplayFrame", Rct);
+                    keyboardHeight = View.Call<int>("getHeight") - Rct.Call<int>("height");
+                }
+            }
+            return (bottom > keyboardHeight) ? bottom : keyboardHeight;
+        }
     }
 #else
     IntPtr webView;
@@ -376,8 +408,12 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
         if (webView == null)
             return;
-        webView.Call("SetMargins", left, top, right, bottom);
+        webView.Call("SetMargins", left, top, right, AdjustBottomMargin(bottom));
 #endif
+        mMarginLeft = left;
+        mMarginTop = top;
+        mMarginRight = right;
+        mMarginBottom = bottom;
     }
 
     public void SetVisibility(bool v)
