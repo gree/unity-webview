@@ -64,9 +64,36 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
     AndroidJavaObject webView;
     
-    bool mIsKeyboardVisible0 = false;
-    bool mIsKeyboardVisible = false;
+    bool mVisibility;
+    bool mIsKeyboardVisible0;
+    bool mIsKeyboardVisible;
+    float mResumedTimestamp;
     
+    void OnApplicationPause(bool paused)
+    {
+        if (webView == null)
+            return;
+        if (paused)
+        {
+            webView.Call("SetVisibility", false);
+        }
+        else
+        {
+            mResumedTimestamp = Time.realtimeSinceStartup;
+        }
+    }
+
+    void Update()
+    {
+        if (webView == null)
+            return;
+        if (mResumedTimestamp != 0.0f && Time.realtimeSinceStartup - mResumedTimestamp > 0.5f)
+        {
+            mResumedTimestamp = 0.0f;
+            webView.Call("SetVisibility", mVisibility);
+        }
+    }
+
     /// Called from Java native plugin to set when the keyboard is opened
     public void SetKeyboardVisible(string pIsVisible)
     {
@@ -391,29 +418,36 @@ public class WebViewObject : MonoBehaviour
     public void SetMargins(int left, int top, int right, int bottom)
     {
 #if UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.setMargins", name, left, top, right, bottom);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
             return;
-        int width = Screen.width - (left + right);
-        int height = Screen.height - (bottom + top);
-        _CWebViewPlugin_SetRect(webView, width, height);
-        rect = new Rect(left, bottom, width, height);
 #elif UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
-        _CWebViewPlugin_SetMargins(webView, left, top, right, bottom);
 #elif UNITY_ANDROID
         if (webView == null)
             return;
-        webView.Call("SetMargins", left, top, right, AdjustBottomMargin(bottom));
 #endif
         mMarginLeft = left;
         mMarginTop = top;
         mMarginRight = right;
         mMarginBottom = bottom;
+#if UNITY_WEBPLAYER
+        Application.ExternalCall("unityWebView.setMargins", name, left, top, right, bottom);
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        int width = Screen.width - (left + right);
+        int height = Screen.height - (bottom + top);
+        _CWebViewPlugin_SetRect(webView, width, height);
+        rect = new Rect(left, bottom, width, height);
+#elif UNITY_IPHONE
+        _CWebViewPlugin_SetMargins(webView, left, top, right, bottom);
+#elif UNITY_ANDROID
+        webView.Call("SetMargins", left, top, right, AdjustBottomMargin(bottom));
+#endif
     }
 
     public void SetVisibility(bool v)
@@ -433,6 +467,7 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
         if (webView == null)
             return;
+        mVisibility = v;
         webView.Call("SetVisibility", v);
 #endif
         visibility = v;
