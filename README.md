@@ -75,12 +75,11 @@ utilize the Safari debugger. For enabling it, please define
 ### iOS
 
 The implementation now supports WKWebView but it is disabled by
-default. For enabling it, please set enableWKWebView as below:
+default. To enable it set `enableWKWebView` to true on line `321` of the file `Plugins/WebViewObject.cs` as below:
 
 ```csharp
-		webViewObject.Init(
-            ...
-            enableWKWebView: true);
+  public void Init(Callback cb = null, bool transparent = false, string ua = "", Callback err = null, Callback ld = null, 
+  bool enableWKWebView = true)
 ```
 
 
