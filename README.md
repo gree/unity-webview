@@ -78,11 +78,15 @@ The implementation now supports WKWebView but it is disabled by
 default. For enabling it, please set enableWKWebView as below:
 
 ```csharp
-		webViewObject.Init(
+        webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+        webViewObject.Init(
             ...
             enableWKWebView: true);
 ```
+(cf. https://github.com/gree/unity-webview/blob/de9a25c0ab0622b15c15ecbc0c7cd85858aa7745/sample/Assets/Scripts/SampleWebView.cs#L94)
 
+Please also note that this flag have no effect on platforms without WKWebView (such as iOS7 and
+Android).
 
 ### Android
 
