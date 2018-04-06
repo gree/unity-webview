@@ -43,6 +43,7 @@ import android.widget.FrameLayout;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Hashtable;
 
@@ -332,7 +333,11 @@ public class CWebViewPlugin {
             if (mWebView == null) {
                 return;
             }
-            mWebView.loadUrl("javascript:" + js);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                mWebView.evaluateJavascript(js, null);
+            } else {
+                mWebView.loadUrl("javascript:" + URLEncoder.encode(js));
+            }
         }});
     }
 
