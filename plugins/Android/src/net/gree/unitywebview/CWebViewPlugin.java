@@ -24,6 +24,8 @@ package net.gree.unitywebview;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
@@ -46,6 +48,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 
 import com.unity3d.player.UnityPlayer;
 
@@ -211,7 +214,11 @@ public class CWebViewPlugin {
                         return true;
                     }
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    view.getContext().startActivity(intent);
+                    PackageManager pm = a.getPackageManager();
+                    List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+                    if (apps.size() > 0) {
+                        view.getContext().startActivity(intent);
+                    }
                     return true;
                 }
             });
@@ -307,8 +314,7 @@ public class CWebViewPlugin {
             if (mWebView == null) {
                 return;
             }
-            if (mCustomHeaders != null &&
-            		!mCustomHeaders.isEmpty()) {
+            if (mCustomHeaders != null && !mCustomHeaders.isEmpty()) {
                 mWebView.loadUrl(url, mCustomHeaders);
             } else {
                 mWebView.loadUrl(url);;
