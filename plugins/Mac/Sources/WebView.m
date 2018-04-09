@@ -144,17 +144,26 @@ static BOOL inEditor;
 
 - (void)addErrorEvent:(const char*)msg
 {
-    [errorEvent addObject:[NSString stringWithUTF8String:msg]];
+    @synchronized(errorEvent)
+    {
+        [errorEvent addObject:[NSString stringWithUTF8String:msg]];
+    }
 }
 
 - (void)addLoadedEvent:(const char*)msg
 {
-    [loadedEvent addObject:[NSString stringWithUTF8String:msg]];
+    @synchronized(loadedEvent)
+    {
+        [loadedEvent addObject:[NSString stringWithUTF8String:msg]];
+    }
 }
 
 - (void)addFromJSEvent:(const char*)msg
 {
-    [fromjsEvent addObject:[NSString stringWithUTF8String:msg]];
+    @synchronized(fromjsEvent)
+    {
+        [fromjsEvent addObject:[NSString stringWithUTF8String:msg]];
+    }
 }
 
 - (BOOL)getErrorEvent:(char*)buff size:(size_t)sizeofbuff
@@ -163,8 +172,11 @@ static BOOL inEditor;
         return FALSE;
     if (strlen([errorEvent[0] UTF8String]) >= sizeofbuff)
         return FALSE;
-    strncpy(buff, [errorEvent[0] UTF8String], sizeofbuff);
-    [errorEvent removeObjectAtIndex:0];
+    @synchronized(errorEvent)
+    {
+        strncpy(buff, [errorEvent[0] UTF8String], sizeofbuff);
+        [errorEvent removeObjectAtIndex:0];
+    }
     return TRUE;
 }
 
@@ -174,8 +186,11 @@ static BOOL inEditor;
         return FALSE;
     if (strlen([loadedEvent[0] UTF8String]) >= sizeofbuff)
         return FALSE;
-    strncpy(buff, [loadedEvent[0] UTF8String], sizeofbuff);
-    [loadedEvent removeObjectAtIndex:0];
+    @synchronized(loadedEvent)
+    {
+        strncpy(buff, [loadedEvent[0] UTF8String], sizeofbuff);
+        [loadedEvent removeObjectAtIndex:0];
+    }
     return TRUE;
 }
 
@@ -185,8 +200,11 @@ static BOOL inEditor;
         return FALSE;
     if (strlen([fromjsEvent[0] UTF8String]) >= sizeofbuff)
         return FALSE;
-    strncpy(buff, [fromjsEvent[0] UTF8String], sizeofbuff);
-    [fromjsEvent removeObjectAtIndex:0];
+    @synchronized(fromjsEvent)
+    {
+        strncpy(buff, [fromjsEvent[0] UTF8String], sizeofbuff);
+        [fromjsEvent removeObjectAtIndex:0];
+    }
     return TRUE;
 }
  
