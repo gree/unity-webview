@@ -289,6 +289,18 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
+    } else if (![url.absoluteString hasPrefix:@"file:"]
+               && ![url.absoluteString hasPrefix:@"http:"]
+               && ![url.absoluteString hasPrefix:@"https:"]
+               && ![url.absoluteString hasPrefix:@"mailto:"]
+               && ![url.absoluteString hasPrefix:@"tel:"]
+               && ![url.absoluteString hasPrefix:@"facetime:"]
+               && ![url.absoluteString hasPrefix:@"sms:"]) {
+        if([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url];
+        }
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
         // cf. for target="_blank", cf. http://qiita.com/ShingoFukuyama/items/b3a1441025a36ab7659c
