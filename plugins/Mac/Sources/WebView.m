@@ -26,95 +26,9 @@
 #import <OpenGL/gl.h>
 #import <unistd.h>
 
-typedef void *MonoDomain;
-typedef void *MonoAssembly;
-typedef void *MonoImage;
-typedef void *MonoObject;
-typedef void *MonoMethodDesc;
-typedef void *MonoMethod;
-typedef void *MonoString;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-    MonoDomain *mono_domain_get();
-    MonoAssembly *mono_domain_assembly_open(MonoDomain *domain, const char *assemblyName);
-    MonoImage *mono_assembly_get_image(MonoAssembly *assembly);
-    MonoMethodDesc *mono_method_desc_new(const char *methodString, int useNamespace);
-    MonoMethodDesc *mono_method_desc_free(MonoMethodDesc *desc);
-    MonoMethod *mono_method_desc_search_in_image(MonoMethodDesc *methodDesc, MonoImage *image);
-    MonoObject *mono_runtime_invoke(MonoMethod *method, void *obj, void **params, MonoObject **exc);
-    MonoString *mono_string_new(MonoDomain *domain, const char *text);
-#ifdef __cplusplus
-}
-#endif
-
 static BOOL inEditor;
-static MonoDomain *monoDomain;
-static MonoAssembly *monoAssembly;
-static MonoImage *monoImage;
-static MonoMethodDesc *monoDesc;
-static MonoMethod *monoMethod;
 
-static void UnitySendMessage(
-    const char *gameObject, const char *method, const char *message)
-{
-    if (monoMethod == 0) {
-        NSString *assemblyPath;
-        if (inEditor) {
-            assemblyPath =
-                @"Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll";
-        } else {
-            NSString *dllPath =
-                @"Contents/Resources/Data/Managed/Assembly-CSharp-firstpass.dll";
-            assemblyPath = [[[NSBundle mainBundle] bundlePath]
-                stringByAppendingPathComponent:dllPath];
-        }
-        monoDomain = mono_domain_get();
-        monoDesc = mono_method_desc_new(
-            "UnitySendMessageDispatcher:Dispatch(string,string,string)", FALSE);
-
-        monoAssembly =
-            mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
-
-        if (monoAssembly != 0) {
-            monoImage = mono_assembly_get_image(monoAssembly);
-            monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
-        }
-
-
-        if (monoMethod == 0) {
-            if (inEditor) {
-                assemblyPath =
-                    @"Library/ScriptAssemblies/Assembly-CSharp.dll";
-            } else {
-                NSString *dllPath =
-                    @"Contents/Resources/Data/Managed/Assembly-CSharp.dll";
-                assemblyPath = [[[NSBundle mainBundle] bundlePath]
-                                stringByAppendingPathComponent:dllPath];
-            }
-            monoAssembly =
-                mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
-
-            if (monoAssembly != 0) {
-                monoImage = mono_assembly_get_image(monoAssembly);
-                monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
-            }
-        }
-    }
-
-    if (monoMethod == 0) {
-        return;
-    }
-
-    void *args[] = {
-        mono_string_new(monoDomain, gameObject),
-        mono_string_new(monoDomain, method),
-        mono_string_new(monoDomain, message),
-    };
-
-    mono_runtime_invoke(monoMethod, 0, args, 0);
-}
+typedef void * ManagedCallback(const char*);
 
 @interface CWebViewPlugin : NSObject
 {
@@ -124,6 +38,9 @@ static void UnitySendMessage(
     int textureId;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
+    ManagedCallback* onError;
+    ManagedCallback* onLoaded;
+    ManagedCallback* onFromJS;
 }
 @end
 
@@ -132,7 +49,7 @@ static void UnitySendMessage(
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
 {
     self = [super init];
-    monoMethod = 0;
+
     customRequestHeader = [[NSMutableDictionary alloc] init];
     webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
     webView.hidden = YES;
@@ -146,6 +63,9 @@ static void UnitySendMessage(
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
+    onError = NULL;
+    onLoaded = NULL;
+    onFromJS = NULL;
     return self;
 }
 
@@ -173,19 +93,22 @@ static void UnitySendMessage(
 
 - (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
 {
-    UnitySendMessage([gameObject UTF8String], "CallOnError", [[error description] UTF8String]);
+    if (onError != NULL)
+        onError([[error description] UTF8String]);
 }
 
 - (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
 {
-    UnitySendMessage([gameObject UTF8String], "CallOnLoaded", [[[[[frame dataSource] request] URL] absoluteString] UTF8String]);
+    if (onLoaded != NULL)
+        onLoaded([[[[[frame dataSource] request] URL] absoluteString] UTF8String]);
 }
 
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObject UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        if (onFromJS != NULL)
+            onFromJS([[url substringFromIndex:6] UTF8String]);
         [listener ignore];
     } else {
         if ([customRequestHeader count] > 0) {
@@ -210,6 +133,15 @@ static void UnitySendMessage(
 
         [listener use];
     }
+}
+
+- (void)setHandler:(ManagedCallback)error loaded:(ManagedCallback)loaded fromjs:(ManagedCallback)fromjs
+{
+    if (webView == nil)
+        return;
+    onError = error;
+    onLoaded = loaded;
+    onFromJS = fromjs;
 }
 
 - (void)setRect:(int)width height:(int)height
@@ -472,6 +404,7 @@ extern "C" {
 const char *_CWebViewPlugin_GetAppPath();
 void *_CWebViewPlugin_Init(
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
+void _CWebViewPlugin_SetHandler(void *instance, ManagedCallback error, ManagedCallback loaded, ManagedCallback fromjs);
 void _CWebViewPlugin_Destroy(void *instance);
 void _CWebViewPlugin_SetRect(void *instance, int width, int height);
 void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -520,6 +453,12 @@ void *_CWebViewPlugin_Init(
     id instance = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua];
     [pool addObject:[NSValue valueWithPointer:instance]];
     return (void *)instance;
+}
+
+void _CWebViewPlugin_SetHandler(void* instance, ManagedCallback error, ManagedCallback loaded, ManagedCallback fromjs)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setHandler:error loaded:loaded fromjs:fromjs];
 }
 
 void _CWebViewPlugin_Destroy(void *instance)
