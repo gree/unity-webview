@@ -25,7 +25,6 @@
 #import <Carbon/Carbon.h>
 #import <OpenGL/gl.h>
 #import <unistd.h>
-#import <string.h>
 
 static BOOL inEditor;
 
@@ -37,9 +36,7 @@ static BOOL inEditor;
     int textureId;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
-    NSMutableArray *errorEvent;
-    NSMutableArray *loadedEvent;
-    NSMutableArray *fromjsEvent;
+    NSMutableArray *messages;
 }
 @end
 
@@ -48,6 +45,7 @@ static BOOL inEditor;
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
 {
     self = [super init];
+    messages = [[NSMutableArray alloc] init];
     customRequestHeader = [[NSMutableDictionary alloc] init];
     webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
     webView.hidden = YES;
@@ -61,9 +59,6 @@ static BOOL inEditor;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
-    errorEvent = [[NSMutableArray alloc] init];
-    loadedEvent = [[NSMutableArray alloc] init];
-    fromjsEvent = [[NSMutableArray alloc] init];
     return self;
 }
 
@@ -85,17 +80,9 @@ static BOOL inEditor;
             [bitmap release];
             bitmap = nil;
         }
-        if (errorEvent != nil) {
-            [errorEvent release];
-            errorEvent = nil;
-        }
-        if (loadedEvent != nil) {
-            [loadedEvent release];
-            loadedEvent = nil;
-        }
-        if (fromjsEvent != nil) {
-            [fromjsEvent release];
-            fromjsEvent = nil;
+        if (messages != nil) {
+            [messages release];
+            messages = nil;
         }
     }
     [super dealloc];
@@ -103,19 +90,19 @@ static BOOL inEditor;
 
 - (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
 {
-    [self addErrorEvent:[[error description] UTF8String]];
+    [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
 }
 
 - (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
 {
-    [self addLoadedEvent:[[[[[frame dataSource] request] URL] absoluteString] UTF8String]];
+    [self addMessage:[NSString stringWithFormat:@"L%@",[[[[frame dataSource] request] URL] absoluteString]]];
 }
 
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
-        [self addFromJSEvent:[[url substringFromIndex:6] UTF8String]];
+        [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
         [listener ignore];
     } else {
         if ([customRequestHeader count] > 0) {
@@ -142,72 +129,27 @@ static BOOL inEditor;
     }
 }
 
-- (void)addErrorEvent:(const char*)msg
+- (void)addMessage:(NSString*)msg
 {
-    @synchronized(errorEvent)
+    @synchronized(messages)
     {
-        [errorEvent addObject:[NSString stringWithUTF8String:msg]];
+        [messages addObject:msg];
     }
 }
 
-- (void)addLoadedEvent:(const char*)msg
+- (NSString *)getMessage
 {
-    @synchronized(loadedEvent)
+    NSString *ret = nil;
+    @synchronized(messages)
     {
-        [loadedEvent addObject:[NSString stringWithUTF8String:msg]];
+        if ([messages count] > 0) {
+            ret = [messages[0] copy];
+            [messages removeObjectAtIndex:0];
+        }
     }
+    return ret;
 }
 
-- (void)addFromJSEvent:(const char*)msg
-{
-    @synchronized(fromjsEvent)
-    {
-        [fromjsEvent addObject:[NSString stringWithUTF8String:msg]];
-    }
-}
-
-- (BOOL)getErrorEvent:(char*)buff size:(size_t)sizeofbuff
-{
-    if ([errorEvent count] <= 0)
-        return FALSE;
-    if (strlen([errorEvent[0] UTF8String]) >= sizeofbuff)
-        return FALSE;
-    @synchronized(errorEvent)
-    {
-        strncpy(buff, [errorEvent[0] UTF8String], sizeofbuff);
-        [errorEvent removeObjectAtIndex:0];
-    }
-    return TRUE;
-}
-
-- (BOOL)getLoadedEvent:(char*)buff size:(size_t)sizeofbuff
-{
-    if ([loadedEvent count] <= 0)
-        return FALSE;
-    if (strlen([loadedEvent[0] UTF8String]) >= sizeofbuff)
-        return FALSE;
-    @synchronized(loadedEvent)
-    {
-        strncpy(buff, [loadedEvent[0] UTF8String], sizeofbuff);
-        [loadedEvent removeObjectAtIndex:0];
-    }
-    return TRUE;
-}
-
-- (BOOL)getFromJSEvent:(char*)buff size:(size_t)sizeofbuff
-{
-    if ([fromjsEvent count] <= 0)
-        return FALSE;
-    if (strlen([fromjsEvent[0] UTF8String]) >= sizeofbuff)
-        return FALSE;
-    @synchronized(fromjsEvent)
-    {
-        strncpy(buff, [fromjsEvent[0] UTF8String], sizeofbuff);
-        [fromjsEvent removeObjectAtIndex:0];
-    }
-    return TRUE;
-}
- 
 - (void)setRect:(int)width height:(int)height
 {
     if (webView == nil)
@@ -465,7 +407,7 @@ typedef void (*UnityRenderEventFunc)(int eventId);
 #ifdef __cplusplus
 extern "C" {
 #endif
-const char *_CWebViewPlugin_GetAppPath();
+const char *_CWebViewPlugin_GetAppPath(void);
 void *_CWebViewPlugin_Init(
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
 void _CWebViewPlugin_Destroy(void *instance);
@@ -487,19 +429,17 @@ int _CWebViewPlugin_BitmapHeight(void *instance);
 void _CWebViewPlugin_SetTextureId(void *instance, int textureId);
 void _CWebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventId);
-UnityRenderEventFunc GetRenderEventFunc();
+UnityRenderEventFunc GetRenderEventFunc(void);
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
 void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
 void _CWebViewPlugin_ClearCustomHeader(void *instance);
 const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
-BOOL _CWebViewPlugin_GetErrorMessage(void *instance, char* buffer, int sizeofbuffer);
-BOOL _CWebViewPlugin_GetLoadedMessage(void *instance, char* buffer, int sizeofbuffer);
-BOOL _CWebViewPlugin_GetFromJSMessage(void *instance, char* buffer, int sizeofbuffer);
+const char *_CWebViewPlugin_GetMessage(void *instance);
 #ifdef __cplusplus
 }
 #endif
 
-const char *_CWebViewPlugin_GetAppPath()
+const char *_CWebViewPlugin_GetAppPath(void)
 {
     const char *s = [[[[NSBundle mainBundle] bundleURL] absoluteString] UTF8String];
     char *r = (char *)malloc(strlen(s) + 1);
@@ -637,7 +577,7 @@ void UnityRenderEvent(int eventId)
     }
 }
 
-UnityRenderEventFunc GetRenderEventFunc()
+UnityRenderEventFunc GetRenderEventFunc(void)
 {
     return UnityRenderEvent;
 }
@@ -666,22 +606,14 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
     [webViewPlugin clearCustomRequestHeader];
 }
 
-BOOL _CWebViewPlugin_GetErrorMessage(void *instance, char* buffer, int sizeofbuffer)
+const char *_CWebViewPlugin_GetMessage(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
-    return [webViewPlugin getErrorEvent:buffer size:sizeofbuffer];
+    NSString *message = [webViewPlugin getMessage];
+    if (message == nil)
+        return NULL;
+    const char *s = [message UTF8String];
+    char *r = (char *)malloc(strlen(s) + 1);
+    strcpy(r, s);
+    return r;
 }
-
-BOOL _CWebViewPlugin_GetLoadedMessage(void *instance, char* buffer, int sizeofbuffer)
-{
-    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
-    return [webViewPlugin getLoadedEvent:buffer size:sizeofbuffer];
-}
-
-BOOL _CWebViewPlugin_GetFromJSMessage(void *instance, char* buffer, int sizeofbuffer)
-{
-    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
-    return [webViewPlugin getFromJSEvent:buffer size:sizeofbuffer];
-}
-
-
