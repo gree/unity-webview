@@ -26,94 +26,14 @@
 #import <OpenGL/gl.h>
 #import <unistd.h>
 
-typedef void *MonoDomain;
-typedef void *MonoAssembly;
-typedef void *MonoImage;
-typedef void *MonoObject;
-typedef void *MonoMethodDesc;
-typedef void *MonoMethod;
-typedef void *MonoString;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-    MonoDomain *mono_domain_get();
-    MonoAssembly *mono_domain_assembly_open(MonoDomain *domain, const char *assemblyName);
-    MonoImage *mono_assembly_get_image(MonoAssembly *assembly);
-    MonoMethodDesc *mono_method_desc_new(const char *methodString, int useNamespace);
-    MonoMethodDesc *mono_method_desc_free(MonoMethodDesc *desc);
-    MonoMethod *mono_method_desc_search_in_image(MonoMethodDesc *methodDesc, MonoImage *image);
-    MonoObject *mono_runtime_invoke(MonoMethod *method, void *obj, void **params, MonoObject **exc);
-    MonoString *mono_string_new(MonoDomain *domain, const char *text);
-#ifdef __cplusplus
-}
-#endif
-
 static BOOL inEditor;
-static MonoDomain *monoDomain;
-static MonoAssembly *monoAssembly;
-static MonoImage *monoImage;
-static MonoMethodDesc *monoDesc;
-static MonoMethod *monoMethod;
 
 static void UnitySendMessage(
     const char *gameObject, const char *method, const char *message)
 {
-    if (monoMethod == 0) {
-        NSString *assemblyPath;
-        if (inEditor) {
-            assemblyPath =
-                @"Library/ScriptAssemblies/Assembly-CSharp-firstpass.dll";
-        } else {
-            NSString *dllPath =
-                @"Contents/Resources/Data/Managed/Assembly-CSharp-firstpass.dll";
-            assemblyPath = [[[NSBundle mainBundle] bundlePath]
-                stringByAppendingPathComponent:dllPath];
-        }
-        monoDomain = mono_domain_get();
-        monoDesc = mono_method_desc_new(
-            "UnitySendMessageDispatcher:Dispatch(string,string,string)", FALSE);
-
-        monoAssembly =
-            mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
-
-        if (monoAssembly != 0) {
-            monoImage = mono_assembly_get_image(monoAssembly);
-            monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
-        }
-
-
-        if (monoMethod == 0) {
-            if (inEditor) {
-                assemblyPath =
-                    @"Library/ScriptAssemblies/Assembly-CSharp.dll";
-            } else {
-                NSString *dllPath =
-                    @"Contents/Resources/Data/Managed/Assembly-CSharp.dll";
-                assemblyPath = [[[NSBundle mainBundle] bundlePath]
-                                stringByAppendingPathComponent:dllPath];
-            }
-            monoAssembly =
-                mono_domain_assembly_open(monoDomain, [assemblyPath UTF8String]);
-
-            if (monoAssembly != 0) {
-                monoImage = mono_assembly_get_image(monoAssembly);
-                monoMethod = mono_method_desc_search_in_image(monoDesc, monoImage);
-            }
-        }
-    }
-
-    if (monoMethod == 0) {
-        return;
-    }
-
-    void *args[] = {
-        mono_string_new(monoDomain, gameObject),
-        mono_string_new(monoDomain, method),
-        mono_string_new(monoDomain, message),
-    };
-
-    mono_runtime_invoke(monoMethod, 0, args, 0);
+    FILE *fp = fopen("/Users/koji.nakamaru/trash/LOG", "a");
+    fprintf(fp, "%s %s %s\n", gameObject, method, message);
+    fclose(fp);
 }
 
 @interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
@@ -126,6 +46,9 @@ static void UnitySendMessage(
     int textureId;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
+    NSMutableArray *errorEvent;
+    NSMutableArray *loadedEvent;
+    NSMutableArray *fromjsEvent;
 }
 @end
 
@@ -134,9 +57,10 @@ static void UnitySendMessage(
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
 {
     self = [super init];
-    monoMethod = 0;
+    errorEvent = [[NSMutableArray alloc] init];
+    loadedEvent = [[NSMutableArray alloc] init];
+    fromjsEvent = [[NSMutableArray alloc] init];
     customRequestHeader = [[NSMutableDictionary alloc] init];
-
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     WKUserContentController *controller = [[WKUserContentController alloc] init];
     WKPreferences *preferences = [[WKPreferences alloc] init];
@@ -204,6 +128,18 @@ static void UnitySendMessage(
             [windowController release];
             windowController = nil;
         }
+        if (errorEvent != nil) {
+            [errorEvent release];
+            errorEvent = nil;
+        }
+        if (loadedEvent != nil) {
+            [loadedEvent release];
+            loadedEvent = nil;
+        }
+        if (fromjsEvent != nil) {
+            [fromjsEvent release];
+            fromjsEvent = nil;
+        }
     }
     [super dealloc];
 }
@@ -212,19 +148,19 @@ static void UnitySendMessage(
 /*
 - (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
 {
-    UnitySendMessage([gameObject UTF8String], "CallOnError", [[error description] UTF8String]);
+    [self addErrorEvent:[[error description] UTF8String]];
 }
 
 - (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
 {
-    UnitySendMessage([gameObject UTF8String], "CallOnLoaded", [[[[[frame dataSource] request] URL] absoluteString] UTF8String]);
+    [self addLoadedEvent:[[[[[frame dataSource] request] URL] absoluteString] UTF8String]];
 }
 
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
     NSString *url = [[request URL] absoluteString];
     if ([url hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObject UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        [self addFromJSEvent:[[url substringFromIndex:6] UTF8String]];
         [listener ignore];
     } else {
         if ([customRequestHeader count] > 0) {
@@ -254,8 +190,7 @@ static void UnitySendMessage(
 
 - (void)webView:(WKWebView*)wkWebView didCommitNavigation:(null_unspecified WKNavigation *)navigation
 {
-    UnitySendMessage([gameObject UTF8String], "CallOnLoaded", "Unknown URL");
-
+    [self addLoadedEvent:"Unknown URL"];
 }
 
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
@@ -270,7 +205,7 @@ static void UnitySendMessage(
         // decisionHandler(WKNavigationActionPolicyCancel);
     //} else
     if ([url.absoluteString hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObject UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
+        [self addFromJSEvent:[[url.absoluteString substringFromIndex:6] UTF8String]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
@@ -288,8 +223,7 @@ static void UnitySendMessage(
 
     // Log out the message received
     NSLog(@"Received event %@", message.body);
-    UnitySendMessage([gameObject UTF8String], "CallFromJS",
-                     [[NSString stringWithFormat:@"%@", message.body] UTF8String]);
+    [self addFromJSEvent:[[NSString stringWithFormat:@"%@", message.body] UTF8String]];
 
     /*
     // Then pull something from the device using the message body
@@ -302,6 +236,72 @@ static void UnitySendMessage(
     */
 }
 
+- (void)addErrorEvent:(const char*)msg
+{
+    @synchronized(errorEvent)
+    {
+        [errorEvent addObject:[NSString stringWithUTF8String:msg]];
+    }
+}
+
+- (void)addLoadedEvent:(const char*)msg
+{
+    @synchronized(loadedEvent)
+    {
+        [loadedEvent addObject:[NSString stringWithUTF8String:msg]];
+    }
+}
+
+- (void)addFromJSEvent:(const char*)msg
+{
+    @synchronized(fromjsEvent)
+    {
+        [fromjsEvent addObject:[NSString stringWithUTF8String:msg]];
+    }
+}
+
+- (BOOL)getErrorEvent:(char*)buff size:(size_t)sizeofbuff
+{
+    if ([errorEvent count] <= 0)
+        return FALSE;
+    if (strlen([errorEvent[0] UTF8String]) >= sizeofbuff)
+        return FALSE;
+    @synchronized(errorEvent)
+    {
+        strncpy(buff, [errorEvent[0] UTF8String], sizeofbuff);
+        [errorEvent removeObjectAtIndex:0];
+    }
+    return TRUE;
+}
+
+- (BOOL)getLoadedEvent:(char*)buff size:(size_t)sizeofbuff
+{
+    if ([loadedEvent count] <= 0)
+        return FALSE;
+    if (strlen([loadedEvent[0] UTF8String]) >= sizeofbuff)
+        return FALSE;
+    @synchronized(loadedEvent)
+    {
+        strncpy(buff, [loadedEvent[0] UTF8String], sizeofbuff);
+        [loadedEvent removeObjectAtIndex:0];
+    }
+    return TRUE;
+}
+
+- (BOOL)getFromJSEvent:(char*)buff size:(size_t)sizeofbuff
+{
+    if ([fromjsEvent count] <= 0)
+        return FALSE;
+    if (strlen([fromjsEvent[0] UTF8String]) >= sizeofbuff)
+        return FALSE;
+    @synchronized(fromjsEvent)
+    {
+        strncpy(buff, [fromjsEvent[0] UTF8String], sizeofbuff);
+        [fromjsEvent removeObjectAtIndex:0];
+    }
+    return TRUE;
+}
+ 
 - (void)setRect:(int)width height:(int)height
 {
     if (webView == nil)
@@ -592,6 +592,9 @@ void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, cons
 void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
 void _CWebViewPlugin_ClearCustomHeader(void *instance);
 const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
+BOOL _CWebViewPlugin_GetErrorMessage(void *instance, char* buffer, int sizeofbuffer);
+BOOL _CWebViewPlugin_GetLoadedMessage(void *instance, char* buffer, int sizeofbuffer);
+BOOL _CWebViewPlugin_GetFromJSMessage(void *instance, char* buffer, int sizeofbuffer);
 #ifdef __cplusplus
 }
 #endif
@@ -763,4 +766,21 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
     [webViewPlugin clearCustomRequestHeader];
 }
 
+BOOL _CWebViewPlugin_GetErrorMessage(void *instance, char* buffer, int sizeofbuffer)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    return [webViewPlugin getErrorEvent:buffer size:sizeofbuffer];
+}
+
+BOOL _CWebViewPlugin_GetLoadedMessage(void *instance, char* buffer, int sizeofbuffer)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    return [webViewPlugin getLoadedEvent:buffer size:sizeofbuffer];
+}
+
+BOOL _CWebViewPlugin_GetFromJSMessage(void *instance, char* buffer, int sizeofbuffer)
+{
+    CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
+    return [webViewPlugin getFromJSEvent:buffer size:sizeofbuffer];
+}
 

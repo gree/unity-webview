@@ -48,6 +48,9 @@ static BOOL inEditor;
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
 {
     self = [super init];
+    errorEvent = [[NSMutableArray alloc] init];
+    loadedEvent = [[NSMutableArray alloc] init];
+    fromjsEvent = [[NSMutableArray alloc] init];
     customRequestHeader = [[NSMutableDictionary alloc] init];
     webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
     webView.hidden = YES;
@@ -61,9 +64,6 @@ static BOOL inEditor;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
-    errorEvent = [[NSMutableArray alloc] init];
-    loadedEvent = [[NSMutableArray alloc] init];
-    fromjsEvent = [[NSMutableArray alloc] init];
     return self;
 }
 
