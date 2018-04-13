@@ -25,7 +25,6 @@
 #import <Carbon/Carbon.h>
 #import <OpenGL/gl.h>
 #import <unistd.h>
-#import <string.h>
 
 static BOOL inEditor;
 
@@ -138,18 +137,17 @@ static BOOL inEditor;
     }
 }
 
-- (BOOL)getMessage:(char*)buff size:(size_t)sizeofbuff
+- (NSString *)getMessage
 {
+    NSString *ret = nil;
     @synchronized(messages)
     {
-        if ([messages count] <= 0)
-            return FALSE;
-        if (strlen([messages[0] UTF8String]) >= sizeofbuff)
-            return FALSE;
-        strncpy(buff, [messages[0] UTF8String], sizeofbuff);
-        [messages removeObjectAtIndex:0];
+        if ([messages count] > 0) {
+            ret = [messages[0] copy];
+            [messages removeObjectAtIndex:0];
+        }
     }
-    return TRUE;
+    return ret;
 }
 
 - (void)setRect:(int)width height:(int)height
@@ -436,7 +434,7 @@ void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, cons
 void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
 void _CWebViewPlugin_ClearCustomHeader(void *instance);
 const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
-BOOL _CWebViewPlugin_GetMessage(void *instance, char* buffer, int sizeofbuffer);
+const char *_CWebViewPlugin_GetMessage(void *instance);
 #ifdef __cplusplus
 }
 #endif
@@ -608,8 +606,14 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
     [webViewPlugin clearCustomRequestHeader];
 }
 
-BOOL _CWebViewPlugin_GetMessage(void *instance, char* buffer, int sizeofbuffer)
+const char *_CWebViewPlugin_GetMessage(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (CWebViewPlugin *)instance;
-    return [webViewPlugin getMessage:buffer size:sizeofbuffer];
+    NSString *message = [webViewPlugin getMessage];
+    if (message == nil)
+        return NULL;
+    const char *s = [message UTF8String];
+    char *r = (char *)malloc(strlen(s) + 1);
+    strcpy(r, s);
+    return r;
 }
