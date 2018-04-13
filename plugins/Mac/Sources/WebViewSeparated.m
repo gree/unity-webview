@@ -28,14 +28,6 @@
 
 static BOOL inEditor;
 
-static void UnitySendMessage(
-    const char *gameObject, const char *method, const char *message)
-{
-    FILE *fp = fopen("/Users/koji.nakamaru/trash/LOG", "a");
-    fprintf(fp, "%s %s %s\n", gameObject, method, message);
-    fclose(fp);
-}
-
 @interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
     NSWindow *window;
@@ -416,29 +408,29 @@ static void UnitySendMessage(
     if (buttonDown) {
         if (buttonPress) {
             event = [NSEvent mouseEventWithType:NSLeftMouseDown
-                location:NSMakePoint(x, y) modifierFlags:nil
+                location:NSMakePoint(x, y) modifierFlags:0
                 timestamp:GetCurrentEventTime() windowNumber:0
-                context:context eventNumber:nil clickCount:1 pressure:1];
+                context:context eventNumber:0 clickCount:1 pressure:1];
             [view mouseDown:event];
         } else {
             event = [NSEvent mouseEventWithType:NSLeftMouseDragged
-                location:NSMakePoint(x, y) modifierFlags:nil
+                location:NSMakePoint(x, y) modifierFlags:0
                 timestamp:GetCurrentEventTime() windowNumber:0
-                context:context eventNumber:nil clickCount:0 pressure:1];
+                context:context eventNumber:0 clickCount:0 pressure:1];
             [view mouseDragged:event];
         }
     } else if (buttonRelease) {
         event = [NSEvent mouseEventWithType:NSLeftMouseUp
-            location:NSMakePoint(x, y) modifierFlags:nil
+            location:NSMakePoint(x, y) modifierFlags:0
             timestamp:GetCurrentEventTime() windowNumber:0
-            context:context eventNumber:nil clickCount:0 pressure:0];
+            context:context eventNumber:0 clickCount:0 pressure:0];
         [view mouseUp:event];
     }
 
     if (keyPress) {
         characters = [NSString stringWithUTF8String:keyChars];
         event = [NSEvent keyEventWithType:NSKeyDown
-            location:NSMakePoint(x, y) modifierFlags:nil
+            location:NSMakePoint(x, y) modifierFlags:0
             timestamp:GetCurrentEventTime() windowNumber:0
             context:context
             characters:characters
@@ -565,7 +557,7 @@ typedef void (*UnityRenderEventFunc)(int eventId);
 #ifdef __cplusplus
 extern "C" {
 #endif
-const char *_CWebViewPlugin_GetAppPath();
+const char *_CWebViewPlugin_GetAppPath(void);
 void *_CWebViewPlugin_Init(
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
 void _CWebViewPlugin_Destroy(void *instance);
@@ -587,7 +579,7 @@ int _CWebViewPlugin_BitmapHeight(void *instance);
 void _CWebViewPlugin_SetTextureId(void *instance, int textureId);
 void _CWebViewPlugin_SetCurrentInstance(void *instance);
 void UnityRenderEvent(int eventId);
-UnityRenderEventFunc GetRenderEventFunc();
+UnityRenderEventFunc GetRenderEventFunc(void);
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
 void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
 void _CWebViewPlugin_ClearCustomHeader(void *instance);
@@ -599,7 +591,7 @@ BOOL _CWebViewPlugin_GetFromJSMessage(void *instance, char* buffer, int sizeofbu
 }
 #endif
 
-const char *_CWebViewPlugin_GetAppPath()
+const char *_CWebViewPlugin_GetAppPath(void)
 {
     const char *s = [[[[NSBundle mainBundle] bundleURL] absoluteString] UTF8String];
     char *r = (char *)malloc(strlen(s) + 1);
@@ -737,7 +729,7 @@ void UnityRenderEvent(int eventId)
     }
 }
 
-UnityRenderEventFunc GetRenderEventFunc()
+UnityRenderEventFunc GetRenderEventFunc(void)
 {
     return UnityRenderEvent;
 }
