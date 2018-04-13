@@ -206,6 +206,12 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
     [DllImport("WebViewSeparated")]
     private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
+    [DllImport("WebViewSeparated")]
+    private static extern bool _CWebViewPlugin_GetErrorMessage(IntPtr instance, IntPtr buff, int sizeofbuff);
+    [DllImport("WebViewSeparated")]
+    private static extern bool _CWebViewPlugin_GetLoadedMessage(IntPtr instance, IntPtr buff, int sizeofbuff);
+    [DllImport("WebViewSeparated")]
+    private static extern bool _CWebViewPlugin_GetFromJSMessage(IntPtr instance, IntPtr buff, int sizeofbuff);
 #else
     [DllImport("WebView")]
     private static extern string _CWebViewPlugin_GetAppPath();
@@ -267,6 +273,12 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
+    [DllImport("WebView")]
+    private static extern bool _CWebViewPlugin_GetErrorMessage(IntPtr instance, IntPtr buff, int sizeofbuff);
+    [DllImport("WebView")]
+    private static extern bool _CWebViewPlugin_GetLoadedMessage(IntPtr instance, IntPtr buff, int sizeofbuff);
+    [DllImport("WebView")]
+    private static extern bool _CWebViewPlugin_GetFromJSMessage(IntPtr instance, IntPtr buff, int sizeofbuff);
 #endif
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
@@ -756,6 +768,25 @@ public class WebViewObject : MonoBehaviour
         if (hasFocus) {
             inputString += Input.inputString;
         }
+        int buffsize = 1024;
+        IntPtr buff = new IntPtr();
+        buff = Marshal.AllocHGlobal(buffsize);
+        while (true) {
+            if (!_CWebViewPlugin_GetErrorMessage(webView, buff, buffsize))
+                break;
+            CallOnError(Marshal.PtrToStringAnsi(buff));
+        }
+        while (true) {
+            if (!_CWebViewPlugin_GetLoadedMessage(webView, buff, buffsize))
+                break;
+            CallOnLoaded(Marshal.PtrToStringAnsi(buff));
+        }
+        while (true) {
+            if (!_CWebViewPlugin_GetFromJSMessage(webView, buff, buffsize))
+               break;
+            CallFromJS(Marshal.PtrToStringAnsi(buff));
+        }
+        Marshal.FreeHGlobal(buff);
     }
 
     public int bitmapRefreshCycle = 1;
