@@ -156,6 +156,7 @@ public class CWebViewPlugin {
                 public void onPageStarted(WebView view, String url, Bitmap favicon) {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
+                    mWebViewPlugin.call("CallOnStarted", url);
                 }
 
                 @Override
