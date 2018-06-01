@@ -45,8 +45,8 @@ public class SampleWebView : MonoBehaviour
             },
             started: (msg) =>
             {
-                Debug.Log(string.Format("CallOnStarted[{0}]", msg);
-            }
+                Debug.Log(string.Format("CallOnStarted[{0}]", msg));
+            },
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
