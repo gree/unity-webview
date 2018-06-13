@@ -270,6 +270,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
             [uiWebView loadRequest:[self constructionCustomHeader:request]];
             return NO;
         }
+        UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
         return YES;
     }
 }
@@ -318,6 +319,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
             }
         }
     }
+    UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
