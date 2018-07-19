@@ -179,13 +179,13 @@ static BOOL inEditor;
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
-    NSURL *url = [navigationAction.request URL];
-    //if ([url.absoluteString rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
+    NSString *url = [[navigationAction.request URL] absoluteString];
+    //if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
         // [[UIApplication sharedApplication] openURL:url];
         // decisionHandler(WKNavigationActionPolicyCancel);
     //} else
-    if ([url.absoluteString hasPrefix:@"unity:"]) {
-        [self addMessage:[NSString stringWithFormat:@"J%@",[url.absoluteString substringFromIndex:6]]];
+    if ([url hasPrefix:@"unity:"]) {
+        [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
@@ -193,6 +193,7 @@ static BOOL inEditor;
         [webView loadRequest:navigationAction.request];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else {
+        [self addMessage:[NSString stringWithFormat:@"S%@",url]];
         decisionHandler(WKNavigationActionPolicyAllow);
     }
 }

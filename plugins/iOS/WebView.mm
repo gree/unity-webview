@@ -270,6 +270,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
             [uiWebView loadRequest:[self constructionCustomHeader:request]];
             return NO;
         }
+        UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
         return YES;
     }
 }
@@ -280,22 +281,22 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
-    NSURL *url = [navigationAction.request URL];
-    if ([url.absoluteString rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
+    NSString *url = [[navigationAction.request URL] absoluteString];
+    if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
         [[UIApplication sharedApplication] openURL:url];
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
-    } else if ([url.absoluteString hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
+    } else if ([url hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
-    } else if (![url.absoluteString hasPrefix:@"file:"]
-               && ![url.absoluteString hasPrefix:@"http:"]
-               && ![url.absoluteString hasPrefix:@"https:"]
-               && ![url.absoluteString hasPrefix:@"mailto:"]
-               && ![url.absoluteString hasPrefix:@"tel:"]
-               && ![url.absoluteString hasPrefix:@"facetime:"]
-               && ![url.absoluteString hasPrefix:@"sms:"]) {
+    } else if (![url hasPrefix:@"file:"]
+               && ![url hasPrefix:@"http:"]
+               && ![url hasPrefix:@"https:"]
+               && ![url hasPrefix:@"mailto:"]
+               && ![url hasPrefix:@"tel:"]
+               && ![url hasPrefix:@"facetime:"]
+               && ![url hasPrefix:@"sms:"]) {
         if([[UIApplication sharedApplication] canOpenURL:url]) {
             [[UIApplication sharedApplication] openURL:url];
         }
@@ -318,6 +319,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
             }
         }
     }
+    UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 

@@ -47,6 +47,7 @@ public class WebViewObject : MonoBehaviour
 {
     Callback onJS;
     Callback onError;
+    Callback onStarted;
     Callback onLoaded;
     bool visibility;
     int mMarginLeft;
@@ -322,10 +323,18 @@ public class WebViewObject : MonoBehaviour
     private static extern void   _CWebViewPlugin_ClearCookies();
 #endif
 
-    public void Init(Callback cb = null, bool transparent = false, string ua = "", Callback err = null, Callback ld = null, bool enableWKWebView = false)
+    public void Init(
+        Callback cb = null,
+        bool transparent = false,
+        string ua = "",
+        Callback err = null,
+        Callback ld = null,
+        bool enableWKWebView = false,
+        Callback started = null)
     {
         onJS = cb;
         onError = err;
+        onStarted = started;
         onLoaded = ld;
 #if UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.init", name);
@@ -638,6 +647,14 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    public void CallOnStarted(string url)
+    {
+        if (onStarted != null)
+        {
+            onStarted(url);
+        }
+    }
+
     public void CallOnLoaded(string url)
     {
         if (onLoaded != null)
@@ -769,6 +786,9 @@ public class WebViewObject : MonoBehaviour
             switch (s[0]) {
             case 'E':
                 CallOnError(s.Substring(1));
+                break;
+            case 'S':
+                CallOnStarted(s.Substring(1));
                 break;
             case 'L':
                 CallOnLoaded(s.Substring(1));

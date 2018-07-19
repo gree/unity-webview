@@ -124,7 +124,7 @@ static BOOL inEditor;
                 return;
             }
         }
-
+        [self addMessage:[NSString stringWithFormat:@"S%@",url]];
         [listener use];
     }
 }
