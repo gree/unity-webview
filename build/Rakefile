@@ -69,6 +69,12 @@ task :build do
       sh "./install.sh"
     end
   end
+  # the following is for Unity 2018 which seems not to process Editor/*.cs under Plugins/{Android,iOS}.
+  FileUtils.mkdir_p("#{DSTDIR[0]}/Editor")
+  FileUtils.mkdir_p("#{DSTDIR[0]}/Editor")
+  sh "cat #{DSTDIR[0]}/Android/Editor/*.cs #{DSTDIR[0]}/iOS/Editor/*.cs > #{DSTDIR[0]}/Editor/UnityWebViewPostprocessBuild.cs"
+  FileUtils.rm_rf("#{DSTDIR[0]}/Android/Editor")
+  FileUtils.rm_rf("#{DSTDIR[0]}/iOS/Editor")
 end
 
 desc "pack"
