@@ -47,6 +47,7 @@ public class WebViewObject : MonoBehaviour
 {
     Callback onJS;
     Callback onError;
+    Callback onHttpError;
     Callback onStarted;
     Callback onLoaded;
     bool visibility;
@@ -328,12 +329,14 @@ public class WebViewObject : MonoBehaviour
         bool transparent = false,
         string ua = "",
         Callback err = null,
+        Callback httpErr = null,
         Callback ld = null,
         bool enableWKWebView = false,
         Callback started = null)
     {
         onJS = cb;
         onError = err;
+        onHttpError = httpErr;
         onStarted = started;
         onLoaded = ld;
 #if UNITY_WEBPLAYER
@@ -644,6 +647,14 @@ public class WebViewObject : MonoBehaviour
         if (onError != null)
         {
             onError(error);
+        }
+    }
+
+    public void CallOnHttpError(string error)
+    {
+        if (onHttpError != null)
+        {
+            onHttpError(error);
         }
     }
 

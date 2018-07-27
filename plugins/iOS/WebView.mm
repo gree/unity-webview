@@ -323,6 +323,19 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+
+    if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
+
+        NSHTTPURLResponse * response = (NSHTTPURLResponse *)navigationResponse.response;
+        if (response.statusCode >= 400) {
+			UnitySendMessage([gameObjectName UTF8String], "CallOnHttpError", [[NSString stringWithFormat:@"%d", response.statusCode] UTF8String]);
+        }
+
+    }
+    decisionHandler(WKNavigationResponsePolicyAllow);
+}
+
 // alert
 - (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler
 {

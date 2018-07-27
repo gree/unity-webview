@@ -35,6 +35,7 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -150,6 +151,13 @@ public class CWebViewPlugin {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
+                }
+                
+                @Override
+                public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                	canGoBack = webView.canGoBack();
+                    canGoForward = webView.canGoForward();
+                    mWebViewPlugin.call("CallOnHttpError", Integer.toString(errorResponse.getStatusCode()));
                 }
 
                 @Override
