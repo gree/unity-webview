@@ -297,9 +297,10 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
-    NSString *url = [[navigationAction.request URL] absoluteString];
+    NSURL *nsurl = [navigationAction.request URL];
+    NSString *url = [nsurl absoluteString];
     if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
-        [[UIApplication sharedApplication] openURL:url];
+        [[UIApplication sharedApplication] openURL:nsurl];
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if ([url hasPrefix:@"unity:"]) {
@@ -313,8 +314,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
                && ![url hasPrefix:@"tel:"]
                && ![url hasPrefix:@"facetime:"]
                && ![url hasPrefix:@"sms:"]) {
-        if([[UIApplication sharedApplication] canOpenURL:url]) {
-            [[UIApplication sharedApplication] openURL:url];
+        if([[UIApplication sharedApplication] canOpenURL:nsurl]) {
+            [[UIApplication sharedApplication] openURL:nsurl];
         }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
