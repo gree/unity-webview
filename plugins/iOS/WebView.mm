@@ -186,10 +186,26 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 +(void)clearCookies
 {
+    // cf. https://dev.classmethod.jp/smartphone/remove-webview-cookies/
+    NSString *libraryPath = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *cookiesPath = [libraryPath stringByAppendingPathComponent:@"Cookies"];
+    NSString *webKitPath = [libraryPath stringByAppendingPathComponent:@"WebKit"];
+    [[NSFileManager defaultManager] removeItemAtPath:cookiesPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:webKitPath error:nil];
+
     NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
     [[cookieStorage cookies] enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
         [cookieStorage deleteCookie:cookie];
     }];
+
+    NSOperatingSystemVersion version = { 9, 0, 0 };
+    if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]) {
+        NSSet *websiteDataTypes = [WKWebsiteDataStore allWebsiteDataTypes];
+        NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
+        [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:websiteDataTypes
+                                                   modifiedSince:date
+                                               completionHandler:^{}];
+    }
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController
