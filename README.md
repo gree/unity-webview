@@ -1,7 +1,7 @@
 # unity-webview
 
 unity-webview is a plugin for Unity 5 that overlays WebView components
-on Unity view. It works on Android, iOS, Unity Web Player, and OS X
+on Unity view. It works on Android, iOS, Unity Web Player, and Mac
 (Windows is not supported for now).
 
 unity-webview is derived from keijiro-san's
@@ -19,7 +19,7 @@ below:
 
 ## Platform Specific Notes
 
-### OS X (Editor)
+### Mac (Editor)
 
 #### Auto Graphics API
 
@@ -33,7 +33,7 @@ and specify OpenGLCore as below.
 Since Unity 5.3.0, Unity.app is built with ATS (App Transport
 Security) enabled and non-secured connection (HTTP) is not
 permitted. If you want to open `http://foo/bar.html` with this plugin
-on Unity OS X Editor, you need to open
+on Unity Mac Editor, you need to open
 `/Applications/Unity5.3.4p3/Unity.app/Contents/Info.plist` with a text
 editor and add the following,
 
@@ -110,6 +110,29 @@ implementation will adjust Unity's SurfaceView z order. Please refer
 `plugins/Android/src/net/gree/unitywebview/CUnityPlayerActivity.java`
 and `plugins/Android/src/net/gree/unitywebview/CUnityPlayer.java` if
 you already have your own activity implementation.
+
+#### How to build WebViewPlugin.jar
+
+The following steps are for Mac but you can follow similar ones for Windows.
+
+1. Install [Android Studio](https://developer.android.com/studio/install).
+2. Open Android Studio and select "Configure/SDK Manager", select the followings with "Show Package Details",
+   and click OK.
+  * SDK Platforms
+    * Android 6.0 (Marshmallow)
+      * Android SDK Platform 23
+  * SDK Tools
+    * Android SDK Build Tools
+      * 28.0.2
+3. Open Terminal.app and perform the followings. You should find
+   `unity-webview/build/Packager/Assets/Plugins/Android/WebViewPlugin.jar` if successful.
+
+```bash
+$ export ANDROID_HOME=~/Library/Android/sdk
+$ export PATH=$PATH:~/Library/Android/sdk/platform-tools/bin:~/Library/Android/sdk/tools:~/Library/Android/sdk/tools/bin
+$ cd unity-webview/plugins/Android
+$ ./install.sh
+```
 
 ### Web Player
 
