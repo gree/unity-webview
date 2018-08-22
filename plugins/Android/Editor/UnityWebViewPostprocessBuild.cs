@@ -1,4 +1,5 @@
 #if UNITY_ANDROID
+#if !UNITY_2018_1_OR_NEWER
 using System.Collections;
 using System.IO;
 using System.Xml;
@@ -82,4 +83,5 @@ public class UnityWebViewPostprocessBuild {
         return null;
     }
 }
+#endif
 #endif
