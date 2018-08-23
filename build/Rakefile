@@ -35,9 +35,7 @@ DSTDIR[0]="Packager/Assets/Plugins"
 SRCS[0]=%W|
   WebViewObject.cs
   iOS/WebView.mm
-  iOS/Editor/UnityWebViewPostprocessBuild.cs
-  Android/Editor/UnityWebViewPostprocessBuild.cs
-  Android/Editor/UnityWebViewPostprocessBuild2018_1.cs
+  Editor/UnityWebViewPostprocessBuild.cs
 |
 
 # NOTE: WebPlayerTemplates is not inclued for now because the sample app becomes complicated.
@@ -70,12 +68,6 @@ task :build do
       sh "./install.sh"
     end
   end
-  # the following is for Unity 2018 which seems not to process Editor/*.cs under Plugins/{Android,iOS}.
-  FileUtils.mkdir_p("#{DSTDIR[0]}/Editor")
-  FileUtils.mkdir_p("#{DSTDIR[0]}/Editor")
-  sh "cat #{DSTDIR[0]}/Android/Editor/*.cs #{DSTDIR[0]}/iOS/Editor/*.cs > #{DSTDIR[0]}/Editor/UnityWebViewPostprocessBuild.cs"
-  FileUtils.rm_rf("#{DSTDIR[0]}/Android/Editor")
-  FileUtils.rm_rf("#{DSTDIR[0]}/iOS/Editor")
 end
 
 desc "pack"
