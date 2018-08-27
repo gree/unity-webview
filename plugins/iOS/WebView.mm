@@ -146,6 +146,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         WKUserContentController *controller = [[WKUserContentController alloc] init];
         [controller addScriptMessageHandler:self name:@"unityControl"];
         configuration.userContentController = controller;
+        configuration.allowsInlineMediaPlayback = true;
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
