@@ -50,7 +50,7 @@ public class SampleWebView : MonoBehaviour
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
-#if !UNITY_ANDROID
+#if UNITY_EDITOR_OSX || !UNITY_ANDROID
                 // NOTE: depending on the situation, you might prefer
                 // the 'iframe' approach.
                 // cf. https://github.com/gree/unity-webview/issues/189
