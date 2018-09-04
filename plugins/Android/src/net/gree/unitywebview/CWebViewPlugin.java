@@ -248,6 +248,7 @@ public class CWebViewPlugin {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
             }
+            webSettings.setMediaPlaybackRequiresUserGesture(false);
             webSettings.setDatabaseEnabled(true);
             webSettings.setDomStorageEnabled(true);
             String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
