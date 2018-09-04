@@ -147,11 +147,15 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         [controller addScriptMessageHandler:self name:@"unityControl"];
         configuration.userContentController = controller;
         configuration.allowsInlineMediaPlayback = true;
+        configuration.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeNone;
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
     } else {
-        webView = [[UIWebView alloc] initWithFrame:view.frame];
+        UIWebView *uiwebview = [[UIWebView alloc] initWithFrame:view.frame];
+        uiwebview.allowsInlineMediaPlayback = YES;
+        uiwebview.mediaPlaybackRequiresUserAction = NO;
+        webView = uiwebview;
         webView.delegate = self;
     }
     if (transparent) {
