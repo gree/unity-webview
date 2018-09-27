@@ -43,6 +43,7 @@ import android.webkit.WebViewClient;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.widget.FrameLayout;
+import android.webkit.PermissionRequest;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -116,6 +117,19 @@ public class CWebViewPlugin {
             // });
             webView.setWebChromeClient(new WebChromeClient() {
                 View videoView;
+
+                // cf. https://stackoverflow.com/questions/40659198/how-to-access-the-camera-from-within-a-webview/47525818#47525818
+                // cf. https://github.com/googlesamples/android-PermissionRequest/blob/eff1d21f0b9c91d67c7f2a2303b591447e61e942/Application/src/main/java/com/example/android/permissionrequest/PermissionRequestFragment.java#L148-L161
+                @Override
+                public void onPermissionRequest(final PermissionRequest request) {
+                    final String[] requestedResources = request.getResources();
+                    for (String r : requestedResources) {
+                        if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                            request.grant(request.getResources());
+                            break;
+                        }
+                    }
+                }
 
                 @Override
                 public void onProgressChanged(WebView view, int newProgress) {
