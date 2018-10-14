@@ -312,7 +312,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
-    } else if (![url hasPrefix:@"file:"]
+    } else if (![url hasPrefix:@"about:blank"]  // for loadHTML(), cf. #365
+               && ![url hasPrefix:@"file:"]
                && ![url hasPrefix:@"http:"]
                && ![url hasPrefix:@"https:"]
                && ![url hasPrefix:@"mailto:"]
