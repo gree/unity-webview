@@ -146,11 +146,16 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         WKUserContentController *controller = [[WKUserContentController alloc] init];
         [controller addScriptMessageHandler:self name:@"unityControl"];
         configuration.userContentController = controller;
+        configuration.allowsInlineMediaPlayback = true;
+        configuration.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeNone;
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
     } else {
-        webView = [[UIWebView alloc] initWithFrame:view.frame];
+        UIWebView *uiwebview = [[UIWebView alloc] initWithFrame:view.frame];
+        uiwebview.allowsInlineMediaPlayback = YES;
+        uiwebview.mediaPlaybackRequiresUserAction = NO;
+        webView = uiwebview;
         webView.delegate = self;
     }
     if (transparent) {
@@ -186,10 +191,26 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 +(void)clearCookies
 {
+    // cf. https://dev.classmethod.jp/smartphone/remove-webview-cookies/
+    NSString *libraryPath = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject;
+    NSString *cookiesPath = [libraryPath stringByAppendingPathComponent:@"Cookies"];
+    NSString *webKitPath = [libraryPath stringByAppendingPathComponent:@"WebKit"];
+    [[NSFileManager defaultManager] removeItemAtPath:cookiesPath error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:webKitPath error:nil];
+
     NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
     [[cookieStorage cookies] enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
         [cookieStorage deleteCookie:cookie];
     }];
+
+    NSOperatingSystemVersion version = { 9, 0, 0 };
+    if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]) {
+        NSSet *websiteDataTypes = [WKWebsiteDataStore allWebsiteDataTypes];
+        NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
+        [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:websiteDataTypes
+                                                   modifiedSince:date
+                                               completionHandler:^{}];
+    }
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController
@@ -270,6 +291,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
             [uiWebView loadRequest:[self constructionCustomHeader:request]];
             return NO;
         }
+        UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
         return YES;
     }
 }
@@ -280,13 +302,27 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
-    NSURL *url = [navigationAction.request URL];
-    if ([url.absoluteString rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
-        [[UIApplication sharedApplication] openURL:url];
+    NSURL *nsurl = [navigationAction.request URL];
+    NSString *url = [nsurl absoluteString];
+    if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
+        [[UIApplication sharedApplication] openURL:nsurl];
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
-    } else if ([url.absoluteString hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url.absoluteString substringFromIndex:6] UTF8String]);
+    } else if ([url hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    } else if (![url hasPrefix:@"about:blank"]  // for loadHTML(), cf. #365
+               && ![url hasPrefix:@"file:"]
+               && ![url hasPrefix:@"http:"]
+               && ![url hasPrefix:@"https:"]
+               && ![url hasPrefix:@"mailto:"]
+               && ![url hasPrefix:@"tel:"]
+               && ![url hasPrefix:@"facetime:"]
+               && ![url hasPrefix:@"sms:"]) {
+        if([[UIApplication sharedApplication] canOpenURL:nsurl]) {
+            [[UIApplication sharedApplication] openURL:nsurl];
+        }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
@@ -306,7 +342,21 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
             }
         }
     }
+    UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
     decisionHandler(WKNavigationActionPolicyAllow);
+}
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+
+    if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
+
+        NSHTTPURLResponse * response = (NSHTTPURLResponse *)navigationResponse.response;
+        if (response.statusCode >= 400) {
+			UnitySendMessage([gameObjectName UTF8String], "CallOnHttpError", [[NSString stringWithFormat:@"%d", response.statusCode] UTF8String]);
+        }
+
+    }
+    decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
 // alert

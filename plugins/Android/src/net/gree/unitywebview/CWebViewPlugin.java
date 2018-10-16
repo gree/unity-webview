@@ -24,6 +24,8 @@ package net.gree.unitywebview;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
@@ -37,6 +39,7 @@ import android.view.ViewGroup.LayoutParams;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -47,8 +50,10 @@ import android.widget.FrameLayout;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 
 import com.unity3d.player.UnityPlayer;
 
@@ -233,11 +238,19 @@ public class CWebViewPlugin extends Fragment {
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
                 }
+                
+                @Override
+                public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                	canGoBack = webView.canGoBack();
+                    canGoForward = webView.canGoForward();
+                    mWebViewPlugin.call("CallOnHttpError", Integer.toString(errorResponse.getStatusCode()));
+                }
 
                 @Override
                 public void onPageStarted(WebView view, String url, Bitmap favicon) {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
+                    mWebViewPlugin.call("CallOnStarted", url);
                 }
 
                 @Override
@@ -296,7 +309,11 @@ public class CWebViewPlugin extends Fragment {
                         return true;
                     }
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    view.getContext().startActivity(intent);
+                    PackageManager pm = a.getPackageManager();
+                    List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+                    if (apps.size() > 0) {
+                        view.getContext().startActivity(intent);
+                    }
                     return true;
                 }
             });
@@ -317,6 +334,7 @@ public class CWebViewPlugin extends Fragment {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
             }
+            webSettings.setMediaPlaybackRequiresUserGesture(false);
             webSettings.setDatabaseEnabled(true);
             webSettings.setDomStorageEnabled(true);
             String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
@@ -392,8 +410,7 @@ public class CWebViewPlugin extends Fragment {
             if (mWebView == null) {
                 return;
             }
-            if (mCustomHeaders != null &&
-            		!mCustomHeaders.isEmpty()) {
+            if (mCustomHeaders != null && !mCustomHeaders.isEmpty()) {
                 mWebView.loadUrl(url, mCustomHeaders);
             } else {
                 mWebView.loadUrl(url);;
@@ -418,7 +435,11 @@ public class CWebViewPlugin extends Fragment {
             if (mWebView == null) {
                 return;
             }
-            mWebView.loadUrl("javascript:" + js);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                mWebView.evaluateJavascript(js, null);
+            } else {
+                mWebView.loadUrl("javascript:" + URLEncoder.encode(js));
+            }
         }});
     }
 

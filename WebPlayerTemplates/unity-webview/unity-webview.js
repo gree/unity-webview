@@ -4,7 +4,7 @@ var unityWebView =
 
     init : function (name) {
         $containers = $('.webviewContainer');
-        if ($containers.size() === 0) {
+        if ($containers.length === 0) {
             $('<div class="webviewContainer" style="overflow:hidden; position:relative; width:100%; height:100%; top:-100%; pointer-events:none;"></div>')
                 .appendTo($('#unityPlayer'));
         }

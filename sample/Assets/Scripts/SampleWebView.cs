@@ -43,10 +43,14 @@ public class SampleWebView : MonoBehaviour
                 status.text = msg;
                 status.GetComponent<Animation>().Play();
             },
+            started: (msg) =>
+            {
+                Debug.Log(string.Format("CallOnStarted[{0}]", msg));
+            },
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
-#if !UNITY_ANDROID
+#if UNITY_EDITOR_OSX || !UNITY_ANDROID
                 // NOTE: depending on the situation, you might prefer
                 // the 'iframe' approach.
                 // cf. https://github.com/gree/unity-webview/issues/189
