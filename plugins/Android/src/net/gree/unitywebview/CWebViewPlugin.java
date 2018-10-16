@@ -30,9 +30,7 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
-import android.os.SystemClock;
 import android.app.Fragment;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -161,6 +159,12 @@ public class CWebViewPlugin extends Fragment {
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
+            // webView.setWebChromeClient(new WebChromeClient() {
+            //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
+            //         Log.d("Webview", cm.message());
+            //         return true;
+            //     }
+            // });
             webView.setWebChromeClient(new WebChromeClient() {
                 View videoView;
 
@@ -201,7 +205,6 @@ public class CWebViewPlugin extends Fragment {
 
                 // For 4.1 <= Android < 5.0
                 public void openFileChooser(ValueCallback<Uri> uploadFile, String acceptType, String capture) {
-                    Log.i("CWebViewPlugin", "here1");
                     if (mUploadMessage != null) {
                         mUploadMessage.onReceiveValue(null);
                     }
@@ -209,9 +212,7 @@ public class CWebViewPlugin extends Fragment {
                     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
                     intent.setType("image/*");
-                    Log.i("CWebViewPlugin", "here2");
                     startActivityForResult(intent, INPUT_FILE_REQUEST_CODE);
-                    Log.i("CWebViewPlugin", "here3");
                 }
 
                 // For Android 5.0+
