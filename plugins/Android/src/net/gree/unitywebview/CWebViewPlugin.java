@@ -409,6 +409,23 @@ public class CWebViewPlugin {
         }});
     }
 
+    // cf. https://stackoverflow.com/questions/31788748/webview-youtube-videos-playing-in-background-on-rotation-and-minimise/31789193#31789193
+    public void OnApplicationPause(final boolean paused) {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            if (paused) {
+                mWebView.onPause();
+                mWebView.pauseTimers();
+            } else {
+                mWebView.onResume();
+                mWebView.resumeTimers();
+            }
+        }});
+    }
+
     public void AddCustomHeader(final String headerKey, final String headerValue)
     {
         if (mCustomHeaders == null) {
