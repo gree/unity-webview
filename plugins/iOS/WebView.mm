@@ -148,6 +148,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         configuration.userContentController = controller;
         configuration.allowsInlineMediaPlayback = true;
         configuration.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeNone;
+        configuration.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
