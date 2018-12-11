@@ -83,6 +83,7 @@ public class WebViewObject : MonoBehaviour
         {
             mResumedTimestamp = Time.realtimeSinceStartup;
         }
+        webView.Call("OnApplicationPause", paused);
     }
 
     void Update()
