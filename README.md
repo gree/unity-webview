@@ -103,7 +103,7 @@ https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-a
 
 ##### Unity 2017.x - 2018.0
 
-Unity forcibly set `android:hardwareAccelerated="false"` regardless of its setting in `Plugins/Android/AndroidManifest.xml`, as discussed in #382 (see also #342 and https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ ), and there is no solution for automatically correcting this setting. Please export the project and manually correct AndroidManifest.xml.
+Unity forcibly set `android:hardwareAccelerated="false"` regardless of its setting in `Plugins/Android/AndroidManifest.xml`, as discussed in https://github.com/gree/unity-webview/issues/382 (see also https://github.com/gree/unity-webview/issues/342 and https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ ), and there is no solution for automatically correcting this setting. Please export the project and manually correct AndroidManifest.xml.
 
 ##### Unity 5.x or older
 
