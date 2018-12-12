@@ -22,6 +22,7 @@
 package net.gree.unitywebview;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -30,11 +31,16 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
-import android.app.Fragment;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -42,13 +48,15 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.CookieManager;
-import android.webkit.CookieSyncManager;
 import android.widget.FrameLayout;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
@@ -92,6 +100,7 @@ public class CWebViewPlugin extends Fragment {
     private static final int INPUT_FILE_REQUEST_CODE = 1;
     private ValueCallback<Uri> mUploadMessage;
     private ValueCallback<Uri[]> mFilePathCallback;
+    private String mCameraPhotoPath;
 
     public CWebViewPlugin() {
         final Activity a = UnityPlayer.currentActivity;
@@ -119,9 +128,20 @@ public class CWebViewPlugin extends Fragment {
             Uri[] results = null;
             // Check that the response is a good one
             if (resultCode == Activity.RESULT_OK) {
-                String dataString = data.getDataString();
-                if (dataString != null) {
-                    results = new Uri[] { Uri.parse(dataString) };
+                if (data == null) {
+                    if (mCameraPhotoPath != null) {
+                        results = new Uri[] { Uri.parse(mCameraPhotoPath) };
+                    }
+                } else {
+                    String dataString = data.getDataString();
+                    // cf. https://www.petitmonte.com/java/android_webview_camera.html
+                    if (dataString == null) {
+                        if (mCameraPhotoPath != null) {
+                            results = new Uri[] { Uri.parse(mCameraPhotoPath) };
+                        }
+                    } else {
+                        results = new Uri[] { Uri.parse(dataString) };
+                    }
                 }
             }
             mFilePathCallback.onReceiveValue(results);
@@ -218,15 +238,66 @@ public class CWebViewPlugin extends Fragment {
                 // For Android 5.0+
                 @Override
                 public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                    // cf. https://github.com/googlearchive/chromium-webview-samples/blob/master/input-file-example/app/src/main/java/inputfilesample/android/chrome/google/com/inputfilesample/MainFragment.java
                     if (mFilePathCallback != null) {
                         mFilePathCallback.onReceiveValue(null);
                     }
                     mFilePathCallback = filePathCallback;
-                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("image/*");
-                    startActivityForResult(intent, INPUT_FILE_REQUEST_CODE);
+
+                    mCameraPhotoPath = null;
+                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+                        // Create the File where the photo should go
+                        File photoFile = null;
+                        try {
+                            photoFile = createImageFile();
+                            takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
+                        } catch (IOException ex) {
+                            // Error occurred while creating the File
+                            Log.e("CWebViewPlugin", "Unable to create Image File", ex);
+                        }
+                        // Continue only if the File was successfully created
+                        if (photoFile != null) {
+                            mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
+                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                                                       Uri.fromFile(photoFile));
+                        } else {
+                            takePictureIntent = null;
+                        }
+                    }
+
+
+                    Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                    contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                    contentSelectionIntent.setType("image/*");
+
+                    Intent[] intentArray;
+                    if(takePictureIntent != null) {
+                        intentArray = new Intent[]{takePictureIntent};
+                    } else {
+                        intentArray = new Intent[0];
+                    }
+
+                    Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+                    chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+                    chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
+                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+
+                    startActivityForResult(chooserIntent, INPUT_FILE_REQUEST_CODE);
+
                     return true;
+                }
+
+                private File createImageFile() throws IOException {
+                    // Create an image file name
+                    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                    String imageFileName = "JPEG_" + timeStamp + "_";
+                    File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+                    File imageFile = File.createTempFile(imageFileName,  /* prefix */
+                                                         ".jpg",         /* suffix */
+                                                         storageDir      /* directory */
+                                                         );
+                    return imageFile;
                 }
             });
 
