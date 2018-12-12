@@ -101,7 +101,11 @@ post-process build scripts).
 Based on the technique discussed in
 https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ and https://github.com/Over17/UnityAndroidManifestCallback, `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` edit the manifest to set `android:hardwareAccelerated="true"`. Please note this works with the `gradle` (not `internal`) build setting.
 
-##### Unity 2018.0 or older
+##### Unity 2017.x - 2018.0
+
+Unity forcibly set `android:hardwareAccelerated="false"` regardless of its setting in `Plugins/Android/AndroidManifest.xml`, as discussed in #382 (see also #342 and https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ ), and there is no solution for automatically correcting this setting. Please export the project and manually correct AndroidManifest.xml.
+
+##### Unity 5.x or older
 
 After the initial build, `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` will copy
 `sample/Temp/StatingArea/AndroidManifest-main.xml` to
