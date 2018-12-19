@@ -28,7 +28,7 @@ and specify OpenGLCore as below.
 
 ![auto-graphics-api-setting-for-mac.png](doc/img/auto-graphics-api-setting-for-mac.png)
 
-If you work only in (recent) Unity Editor, you need only to disable "Metal Editor Support" (cf. #383).
+If you work only in (recent) Unity Editor, you need only to disable "Metal Editor Support" (cf. https://github.com/gree/unity-webview/issues/383 ).
 
 ![metal-editor-support-setting-for-mac.png](doc/img/metal-editor-support-setting-for-mac.png)
 
