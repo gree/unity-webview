@@ -21,12 +21,16 @@ below:
 
 ### Mac (Editor)
 
-#### Auto Graphics API
+#### Auto Graphics API/Metal Editor Support
 
 The current implementation reiles on several OpenGL APIs so you need to disable "Auto graphics API"
 and specify OpenGLCore as below.
 
 ![auto-graphics-api-setting-for-mac.png](doc/img/auto-graphics-api-setting-for-mac.png)
+
+If you work only in (recent) Unity Editor, you need only to disable "Metal Editor Support" (cf. #383).
+
+![metal-editor-support-setting-for-mac.png](doc/img/metal-editor-support-setting-for-mac.png)
 
 #### App Transport Security
 
