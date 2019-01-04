@@ -63,7 +63,12 @@ task :build do
       FileUtils.cp "#{SRCDIR[i]}/#{src}", dstdir, {:preserve => true}
     end
   end
-  ["Android", "Mac"].each do |t|
+  ["Android"].each do |t|
+    Dir.chdir("#{SRCDIR[0]}/#{t}") do
+      sh "./install.sh --unity /Applications/Unity5.6.1f1"
+    end
+  end
+  ["Mac"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
       sh "./install.sh"
     end
