@@ -60,6 +60,12 @@ import android.webkit.ValueCallback;
 
 import java.io.File;
 import java.io.IOException;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.os.Message;
+import android.view.WindowManager;
+import android.util.Log;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -104,6 +110,8 @@ public class CWebViewPlugin extends Fragment {
     private static FrameLayout layout = null;
     private WebView mWebView;
     private OnGlobalLayoutListener mGlobalLayoutListener;
+    private WebView mPopWebView;
+    private View mVideoView;
     private CWebViewPluginInterface mWebViewPlugin;
     private int progress;
     private boolean canGoBack;
@@ -207,6 +215,270 @@ public class CWebViewPlugin extends Fragment {
         return mWebView != null;
     }
 
+    class UriChromeClient extends WebChromeClient {
+        View videoView;
+
+        // cf. https://stackoverflow.com/questions/40659198/how-to-access-the-camera-from-within-a-webview/47525818#47525818
+        // cf. https://github.com/googlesamples/android-PermissionRequest/blob/eff1d21f0b9c91d67c7f2a2303b591447e61e942/Application/src/main/java/com/example/android/permissionrequest/PermissionRequestFragment.java#L148-L161
+        @Override
+        public void onPermissionRequest(final PermissionRequest request) {
+            final String[] requestedResources = request.getResources();
+            for (String r : requestedResources) {
+                if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) || r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+                    request.grant(requestedResources);
+                    // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    //     a.runOnUiThread(new Runnable() {public void run() {
+                    //         final String[] permissions = {
+                    //             "android.permission.CAMERA",
+                    //             "android.permission.RECORD_AUDIO",
+                    //         };
+                    //         ActivityCompat.requestPermissions(a, permissions, 0);
+                    //     }});
+                    // }
+                    break;
+                }
+            }
+        }
+
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            progress = newProgress;
+        }
+
+        @Override
+        public void onShowCustomView(View view, CustomViewCallback callback) {
+            super.onShowCustomView(view, callback);
+            if (layout != null) {
+                videoView = view;
+                layout.setBackgroundColor(0xff000000);
+                layout.addView(videoView);
+            }
+        }
+
+        @Override
+        public void onHideCustomView() {
+            super.onHideCustomView();
+            if (layout != null) {
+                layout.removeView(videoView);
+                layout.setBackgroundColor(0x00000000);
+                videoView = null;
+            }
+        }
+
+        @Override
+        public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+            if (!mAlertDialogEnabled) {
+                result.cancel();
+                return true;
+            }
+            return super.onJsAlert(view, url, message, result);
+        }
+
+        @Override
+        public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
+            if (!mAlertDialogEnabled) {
+                result.cancel();
+                return true;
+            }
+            return super.onJsConfirm(view, url, message, result);
+        }
+
+        @Override
+        public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+            if (!mAlertDialogEnabled) {
+                result.cancel();
+                return true;
+            }
+            return super.onJsPrompt(view, url, message, defaultValue, result);
+        }
+
+        @Override
+        public void onGeolocationPermissionsShowPrompt(String origin, Callback callback) {
+            callback.invoke(origin, true, false);
+        }
+
+        // For Android < 3.0 (won't work because we cannot utilize FragmentActivity)
+        // public void openFileChooser(ValueCallback<Uri> uploadFile) {
+        //     openFileChooser(uploadFile, "");
+        // }
+
+        // For 3.0 <= Android < 4.1
+        public void openFileChooser(ValueCallback<Uri> uploadFile, String acceptType) {
+            openFileChooser(uploadFile, acceptType, "");
+        }
+
+        // For 4.1 <= Android < 5.0
+        public void openFileChooser(ValueCallback<Uri> uploadFile, String acceptType, String capture) {
+            if (mUploadMessage != null) {
+                mUploadMessage.onReceiveValue(null);
+            }
+            mUploadMessage = uploadFile;
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            startActivityForResult(intent, INPUT_FILE_REQUEST_CODE);
+        }
+
+        // For Android 5.0+
+        @Override
+        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+            // cf. https://github.com/googlearchive/chromium-webview-samples/blob/master/input-file-example/app/src/main/java/inputfilesample/android/chrome/google/com/inputfilesample/MainFragment.java
+            if (mFilePathCallback != null) {
+                mFilePathCallback.onReceiveValue(null);
+            }
+            mFilePathCallback = filePathCallback;
+
+            mCameraPhotoPath = null;
+            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+                // Create the File where the photo should go
+                File photoFile = null;
+                try {
+                    photoFile = createImageFile();
+                    takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
+                } catch (IOException ex) {
+                    // Error occurred while creating the File
+                    Log.e("CWebViewPlugin", "Unable to create Image File", ex);
+                }
+                // Continue only if the File was successfully created
+                if (photoFile != null) {
+                    mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                                               Uri.fromFile(photoFile));
+                } else {
+                    takePictureIntent = null;
+                }
+            }
+
+
+            Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+            contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+            contentSelectionIntent.setType("*/*");
+
+            Intent[] intentArray;
+            if(takePictureIntent != null) {
+                intentArray = new Intent[]{takePictureIntent};
+            } else {
+                intentArray = new Intent[0];
+            }
+
+            Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+            chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+            // chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+
+            startActivityForResult(chooserIntent, INPUT_FILE_REQUEST_CODE);
+
+            return true;
+        }
+
+        private File createImageFile() throws IOException {
+            // Create an image file name
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String imageFileName = "JPEG_" + timeStamp + "_";
+            File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+            File imageFile = File.createTempFile(imageFileName,  /* prefix */
+                                                 ".jpg",         /* suffix */
+                                                 storageDir      /* directory */
+                                                 );
+            return imageFile;
+        }
+
+        // cf. https://github.com/hwasiti/Android_Popup_Webview_handler_example
+        @Override
+        public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+            if (mPopWebView != null) {
+                return false;
+            }
+            Activity a = UnityPlayer.currentActivity;
+            mPopWebView = new WebView(a);
+            // mPopWebView.setVerticalScrollBarEnabled(false);
+            // mPopWebView.setHorizontalScrollBarEnabled(false);
+            mPopWebView.setWebViewClient(new WebViewClient());
+            mPopWebView.setWebChromeClient(new UriChromeClient());
+            WebSettings webSettings = mPopWebView.getSettings();
+            webSettings.setSupportZoom(true);
+            webSettings.setBuiltInZoomControls(true);
+            webSettings.setDisplayZoomControls(false);
+            webSettings.setLoadWithOverviewMode(true);
+            webSettings.setUseWideViewPort(true);
+            webSettings.setJavaScriptEnabled(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
+                webSettings.setAllowUniversalAccessFromFileURLs(true);
+            }
+            webSettings.setMediaPlaybackRequiresUserGesture(false);
+            webSettings.setDatabaseEnabled(true);
+            webSettings.setDomStorageEnabled(true);
+            String databasePath = mPopWebView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
+            webSettings.setDatabasePath(databasePath);
+            // webSettings.setAppCacheEnabled(true);
+            // webSettings.setSavePassword(true);
+            // webSettings.setSaveFormData(true);
+
+            layout.addView(
+                mPopWebView,
+                new FrameLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT,
+                    Gravity.NO_GRAVITY));
+            mPopWebView.setLayoutParams(mWebView.getLayoutParams());
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                cookieManager.setAcceptThirdPartyCookies(mPopWebView, true);
+            }
+            WebView.WebViewTransport transport = (WebView.WebViewTransport)resultMsg.obj;
+            transport.setWebView(mPopWebView);
+            resultMsg.sendToTarget();
+            return true;
+        }
+
+        @Override
+        public void onCloseWindow(WebView window) {
+            try {
+                layout.removeView(mPopWebView);
+            } catch (Exception e) {
+            }
+            try {
+                mPopWebView.destroy();
+            } catch (Exception e) {
+            }
+            mPopWebView = null;
+        }
+
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            progress = newProgress;
+        }
+
+        @Override
+        public void onShowCustomView(View view, CustomViewCallback callback) {
+            super.onShowCustomView(view, callback);
+            if (layout != null) {
+                mVideoView = view;
+                layout.setBackgroundColor(0xff000000);
+                layout.addView(mVideoView);
+            }
+        }
+
+        @Override
+        public void onHideCustomView() {
+            super.onHideCustomView();
+            if (layout != null) {
+                layout.removeView(mVideoView);
+                layout.setBackgroundColor(0x00000000);
+                mVideoView = null;
+            }
+        }
+
+        // @Override
+        // public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
+        //     Log.d("Webview", cm.message());
+        //     return true;
+        // }
+    }
+
     public void Init(final String gameObject, final boolean transparent, final String ua) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
@@ -254,175 +526,7 @@ public class CWebViewPlugin extends Fragment {
             //         return true;
             //     }
             // });
-            webView.setWebChromeClient(new WebChromeClient() {
-                View videoView;
-
-                // cf. https://stackoverflow.com/questions/40659198/how-to-access-the-camera-from-within-a-webview/47525818#47525818
-                // cf. https://github.com/googlesamples/android-PermissionRequest/blob/eff1d21f0b9c91d67c7f2a2303b591447e61e942/Application/src/main/java/com/example/android/permissionrequest/PermissionRequestFragment.java#L148-L161
-                @Override
-                public void onPermissionRequest(final PermissionRequest request) {
-                    final String[] requestedResources = request.getResources();
-                    for (String r : requestedResources) {
-                        if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) || r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
-                            request.grant(requestedResources);
-                            // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            //     a.runOnUiThread(new Runnable() {public void run() {
-                            //         final String[] permissions = {
-                            //             "android.permission.CAMERA",
-                            //             "android.permission.RECORD_AUDIO",
-                            //         };
-                            //         ActivityCompat.requestPermissions(a, permissions, 0);
-                            //     }});
-                            // }
-                            break;
-                        }
-                    }
-                }
-
-                @Override
-                public void onProgressChanged(WebView view, int newProgress) {
-                    progress = newProgress;
-                }
-
-                @Override
-                public void onShowCustomView(View view, CustomViewCallback callback) {
-                    super.onShowCustomView(view, callback);
-                    if (layout != null) {
-                        videoView = view;
-                        layout.setBackgroundColor(0xff000000);
-                        layout.addView(videoView);
-                    }
-                }
-
-                @Override
-                public void onHideCustomView() {
-                    super.onHideCustomView();
-                    if (layout != null) {
-                        layout.removeView(videoView);
-                        layout.setBackgroundColor(0x00000000);
-                        videoView = null;
-                    }
-                }
-
-                @Override
-                public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
-                    if (!mAlertDialogEnabled) {
-                        result.cancel();
-                        return true;
-                    }
-                    return super.onJsAlert(view, url, message, result);
-                }
-
-                @Override
-                public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
-                    if (!mAlertDialogEnabled) {
-                        result.cancel();
-                        return true;
-                    }
-                    return super.onJsConfirm(view, url, message, result);
-                }
-
-                @Override
-                public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
-                    if (!mAlertDialogEnabled) {
-                        result.cancel();
-                        return true;
-                    }
-                   return super.onJsPrompt(view, url, message, defaultValue, result);
-                }
-
-                @Override
-                public void onGeolocationPermissionsShowPrompt(String origin, Callback callback) {
-                    callback.invoke(origin, true, false);
-                }
-
-                // For Android < 3.0 (won't work because we cannot utilize FragmentActivity)
-                // public void openFileChooser(ValueCallback<Uri> uploadFile) {
-                //     openFileChooser(uploadFile, "");
-                // }
-
-                // For 3.0 <= Android < 4.1
-                public void openFileChooser(ValueCallback<Uri> uploadFile, String acceptType) {
-                    openFileChooser(uploadFile, acceptType, "");
-                }
-
-                // For 4.1 <= Android < 5.0
-                public void openFileChooser(ValueCallback<Uri> uploadFile, String acceptType, String capture) {
-                    if (mUploadMessage != null) {
-                        mUploadMessage.onReceiveValue(null);
-                    }
-                    mUploadMessage = uploadFile;
-                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("*/*");
-                    startActivityForResult(intent, INPUT_FILE_REQUEST_CODE);
-                }
-
-                // For Android 5.0+
-                @Override
-                public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-                    // cf. https://github.com/googlearchive/chromium-webview-samples/blob/master/input-file-example/app/src/main/java/inputfilesample/android/chrome/google/com/inputfilesample/MainFragment.java
-                    if (mFilePathCallback != null) {
-                        mFilePathCallback.onReceiveValue(null);
-                    }
-                    mFilePathCallback = filePathCallback;
-
-                    mCameraPhotoPath = null;
-                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
-                        // Create the File where the photo should go
-                        File photoFile = null;
-                        try {
-                            photoFile = createImageFile();
-                            takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
-                        } catch (IOException ex) {
-                            // Error occurred while creating the File
-                            Log.e("CWebViewPlugin", "Unable to create Image File", ex);
-                        }
-                        // Continue only if the File was successfully created
-                        if (photoFile != null) {
-                            mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
-                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                                                       Uri.fromFile(photoFile));
-                        } else {
-                            takePictureIntent = null;
-                        }
-                    }
-
-
-                    Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                    contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                    contentSelectionIntent.setType("*/*");
-
-                    Intent[] intentArray;
-                    if(takePictureIntent != null) {
-                        intentArray = new Intent[]{takePictureIntent};
-                    } else {
-                        intentArray = new Intent[0];
-                    }
-
-                    Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-                    chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-                    // chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
-                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
-
-                    startActivityForResult(chooserIntent, INPUT_FILE_REQUEST_CODE);
-
-                    return true;
-                }
-
-                private File createImageFile() throws IOException {
-                    // Create an image file name
-                    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                    String imageFileName = "JPEG_" + timeStamp + "_";
-                    File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                    File imageFile = File.createTempFile(imageFileName,  /* prefix */
-                                                         ".jpg",         /* suffix */
-                                                         storageDir      /* directory */
-                                                         );
-                    return imageFile;
-                }
-            });
+            webView.setWebChromeClient(new UriChromeClient());
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
             webView.setWebViewClient(new WebViewClient() {
@@ -436,7 +540,7 @@ public class CWebViewPlugin extends Fragment {
                 
                 @Override
                 public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                	canGoBack = webView.canGoBack();
+                    canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnHttpError", Integer.toString(errorResponse.getStatusCode()));
                 }
@@ -559,6 +663,11 @@ public class CWebViewPlugin extends Fragment {
             webSettings.setDomStorageEnabled(true);
             String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
             webSettings.setDatabasePath(databasePath);
+            // webSettings.setAppCacheEnabled(true);
+            // webSettings.setSavePassword(true);
+            // webSettings.setSaveFormData(true);
+            webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+            webSettings.setSupportMultipleWindows(true);
 
             if (transparent) {
                 webView.setBackgroundColor(0x00000000);

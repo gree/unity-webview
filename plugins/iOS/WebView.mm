@@ -91,6 +91,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
     UIView <WebViewProtocol> *webView;
+    WKWebView *popWebView;
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
     BOOL alertDialogEnabled;
@@ -317,6 +318,65 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
+- (void)webViewDidFinishLoad:(UIWebView *)uiWebView {
+    if (webView == nil)
+        return;
+    // cf. http://stackoverflow.com/questions/10996028/uiwebview-when-did-a-page-really-finish-loading/15916853#15916853
+    if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]
+        && [webView URL] != nil) {
+        UnitySendMessage(
+            [gameObjectName UTF8String],
+            "CallOnLoaded",
+            [[[webView URL] absoluteString] UTF8String]);
+    }
+}
+
+- (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
+{
+    if (webView == nil)
+        return YES;
+
+    NSString *url = [[request URL] absoluteString];
+    if ([url hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        return NO;
+    } else {
+        if (![self isSetupedCustomHeader:request]) {
+            [uiWebView loadRequest:[self constructionCustomHeader:request]];
+            return NO;
+        }
+        UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
+        return YES;
+    }
+}
+
+- (WKWebView *)webView:(WKWebView *)wkWebView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
+    if (popWebView) {
+        return nil;
+    }
+    popWebView = [[WKWebView alloc] initWithFrame:webView.frame configuration:configuration];
+    popWebView.frame
+        = CGRectMake(
+            webView.frame.origin.x,
+            webView.frame.origin.y,
+            webView.frame.size.width,
+            webView.frame.size.height);
+    popWebView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    popWebView.UIDelegate = self;
+    popWebView.navigationDelegate = self;
+    // popWebView.load(navigationAction.request);
+    UIView *view = UnityGetGLViewController().view;
+    [view addSubview:popWebView];
+    return popWebView;
+}
+
+- (void)webViewDidClose:(WKWebView *)webView {
+    if (webView == popWebView) {
+        [popWebView removeFromSuperview];
+        popWebView = nil;
+    }
+}
+
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
     if (webView == nil) {
@@ -359,8 +419,9 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
         // cf. for target="_blank", cf. http://qiita.com/ShingoFukuyama/items/b3a1441025a36ab7659c
-        [webView load:navigationAction.request];
-        decisionHandler(WKNavigationActionPolicyCancel);
+        // [webView load:navigationAction.request];
+        // decisionHandler(WKNavigationActionPolicyCancel);
+        decisionHandler(WKNavigationActionPolicyAllow);
         return;
     } else {
         if (navigationAction.targetFrame != nil && navigationAction.targetFrame.isMainFrame) {
