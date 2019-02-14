@@ -453,6 +453,7 @@ void *_CWebViewPlugin_Init(
 
 void _CWebViewPlugin_Destroy(void *instance)
 {
+    _CWebViewPlugin_SetCurrentInstance(NULL);
     CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
     [pool removeObject:webViewPlugin];
     [webViewPlugin dispose];
