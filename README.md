@@ -17,6 +17,16 @@ below:
    might be easier to extract `dist/unity-webview.zip` instead if
    you've imported unity-webview before.
 
+## Common Notes
+
+### UnityWebViewPostprocessBuild.cs
+
+`Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` contains code for Android/iOS build, which
+may cause errors if you haven't installed components for these platforms. As discussed in
+https://github.com/gree/unity-webview/pull/397#issuecomment-464631894, I intentionally don't utilize
+`UNITY_IOS` and/or `UNITY_ANDROID`. If you haven't installed Android/iOS components, please comment
+out adequate parts in the script.
+
 ## Platform Specific Notes
 
 ### Mac (Editor)
