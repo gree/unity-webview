@@ -316,11 +316,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     } else if (![url hasPrefix:@"about:blank"]  // for loadHTML(), cf. #365
                && ![url hasPrefix:@"file:"]
                && ![url hasPrefix:@"http:"]
-               && ![url hasPrefix:@"https:"]
-               && ![url hasPrefix:@"mailto:"]
-               && ![url hasPrefix:@"tel:"]
-               && ![url hasPrefix:@"facetime:"]
-               && ![url hasPrefix:@"sms:"]) {
+               && ![url hasPrefix:@"https:"]) {
         if([[UIApplication sharedApplication] canOpenURL:nsurl]) {
             [[UIApplication sharedApplication] openURL:nsurl];
         }
