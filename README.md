@@ -17,16 +17,30 @@ below:
    might be easier to extract `dist/unity-webview.zip` instead if
    you've imported unity-webview before.
 
+## Common Notes
+
+### UnityWebViewPostprocessBuild.cs
+
+`Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` contains code for Android/iOS build, which
+may cause errors if you haven't installed components for these platforms. As discussed in
+https://github.com/gree/unity-webview/pull/397#issuecomment-464631894, I intentionally don't utilize
+`UNITY_IOS` and/or `UNITY_ANDROID`. If you haven't installed Android/iOS components, please comment
+out adequate parts in the script.
+
 ## Platform Specific Notes
 
 ### Mac (Editor)
 
-#### Auto Graphics API
+#### Auto Graphics API/Metal Editor Support
 
 The current implementation reiles on several OpenGL APIs so you need to disable "Auto graphics API"
 and specify OpenGLCore as below.
 
 ![auto-graphics-api-setting-for-mac.png](doc/img/auto-graphics-api-setting-for-mac.png)
+
+If you work only in (recent) Unity Editor, you may just disable "Metal Editor Support" (cf. https://github.com/gree/unity-webview/issues/383 ).
+
+![metal-editor-support-setting-for-mac.png](doc/img/metal-editor-support-setting-for-mac.png)
 
 #### App Transport Security
 
