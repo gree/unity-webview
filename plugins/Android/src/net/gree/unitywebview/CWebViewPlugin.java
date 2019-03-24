@@ -245,7 +245,7 @@ public class CWebViewPlugin extends Fragment {
                     mUploadMessage = uploadFile;
                     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                     intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("image/*");
+                    intent.setType("*/*");
                     startActivityForResult(intent, INPUT_FILE_REQUEST_CODE);
                 }
 
@@ -283,7 +283,7 @@ public class CWebViewPlugin extends Fragment {
 
                     Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
                     contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                    contentSelectionIntent.setType("image/*");
+                    contentSelectionIntent.setType("*/*");
 
                     Intent[] intentArray;
                     if(takePictureIntent != null) {
