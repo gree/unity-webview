@@ -325,6 +325,14 @@ public class WebViewObject : MonoBehaviour
     private static extern void   _CWebViewPlugin_ClearCookies();
 #endif
 
+    public static bool IsWebViewAvailable() {
+#if !UNITY_EDITOR && UNITY_ANDROID
+        return (new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin")).CallStatic<bool>("IsWebViewAvailable");
+#else
+        return true;
+#endif
+    }
+
     public void Init(
         Callback cb = null,
         bool transparent = false,
