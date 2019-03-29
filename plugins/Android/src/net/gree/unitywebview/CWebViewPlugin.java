@@ -294,7 +294,7 @@ public class CWebViewPlugin extends Fragment {
 
                     Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
                     chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-                    chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
+                    // chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
                     chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
                     startActivityForResult(chooserIntent, INPUT_FILE_REQUEST_CODE);
