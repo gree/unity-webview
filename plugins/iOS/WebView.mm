@@ -129,6 +129,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @implementation CWebViewPlugin
 
+static WKProcessPool *_sharedProcessPool;
 
 - (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView
 {
@@ -142,6 +143,9 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
     UIView *view = UnityGetGLViewController().view;
     if (enableWKWebView && [WKWebView class]) {
+        if (_sharedProcessPool == NULL) {
+            _sharedProcessPool = [[WKProcessPool alloc] init];
+        }
         WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
         WKUserContentController *controller = [[WKUserContentController alloc] init];
         [controller addScriptMessageHandler:self name:@"unityControl"];
@@ -149,6 +153,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
         configuration.allowsInlineMediaPlayback = true;
         configuration.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeNone;
         configuration.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
+        configuration.processPool = _sharedProcessPool;
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
