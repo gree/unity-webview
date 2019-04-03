@@ -44,9 +44,16 @@ static BOOL inEditor;
 
 @implementation CWebViewPlugin
 
+static WKProcessPool *_sharedProcessPool;
+
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
 {
     self = [super init];
+    @synchronized(self) {
+        if (_sharedProcessPool == NULL) {
+            _sharedProcessPool = [[WKProcessPool alloc] init];
+        }
+    }
     messages = [[NSMutableArray alloc] init];
     customRequestHeader = [[NSMutableDictionary alloc] init];
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
@@ -56,8 +63,9 @@ static BOOL inEditor;
     preferences.plugInsEnabled = true;
     [controller addScriptMessageHandler:self name:@"unityControl"];
     configuration.userContentController = controller;
+    configuration.processPool = _sharedProcessPool;
     // configuration.preferences = preferences;
-    NSRect frame = NSMakeRect(0, 0, width / 2, height / 2);
+    NSRect frame = NSMakeRect(0, 0, width, height);
     webView = [[WKWebView alloc] initWithFrame:frame
                                  configuration:configuration];
     [[[webView configuration] preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
@@ -235,14 +243,16 @@ static BOOL inEditor;
     if (webView == nil)
         return;
     NSRect frame;
-    frame.size.width = width / 2;
-    frame.size.height = height / 2;
-    frame.origin.x = 0;
-    frame.origin.y = 0;
-    webView.frame = frame;
+    frame.size.width = width;
+    frame.size.height = height;
+    // frame.origin.x = 0;
+    // frame.origin.y = 0;
+    // webView.frame = frame;
     if (bitmap != nil) {
         bitmap = nil;
     }
+    frame.origin = window.frame.origin;
+    [window setFrame:frame display:YES];
 }
 
 - (void)setVisibility:(BOOL)visibility
@@ -387,8 +397,8 @@ static BOOL inEditor;
             if (bitmap == nil) {
                 bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
             }
-            memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
-            [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+            memset([bitmap bitmapData], 128, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+            // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
         }
         needsDisplay = refreshBitmap;
     }
