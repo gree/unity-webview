@@ -75,12 +75,9 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == null)
             return;
-        if (paused)
+        if (!paused)
         {
             webView.Call("SetVisibility", false);
-        }
-        else
-        {
             mResumedTimestamp = Time.realtimeSinceStartup;
         }
         webView.Call("OnApplicationPause", paused);
@@ -324,6 +321,14 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_ClearCookies();
 #endif
+
+    public static bool IsWebViewAvailable() {
+#if !UNITY_EDITOR && UNITY_ANDROID
+        return (new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin")).CallStatic<bool>("IsWebViewAvailable");
+#else
+        return true;
+#endif
+    }
 
     public void Init(
         Callback cb = null,

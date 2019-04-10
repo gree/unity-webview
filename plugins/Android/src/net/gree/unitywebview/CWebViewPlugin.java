@@ -61,6 +61,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 
 import com.unity3d.player.UnityPlayer;
 
@@ -160,6 +162,30 @@ public class CWebViewPlugin extends Fragment {
             }
             mUploadMessage.onReceiveValue(result);
             mUploadMessage = null;
+        }
+    }
+
+    public static boolean IsWebViewAvailable() {
+        final Activity a = UnityPlayer.currentActivity;
+        FutureTask<Boolean> t = new FutureTask<Boolean>(new Callable<Boolean>() {
+            public Boolean call() throws Exception {
+                boolean isAvailable = false;
+                try {
+                    WebView webView = new WebView(a);
+                    if (webView != null) {
+                        webView = null;
+                        isAvailable = true;
+                    }
+                } catch (Exception e) {
+                }
+                return isAvailable;
+            }
+        });
+        a.runOnUiThread(t);
+        try {
+            return t.get();
+        } catch (Exception e) {
+            return false;
         }
     }
 
