@@ -75,12 +75,9 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == null)
             return;
-        if (paused)
+        if (!paused)
         {
             webView.Call("SetVisibility", false);
-        }
-        else
-        {
             mResumedTimestamp = Time.realtimeSinceStartup;
         }
         webView.Call("OnApplicationPause", paused);
