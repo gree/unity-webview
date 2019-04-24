@@ -166,12 +166,7 @@ public class SampleWebView : MonoBehaviour
         GUI.TextField(new Rect(200, 10, 300, 80), "" + webViewObject.Progress());
 
         if (GUI.Button(new Rect(600, 10, 80, 80), "*")) {
-            var g = GameObject.Find("WebViewObject");
-            if (g != null) {
-                Destroy(g);
-            } else {
-                StartCoroutine(Start());
-            }
+            webViewObject.SetVisibility(!webViewObject.GetVisibility());
         }
         GUI.enabled = true;
     }
