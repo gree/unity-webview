@@ -413,6 +413,7 @@ public class CWebViewPlugin extends Fragment {
                     canGoForward = webView.canGoForward();
                     if (url.startsWith("http://") || url.startsWith("https://")
                         || url.startsWith("file://") || url.startsWith("javascript:")) {
+                        mWebViewPlugin.call("CallOnStarted", url);
                         // Let webview handle the URL
                         return false;
                     } else if (url.startsWith("unity:")) {
