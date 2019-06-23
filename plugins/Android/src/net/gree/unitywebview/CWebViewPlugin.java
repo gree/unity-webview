@@ -512,4 +512,9 @@ public class CWebViewPlugin {
         }
     }
 
+    public String GetCookies(String url)
+    {
+        CookieManager cookieManager = CookieManager.getInstance();
+        return cookieManager.getCookie(url);
+    }
 }
