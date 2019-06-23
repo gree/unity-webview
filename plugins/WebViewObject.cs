@@ -320,6 +320,8 @@ public class WebViewObject : MonoBehaviour
     private static extern void   _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_ClearCookies();
+    [DllImport("__Internal")]
+    private static extern string _CWebViewPlugin_GetCookies(string url);
 #endif
 
     public static bool IsWebViewAvailable() {
@@ -702,7 +704,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
-
         _CWebViewPlugin_AddCustomHeader(webView, headerKey, headerValue);
 #elif UNITY_ANDROID
         if (webView == null)
@@ -722,7 +723,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return null;
-        
         return _CWebViewPlugin_GetCustomHeaderValue(webView, headerKey);  
 #elif UNITY_ANDROID
         if (webView == null)
@@ -738,7 +738,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
-
         _CWebViewPlugin_RemoveCustomHeader(webView, headerKey);
 #elif UNITY_ANDROID
         if (webView == null)
@@ -756,7 +755,6 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
-
         _CWebViewPlugin_ClearCustomHeader(webView);
 #elif UNITY_ANDROID
         if (webView == null)
@@ -774,12 +772,34 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_IPHONE && !UNITY_EDITOR
         if (webView == IntPtr.Zero)
             return;
-
         _CWebViewPlugin_ClearCookies();
 #elif UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
         webView.Call("ClearCookies");
+#endif
+    }
+
+
+    public string GetCookies(string url)
+    {
+#if UNITY_WEBPLAYER
+        //TODO: UNSUPPORTED
+        return "";
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+        //TODO: UNSUPPORTED
+        return "";
+#elif UNITY_IPHONE && !UNITY_EDITOR
+        if (webView == IntPtr.Zero)
+            return "";
+        return _CWebViewPlugin_GetCookies(url);
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return "";
+        return webView.Call<string>("GetCookies", url);
+#else
+        //TODO: UNSUPPORTED
+        return "";
 #endif
     }
 
