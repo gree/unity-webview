@@ -174,6 +174,11 @@ public class SampleWebView : MonoBehaviour
             }
         }
         GUI.enabled = true;
+
+        if (GUI.Button(new Rect(700, 10, 80, 80), "c")) {
+            Debug.Log(webViewObject.GetCookies(Url));
+        }
+        GUI.enabled = true;
     }
 #endif
 }

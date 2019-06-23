@@ -685,4 +685,9 @@ public class CWebViewPlugin extends Fragment {
         }
     }
 
+    public String GetCookies(String url)
+    {
+        CookieManager cookieManager = CookieManager.getInstance();
+        return cookieManager.getCookie(url);
+    }
 }
