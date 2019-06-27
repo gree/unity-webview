@@ -130,6 +130,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @implementation CWebViewPlugin
 
 static WKProcessPool *_sharedProcessPool;
+static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
 - (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView
 {
@@ -233,6 +234,14 @@ static WKProcessPool *_sharedProcessPool;
 
 + (const char *)getCookies:(const char *)url
 {
+    // cf. https://stackoverflow.com/questions/33156567/getting-all-cookies-from-wkwebview/49744695#49744695
+    _sharedProcessPool = [[WKProcessPool alloc] init];
+    [_instances enumerateObjectsUsingBlock:^(CWebViewPlugin *obj, NSUInteger idx, BOOL *stop) {
+        if ([obj->webView isKindOfClass:[WKWebView class]]) {
+            WKWebView *webView = (WKWebView *)obj->webView;
+            webView.configuration.processPool = _sharedProcessPool;
+        }
+    }];
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
     [formatter setDateFormat:@"EEE, dd MMM yyyy HH:mm:ss zzz"];
@@ -402,7 +411,7 @@ static WKProcessPool *_sharedProcessPool;
 
         NSHTTPURLResponse * response = (NSHTTPURLResponse *)navigationResponse.response;
         if (response.statusCode >= 400) {
-			UnitySendMessage([gameObjectName UTF8String], "CallOnHttpError", [[NSString stringWithFormat:@"%d", response.statusCode] UTF8String]);
+            UnitySendMessage([gameObjectName UTF8String], "CallOnHttpError", [[NSString stringWithFormat:@"%d", response.statusCode] UTF8String]);
         }
 
     }
@@ -658,13 +667,15 @@ extern "C" {
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
 {
-    id instance = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
-    return (__bridge_retained void *)instance;
+    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
+    [_instances addObject:webViewPlugin];
+    return (__bridge_retained void *)webViewPlugin;
 }
 
 void _CWebViewPlugin_Destroy(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
+    [_instances removeObject:webViewPlugin];
     [webViewPlugin dispose];
     webViewPlugin = nil;
 }
