@@ -509,24 +509,33 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     webView.frame = frame;
 }
 
-- (void)setMargins:(float)left top:(float)top right:(float)right bottom:(float)bottom
+- (void)setMargins:(float)left top:(float)top right:(float)right bottom:(float)bottom relative:(BOOL)relative
 {
     if (webView == nil)
         return;
     UIView *view = UnityGetGLViewController().view;
     CGRect frame = webView.frame;
     CGRect screen = view.bounds;
-	CGFloat width = screen.size.width;
-	CGFloat height = screen.size.height;
-	CGFloat leftCG = CGFloat(left) * width;
-	CGFloat topCG = CGFloat(top) * height;
-	CGFloat rightCG = CGFloat(right) * height;
-	CGFloat bottomCG = CGFloat(bottom) * width;
-    frame.size.width = width - (leftCG + rightCG) ;
-    frame.size.height = height - (topCG + bottomCG) ;
-    frame.origin.x = leftCG ;
-    frame.origin.y = topCG ;
+    if (relative) {
+        frame.size.width = screen.size.width * (1.0f - left - right);
+        frame.size.height = screen.size.height * (1.0f - top - bottom);
+        frame.origin.x = screen.size.width * left;
+        frame.origin.y = screen.size.height * top;
+    } else {
+        CGFloat scale = 1.0f / [self getScale:view];
+        frame.size.width = screen.size.width - scale * (left + right) ;
+        frame.size.height = screen.size.height - scale * (top + bottom) ;
+        frame.origin.x = scale * left ;
+        frame.origin.y = scale * top ;
+    }
     webView.frame = frame;
+}
+
+- (CGFloat)getScale:(UIView *)view
+{
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
+        return view.window.screen.nativeScale;
+    return view.contentScaleFactor;
 }
 
 - (void)setVisibility:(BOOL)visibility
@@ -645,7 +654,7 @@ extern "C" {
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _CWebViewPlugin_SetMargins(
-        void *instance, float left, float top, float right, float bottom);
+        void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
@@ -692,10 +701,10 @@ void _CWebViewPlugin_SetFrame(void* instance, int x, int y, int width, int heigh
 }
 
 void _CWebViewPlugin_SetMargins(
-    void *instance, float left, float top, float right, float bottom)
+    void *instance, float left, float top, float right, float bottom, BOOL relative)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin setMargins:left top:top right:right bottom:bottom];
+    [webViewPlugin setMargins:left top:top right:right bottom:bottom relative:relative];
 }
 
 void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
