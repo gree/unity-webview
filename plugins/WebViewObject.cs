@@ -279,7 +279,7 @@ public class WebViewObject : MonoBehaviour
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetMargins(
-        IntPtr instance, int left, int top, int right, int bottom);
+        IntPtr instance, float left, float top, float right, float bottom);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetVisibility(
         IntPtr instance, bool visibility);
@@ -324,7 +324,8 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetCookies(string url);
 #endif
 
-    public static bool IsWebViewAvailable() {
+    public static bool IsWebViewAvailable()
+    {
 #if !UNITY_EDITOR && UNITY_ANDROID
         return (new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin")).CallStatic<bool>("IsWebViewAvailable");
 #else
@@ -469,7 +470,11 @@ public class WebViewObject : MonoBehaviour
         _CWebViewPlugin_SetRect(webView, width, height);
         rect = new Rect(left, bottom, width, height);
 #elif UNITY_IPHONE
-        _CWebViewPlugin_SetMargins(webView, left, top, right, bottom);
+        float leftPercentage = left / Screen.width;
+        float topPercentage = top / Screen.height;
+        float rightPercentage = right / Screen.width;
+        float bottomPercentage = bottom / Screen.height;
+        _CWebViewPlugin_SetMargins(webView, leftPercentage, topPercentage, rightPercentage, bottomPercentage);
 #elif UNITY_ANDROID
         webView.Call("SetMargins", left, top, right, AdjustBottomMargin(bottom));
 #endif
