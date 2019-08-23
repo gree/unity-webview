@@ -279,7 +279,7 @@ public class WebViewObject : MonoBehaviour
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetMargins(
-        IntPtr instance, float left, float top, float right, float bottom);
+        IntPtr instance, float left, float top, float right, float bottom, bool relative);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetVisibility(
         IntPtr instance, bool visibility);
@@ -441,7 +441,7 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void SetMargins(int left, int top, int right, int bottom)
+    public void SetMargins(int left, int top, int right, int bottom, bool relative = false)
     {
 #if UNITY_WEBPLAYER
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -470,13 +470,23 @@ public class WebViewObject : MonoBehaviour
         _CWebViewPlugin_SetRect(webView, width, height);
         rect = new Rect(left, bottom, width, height);
 #elif UNITY_IPHONE
-        float leftPercentage = left / Screen.width;
-        float topPercentage = top / Screen.height;
-        float rightPercentage = right / Screen.width;
-        float bottomPercentage = bottom / Screen.height;
-        _CWebViewPlugin_SetMargins(webView, leftPercentage, topPercentage, rightPercentage, bottomPercentage);
+        if (relative) {
+            float w = (float)Screen.width;
+            float h = (float)Screen.height;
+            _CWebViewPlugin_SetMargins(webView, left / w, top / h, right / w, bottom / h, true);
+        } else {
+            _CWebViewPlugin_SetMargins(webView, (float)left, (float)top, (float)right, (float)bottom, false);
+        }
 #elif UNITY_ANDROID
-        webView.Call("SetMargins", left, top, right, AdjustBottomMargin(bottom));
+        if (relative) {
+            float w = (float)Screen.width;
+            float h = (float)Screen.height;
+            int iw = Screen.currentResolution.width;
+            int ih = Screen.currentResolution.height;
+            webView.Call("SetMargins", (int)(left / w * iw), (int)(top / h * ih), (int)(right / w * iw), AdjustBottomMargin((int)(bottom / h * ih)));
+        } else {
+            webView.Call("SetMargins", left, top, right, AdjustBottomMargin(bottom));
+        }
 #endif
     }
 
