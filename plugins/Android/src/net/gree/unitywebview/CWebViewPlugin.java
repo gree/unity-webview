@@ -459,7 +459,7 @@ public class CWebViewPlugin extends Fragment {
                 webView.setBackgroundColor(0x00000000);
             }
 
-            if (layout == null) {
+            if (layout == null || layout.getParent() != a.findViewById(android.R.id.content)) {
                 layout = new FrameLayout(a);
                 a.addContentView(
                     layout,
