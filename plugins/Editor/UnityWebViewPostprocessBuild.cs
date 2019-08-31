@@ -4,7 +4,9 @@ using System.Text;
 using System.Xml;
 using UnityEditor.Android;
 using UnityEditor.Callbacks;
+#if UNITY_IOS
 using UnityEditor.iOS.Xcode;
+#endif
 using UnityEditor;
 using UnityEngine;
 
@@ -80,12 +82,14 @@ public class UnityWebViewPostprocessBuild
         }
 #endif
         if (buildTarget == BuildTarget.iOS) {
+#if UNITY_IOS
             string projPath = path + "/Unity-iPhone.xcodeproj/project.pbxproj";
             PBXProject proj = new PBXProject();
             proj.ReadFromString(File.ReadAllText(projPath));
             string target = proj.TargetGuidByName("Unity-iPhone");
             proj.AddFrameworkToProject(target, "WebKit.framework", false);
             File.WriteAllText(projPath, proj.WriteToString());
+#endif
         }
     }
 
