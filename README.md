@@ -88,6 +88,8 @@ utilize the Safari debugger. For enabling it, please define
 
 ### iOS
 
+#### enableWKWebView
+
 The implementation now supports WKWebView but it is disabled by
 default. For enabling it, please set enableWKWebView as below:
 
@@ -99,8 +101,31 @@ default. For enabling it, please set enableWKWebView as below:
 ```
 (cf. https://github.com/gree/unity-webview/blob/de9a25c0ab0622b15c15ecbc0c7cd85858aa7745/sample/Assets/Scripts/SampleWebView.cs#L94)
 
-Please also note that this flag have no effect on platforms without WKWebView (such as iOS7 and
-Android).
+This flag have no effect on platforms without WKWebView (such as iOS7 and Android) and should always
+be set true for iOS9 or later (see the next section).
+
+#### WKWebView only implementation for iOS9 or later
+
+Apple recently sends the following warning for an app submission,
+
+> ITMS-90809: Deprecated API Usage - Apple will stop accepting submissions of apps that use
+> UIWebView APIs . See https://developer.apple.com/documentation/uikit/uiwebview for more
+> information.
+
+so the current implementation for iOS (Assets/Plugins/iOS/WebView.mmWebView) has two variations, in
+which new one utilizes only WKWebView if iOS deployment target is iOS9 or later. Please modify
+the following part of WebView.mm if you want to change this behaviour.
+
+```c++
+...
+
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0
+
+...
+```
+
+(Note: WKWebView is available since iOS8 but was largely changed in iOS9, so we use `___IPHONE_9_0`
+instead of `__IPHONE_8_0`)
 
 ### Android
 
