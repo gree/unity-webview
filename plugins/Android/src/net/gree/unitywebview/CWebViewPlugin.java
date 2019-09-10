@@ -24,6 +24,7 @@ package net.gree.unitywebview;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -130,6 +131,15 @@ public class CWebViewPlugin {
             mCustomHeaders = new Hashtable<String, String>();
             
             final WebView webView = new WebView(a);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                try {
+                    ApplicationInfo ai = a.getPackageManager().getApplicationInfo(a.getPackageName(), 0);
+                    if ((ai.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+                        webView.setWebContentsDebuggingEnabled(true);
+                    }
+                } catch (Exception ex) {
+                }
+            }
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
