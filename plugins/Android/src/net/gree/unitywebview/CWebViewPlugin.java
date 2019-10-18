@@ -34,6 +34,7 @@ import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -83,6 +84,7 @@ class CWebViewPluginInterface {
 public class CWebViewPlugin {
     private static FrameLayout layout = null;
     private WebView mWebView;
+    private OnGlobalLayoutListener mGlobalLayoutListener;
     private CWebViewPluginInterface mWebViewPlugin;
     private int progress;
     private boolean canGoBack;
@@ -316,7 +318,7 @@ public class CWebViewPlugin {
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();
-        activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+        mGlobalLayoutListener = new OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 android.graphics.Rect r = new android.graphics.Rect();
@@ -340,7 +342,8 @@ public class CWebViewPlugin {
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "false");
                 }
             }
-        });
+        };
+        activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(mGlobalLayoutListener);
     }
 
     public void Destroy() {
@@ -348,6 +351,11 @@ public class CWebViewPlugin {
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
+            }
+            if (mGlobalLayoutListener != null) {
+                View activityRootView = a.getWindow().getDecorView().getRootView();
+                activityRootView.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
+                mGlobalLayoutListener = null;
             }
             mWebView.stopLoading();
             layout.removeView(mWebView);
