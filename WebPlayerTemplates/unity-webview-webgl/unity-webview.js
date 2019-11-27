@@ -5,7 +5,7 @@ var unityWebView =
     init : function (name) {
         $containers = $('.webviewContainer');
         if ($containers.length === 0) {
-            $('<div style="position: absolute; left: 0px; width: 100%; height: 100%;"><div class="webviewContainer" style="overflow:hidden; position:relative; width:100%; height:100%; top:-100%; pointer-events:none; z-index: 1;"></div></div')
+            $('<div style="position: absolute; left: 0px; width: 100%; height: 100%; top: 0px;"><div class="webviewContainer" style="overflow:hidden; position:relative; width:100%; height:100%; pointer-events:none; z-index: 1;"></div></div')
                 .appendTo($('#unityPlayer'));
         }
         var $last = $('.webviewContainer:last');
