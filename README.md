@@ -142,13 +142,13 @@ https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-a
 
 ##### Unity 2017.x - 2018.0
 
-Unity forcibly set `android:hardwareAccelerated="false"` regardless of its setting in `Plugins/Android/AndroidManifest.xml`, as discussed in https://github.com/gree/unity-webview/issues/382 (see also https://github.com/gree/unity-webview/issues/342 and https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ ), and there is no solution for automatically correcting this setting. Please export the project and manually correct AndroidManifest.xml.
+Unity forcibly set `android:hardwareAccelerated="false"` regardless of its setting in `Plugins/Android/AndroidManifest.xml`, as discussed in https://github.com/gree/unity-webview/issues/382 (see also https://github.com/gree/unity-webview/issues/342 and https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ ), and there is no solution for automatically correcting this setting. Please export the project and manually correct `AndroidManifest.xml`.
 
 ##### Unity 5.x or older
 
 After the initial build, `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` will copy
-`sample/Temp/StatingArea/AndroidManifest-main.xml` to
-`sample/Assets/Plugins/Android/AndroidManifest.xml`, edit the latter to add
+`Temp/StatingArea/AndroidManifest-main.xml` to
+`Assets/Plugins/Android/AndroidManifest.xml`, edit the latter to add
 `android:hardwareAccelerated="true"` to `<activity
 android:name="com.unity3d.player.UnityPlayerActivity" ...`. Then you need to build the app again to
 reflect this change.
@@ -162,6 +162,17 @@ implementation will adjust Unity's SurfaceView z order. Please refer
 `plugins/Android/src/net/gree/unitywebview/CUnityPlayerActivity.java`
 and `plugins/Android/src/net/gree/unitywebview/CUnityPlayer.java` if
 you already have your own activity implementation.
+
+#### Camera Permission/Feature
+
+In order to allow camera access (`navigator.mediaDevices.getUserMedia({ video:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
+
+```xml
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-feature android:name="android.hardware.camera" />
+```
+
+Details for each Unity version are the same as for hardwareAccelerated.
 
 #### How to build WebViewPlugin.jar
 
