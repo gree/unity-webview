@@ -10,7 +10,7 @@ mkdir gradle_build\src
 mkdir gradle_build\src\main
 mkdir gradle_build\src\main\java
 
-copy /b "\Program Files\Unity\Editor\Data\PlaybackEngines\AndroidPlayer\Variations\mono\Release\Classes\classes.jar" gradle_build\libs >nul
+copy /b "\Program Files\Unity5.6.1f1\Editor\Data\PlaybackEngines\AndroidPlayer\Variations\mono\Release\Classes\classes.jar" gradle_build\libs >nul
 xcopy /s /e src gradle_build\src\main\java >nul
 copy /b AndroidManifest.xml gradle_build\src\main >nul
 

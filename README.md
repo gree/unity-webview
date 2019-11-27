@@ -167,8 +167,9 @@ you already have your own activity implementation.
 
 The following steps are for Mac but you can follow similar ones for Windows.
 
-1. Install [Android Studio](https://developer.android.com/studio/install).
-2. Open Android Studio and select "Configure/SDK Manager", select the followings with "Show Package Details",
+1. Place Unity 5.6.1f1 as `/Applications/Unity5.6.1f1` on osx or `\Program Files\Unity5.6.1f1\` on windows.
+2. Install [Android Studio](https://developer.android.com/studio/install).
+3. Open Android Studio and select "Configure/SDK Manager", select the followings with "Show Package Details",
    and click OK.
   * SDK Platforms
     * Android 6.0 (Marshmallow)
@@ -176,7 +177,7 @@ The following steps are for Mac but you can follow similar ones for Windows.
   * SDK Tools
     * Android SDK Build Tools
       * 28.0.2
-3. Open Terminal.app and perform the followings. You should find
+4. Open Terminal.app and perform the followings. You should find
    `unity-webview/build/Packager/Assets/Plugins/Android/WebViewPlugin.jar` if successful.
 
 ```bash
