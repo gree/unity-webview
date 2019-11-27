@@ -20,11 +20,19 @@
 
 using System.Collections;
 using UnityEngine;
+#if UNITY_2018_4_OR_NEWER
+using UnityEngine.UI;
+using UnityEngine.Networking;
+#endif
 
 public class SampleWebView : MonoBehaviour
 {
     public string Url;
+#if UNITY_2018_4_OR_NEWER
+    public Text status;
+#else
     public GUIText status;
+#endif
     WebViewObject webViewObject;
 
     IEnumerator Start()
@@ -102,7 +110,7 @@ public class SampleWebView : MonoBehaviour
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
 
-#if !UNITY_WEBPLAYER
+#if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
         } else {
@@ -117,9 +125,15 @@ public class SampleWebView : MonoBehaviour
                 var dst = System.IO.Path.Combine(Application.persistentDataPath, url);
                 byte[] result = null;
                 if (src.Contains("://")) {  // for Android
+#if UNITY_2018_4_OR_NEWER
+                    var www = new UnityWebRequest(src);
+                    yield return www;
+                    result = www.downloadHandler.data;
+#else
                     var www = new WWW(src);
                     yield return www;
                     result = www.bytes;
+#endif
                 } else {
                     result = System.IO.File.ReadAllBytes(src);
                 }
@@ -148,7 +162,7 @@ public class SampleWebView : MonoBehaviour
         yield break;
     }
 
-#if !UNITY_WEBPLAYER
+#if !UNITY_WEBPLAYER && !UNITY_WEBGL
     void OnGUI()
     {
         GUI.enabled = webViewObject.CanGoBack();
