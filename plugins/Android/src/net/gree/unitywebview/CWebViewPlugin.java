@@ -46,6 +46,7 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.widget.FrameLayout;
 import android.webkit.PermissionRequest;
+import android.support.v4.app.ActivityCompat;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -163,7 +164,13 @@ public class CWebViewPlugin {
                     final String[] requestedResources = request.getResources();
                     for (String r : requestedResources) {
                         if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
-                            request.grant(request.getResources());
+                            request.grant(requestedResources);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                a.runOnUiThread(new Runnable() {public void run() {
+                                    final String[] permissions = { "android.permission.CAMERA" };
+                                    ActivityCompat.requestPermissions(a, permissions, 0);
+                                }});
+                            }
                             break;
                         }
                     }
