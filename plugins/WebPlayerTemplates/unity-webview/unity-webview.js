@@ -5,7 +5,7 @@ var unityWebView =
     init : function (name) {
         $containers = $('.webviewContainer');
         if ($containers.length === 0) {
-            $('<div class="webviewContainer" style="overflow:hidden; position:relative; width:100%; height:100%; top:-100%; pointer-events:none;"></div>')
+            $('<div style="position: absolute; left: 0px; width: 100%; height: 100%;"><div class="webviewContainer" style="overflow:hidden; position:relative; width:100%; height:100%; top:-100%; pointer-events:none; z-index: 1;"></div></div')
                 .appendTo($('#unityPlayer'));
         }
         var $last = $('.webviewContainer:last');
@@ -15,7 +15,7 @@ var unityWebView =
             $('<iframe style="position:relative; width:100%; height100%; border-style:none; display:none; pointer-events:auto;"></iframe>')
             .attr('id', 'webview_' + name)
             .appendTo($last)
-            .load(function () {
+            .one('load', function () {
                 $(this).attr('loaded', 'true');
                 var contents = $(this).contents();
                 var w = $(this)[0].contentWindow;
@@ -82,14 +82,14 @@ var unityWebView =
         if ($iframe.attr('loaded') === 'true') {
             $iframe[0].contentWindow.eval(js);
         } else {
-            $iframe.load(function(){
+            $iframe.one('load', function(){
                 $(this)[0].contentWindow.eval(js);
             });
         }
     },
 
     destroy: function (name) {
-        this.iframe(name).remove();
+        this.iframe(name).parent().parent().remove();
     },
 
     iframe: function (name) {
