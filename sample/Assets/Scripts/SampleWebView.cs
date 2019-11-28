@@ -20,10 +20,6 @@
 
 using System.Collections;
 using UnityEngine;
-#if UNITY_2018_4_OR_NEWER
-using UnityEngine.UI;
-using UnityEngine.Networking;
-#endif
 
 public class SampleWebView : MonoBehaviour
 {
