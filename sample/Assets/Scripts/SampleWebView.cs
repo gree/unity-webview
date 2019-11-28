@@ -121,15 +121,9 @@ public class SampleWebView : MonoBehaviour
                 var dst = System.IO.Path.Combine(Application.persistentDataPath, url);
                 byte[] result = null;
                 if (src.Contains("://")) {  // for Android
-#if UNITY_2018_4_OR_NEWER
-                    var www = new UnityWebRequest(src);
-                    yield return www;
-                    result = www.downloadHandler.data;
-#else
                     var www = new WWW(src);
                     yield return www;
                     result = www.bytes;
-#endif
                 } else {
                     result = System.IO.File.ReadAllBytes(src);
                 }
