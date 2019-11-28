@@ -143,11 +143,8 @@ internal class AndroidManifest : AndroidXmlDocument {
     internal bool SetHardwareAccelerated(bool enabled) {
         bool changed = false;
         var activity = GetActivityWithLaunchIntent() as XmlElement;
-        Debug.Log(activity.GetAttribute("hardwareAccelerated", AndroidXmlNamespace));
         if (activity.GetAttribute("hardwareAccelerated", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
-            Debug.Log("HERE");
             activity.SetAttribute("hardwareAccelerated", AndroidXmlNamespace, (enabled) ? "true" : "false");
-            Debug.Log(activity.GetAttribute("hardwareAccelerated", AndroidXmlNamespace));
             changed = true;
         }
         return changed;

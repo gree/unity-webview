@@ -29,7 +29,7 @@ public class Packager
 	public static void Export()
 	{
 		AssetDatabase.ExportPackage(
-			new string[]{"Assets/Plugins", "Assets/WebPlayerTemplates"},
+			new string[]{"Assets/Plugins", "Assets/WebGLTemplates", "Assets/WebPlayerTemplates"},
 			"unity-webview.unitypackage",
 			ExportPackageOptions.Recurse);
 	}

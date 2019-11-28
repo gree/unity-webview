@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 dependencies {
-    provided files('./libs/classes.jar')
+    compileOnly files('./libs/classes.jar')
     implementation 'com.android.support:appcompat-v7:23.3.0'
     implementation 'com.android.support:support-v4:23.3.0'
 }
