@@ -1,4 +1,4 @@
-var unityWebView = 
+var unityWebView =
 {
     loaded: [],
 
@@ -41,7 +41,7 @@ var unityWebView =
                         return false;
                     }
                     return true;
-                }); 
+                });
             });
     },
 
