@@ -24,7 +24,7 @@ var unityWebView =
                 contents.find('a').click(function (e) {
                     var href = $.trim($(this).attr('href'));
                     if (href.substr(0, 6) === 'unity:') {
-                        u.getUnity().SendMessage(name, "CallFromJS", href.substring(6, href.length));
+                        gameInstance.SendMessage(name, "CallFromJS", href.substring(6, href.length));
                         e.preventDefault();
                     } else {
                         w.location.replace(href);
@@ -39,7 +39,7 @@ var unityWebView =
                         if ($this.attr('method').toLowerCase() == 'get') {
                             message += '?' + $this.serialize();
                         }
-                        u.getUnity().SendMessage(name, "CallFromJS", message);
+                        gameInstance.getUnity().SendMessage(name, "CallFromJS", message);
                         return false;
                     }
                     return true;
@@ -48,7 +48,7 @@ var unityWebView =
     },
 
     sendMessage: function (name, message) {
-        u.getUnity().SendMessage(name, "CallFromJS", message);
+        gameInstance.getUnity().SendMessage(name, "CallFromJS", message);
     },
 
     setMargins: function (name, left, top, right, bottom) {
