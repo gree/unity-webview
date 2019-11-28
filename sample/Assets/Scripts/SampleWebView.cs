@@ -28,11 +28,7 @@ using UnityEngine.Networking;
 public class SampleWebView : MonoBehaviour
 {
     public string Url;
-#if UNITY_2018_4_OR_NEWER
-    public Text status;
-#else
     public GUIText status;
-#endif
     WebViewObject webViewObject;
 
     IEnumerator Start()
