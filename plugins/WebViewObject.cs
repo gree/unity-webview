@@ -365,7 +365,9 @@ public class WebViewObject : MonoBehaviour
         onStarted = started;
         onLoaded = ld;
 #if UNITY_WEBGL
+#if !UNITY_EDITOR
         _gree_unity_webview_init(name);
+#endif
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.init", name);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -419,7 +421,9 @@ public class WebViewObject : MonoBehaviour
     protected virtual void OnDestroy()
     {
 #if UNITY_WEBGL
+#if !UNITY_EDITOR
         _gree_unity_webview_destroy(name);
+#endif
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.destroy", name);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -481,7 +485,9 @@ public class WebViewObject : MonoBehaviour
         mMarginRight = right;
         mMarginBottom = bottom;
 #if UNITY_WEBGL
+#if !UNITY_EDITOR
         _gree_unity_webview_setMargins(name, left, top, right, bottom);
+#endif
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.setMargins", name, left, top, right, bottom);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -515,7 +521,9 @@ public class WebViewObject : MonoBehaviour
     public void SetVisibility(bool v)
     {
 #if UNITY_WEBGL
+#if !UNITY_EDITOR
         _gree_unity_webview_setVisibility(name, v);
+#endif
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.setVisibility", name, v);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -547,7 +555,9 @@ public class WebViewObject : MonoBehaviour
         if (string.IsNullOrEmpty(url))
             return;
 #if UNITY_WEBGL
+#if !UNITY_EDITOR
         _gree_unity_webview_loadURL(name, url);
+#endif
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.loadURL", name, url);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -587,7 +597,9 @@ public class WebViewObject : MonoBehaviour
     public void EvaluateJS(string js)
     {
 #if UNITY_WEBGL
+#if !UNITY_EDITOR
         _gree_unity_webview_evaluateJS(name, js);
+#endif
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.evaluateJS", name, js);
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
