@@ -126,9 +126,17 @@ public class SampleWebView : MonoBehaviour
                 byte[] result = null;
                 if (src.Contains("://")) {  // for Android
 #if UNITY_2018_4_OR_NEWER
-                    var www = new UnityWebRequest(src);
-                    yield return www;
-                    result = www.downloadHandler.data;
+                    using (UnityWebRequest request = UnityWebRequest.Get(src))
+                    {
+                      yield return request.SendWebRequest();
+                      if (request.isHttpError || request.isNetworkError)
+                      {
+                        Debug.Log("An error has occured when trying to access " + src + ": " + request.error);
+                      } else
+                      {
+                        result = request.downloadHandler.data;
+                      }
+                    }
 #else
                     var www = new WWW(src);
                     yield return www;
@@ -137,7 +145,12 @@ public class SampleWebView : MonoBehaviour
                 } else {
                     result = System.IO.File.ReadAllBytes(src);
                 }
-                System.IO.File.WriteAllBytes(dst, result);
+
+                if (result != null)
+                {
+                  System.IO.File.WriteAllBytes(dst, result);
+                }
+
                 if (ext == ".html") {
                     webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
                     break;
