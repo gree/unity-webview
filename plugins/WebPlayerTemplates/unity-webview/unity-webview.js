@@ -15,7 +15,7 @@ var unityWebView =
             $('<iframe style="position:relative; width:100%; height100%; border-style:none; display:none; pointer-events:auto;"></iframe>')
             .attr('id', 'webview_' + name)
             .appendTo($last)
-            .one('load', function () {
+            .on('load', function () {
                 $(this).attr('loaded', 'true');
                 var contents = $(this).contents();
                 var w = $(this)[0].contentWindow;
@@ -82,7 +82,7 @@ var unityWebView =
         if ($iframe.attr('loaded') === 'true') {
             $iframe[0].contentWindow.eval(js);
         } else {
-            $iframe.one('load', function(){
+            $iframe.on('load', function(){
                 $(this)[0].contentWindow.eval(js);
             });
         }
