@@ -64,7 +64,6 @@ if [ ${JAR_CMD} = "" ];then
 else
   jar cvf ${CWD}/bin/WebViewPlugin.jar -C ${BUILD_DIR}/build/intermediates/classes/release net
   cp -a ${BIN_DIR}/WebViewPlugin.jar ${DEST_DIR}
-  cp -a extra/*.aar ${DEST_DIR}
 fi
 
 ./gradlew clean

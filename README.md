@@ -153,7 +153,7 @@ After the initial build, `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs`
 android:name="com.unity3d.player.UnityPlayerActivity" ...`. Then you need to build the app again to
 reflect this change.
 
-*NOTE: Unity 5.6.1p4 or newer (including 2017 1.0) seems to fix the following issue. cf. https://github.com/gree/unity-webview/pull/212#issuecomment-314952793*
+*NOTE: Unity 5.6.1p4 or newer (including 2017 1.0) seems to fix the following issue (cf. https://github.com/gree/unity-webview/pull/212#issuecomment-314952793)*
 
 For Unity 5.6.0 and 5.6.1 (except 5.6.1p4), you also need to modify `android:name` from
 `com.unity3d.player.UnityPlayerActivity` to
@@ -172,7 +172,57 @@ In order to allow camera access (`navigator.mediaDevices.getUserMedia({ video:tr
   <uses-feature android:name="android.hardware.camera" />
 ```
 
-Details for each Unity version are the same as for hardwareAccelerated.
+Details for each Unity version are the same as for hardwareAccelerated. Please also note that it is necessary to request permissions at runtime for Android API 23 or later as below:
+
+```diff
+diff --git a/sample/Assets/Scripts/SampleWebView.cs b/sample/Assets/Scripts/SampleWebView.cs
+index a62c1ca..a5efe9f 100644
+--- a/sample/Assets/Scripts/SampleWebView.cs
++++ b/sample/Assets/Scripts/SampleWebView.cs
+@@ -24,6 +24,9 @@ using UnityEngine;
+ using UnityEngine.UI;
+ using UnityEngine.Networking;
+ #endif
++#if !UNITY_EDITOR && UNITY_ANDROID
++using UnityEngine.Android;
++#endif
+ 
+ public class SampleWebView : MonoBehaviour
+ {
+@@ -31,8 +34,29 @@ public class SampleWebView : MonoBehaviour
+     public GUIText status;
+     WebViewObject webViewObject;
+ 
++#if !UNITY_EDITOR && UNITY_ANDROID
++    bool inRequestingCameraPermission;
++
++    void OnApplicationFocus(bool hasFocus)
++    {
++        if (inRequestingCameraPermission && hasFocus) {
++            inRequestingCameraPermission = false;
++        }
++    }
++#endif
++
+     IEnumerator Start()
+     {
++#if !UNITY_EDITOR && UNITY_ANDROID
++        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
++        {
++            inRequestingCameraPermission = true;
++            Permission.RequestUserPermission(Permission.Camera);
++        }        
++        while (inRequestingCameraPermission) {
++            yield return new WaitForSeconds(0.5f);
++        }
++#endif
+         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+         webViewObject.Init(
+             cb: (msg) =>
+```
+
+(cf. https://github.com/gree/unity-webview/issues/473#issuecomment-559412496)
+(cf. https://docs.unity3d.com/Manual/android-RequestingPermissions.html)
 
 #### How to build WebViewPlugin.jar
 
