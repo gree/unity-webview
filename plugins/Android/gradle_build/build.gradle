@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 dependencies {
-    provided files('./libs/classes.jar')
+    compileOnly files('./libs/classes.jar')
 }
 
 android {

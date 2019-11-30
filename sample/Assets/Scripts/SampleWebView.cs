@@ -102,7 +102,7 @@ public class SampleWebView : MonoBehaviour
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
 
-#if !UNITY_WEBPLAYER
+#if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
         } else {
@@ -148,7 +148,7 @@ public class SampleWebView : MonoBehaviour
         yield break;
     }
 
-#if !UNITY_WEBPLAYER
+#if !UNITY_WEBPLAYER && !UNITY_WEBGL
     void OnGUI()
     {
         GUI.enabled = webViewObject.CanGoBack();

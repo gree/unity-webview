@@ -1,11 +1,11 @@
-var unityWebView = 
+var unityWebView =
 {
     loaded: [],
 
     init : function (name) {
         $containers = $('.webviewContainer');
         if ($containers.length === 0) {
-            $('<div class="webviewContainer" style="overflow:hidden; position:relative; width:100%; height:100%; top:-100%; pointer-events:none;"></div>')
+            $('<div style="position: absolute; left: 0px; width: 100%; height: 100%; top: 0px; pointer-events: none;"><div class="webviewContainer" style="overflow: hidden; position: relative; width: 100%; height: 100%; z-index: 1;"></div></div>')
                 .appendTo($('#unityPlayer'));
         }
         var $last = $('.webviewContainer:last');
@@ -15,14 +15,14 @@ var unityWebView =
             $('<iframe style="position:relative; width:100%; height100%; border-style:none; display:none; pointer-events:auto;"></iframe>')
             .attr('id', 'webview_' + name)
             .appendTo($last)
-            .load(function () {
+            .on('load', function () {
                 $(this).attr('loaded', 'true');
                 var contents = $(this).contents();
                 var w = $(this)[0].contentWindow;
                 contents.find('a').click(function (e) {
                     var href = $.trim($(this).attr('href'));
                     if (href.substr(0, 6) === 'unity:') {
-                        u.getUnity().SendMessage(name, "CallFromJS", href.substring(6, href.length));
+                        unityInstance.SendMessage(name, "CallFromJS", href.substring(6, href.length));
                         e.preventDefault();
                     } else {
                         w.location.replace(href);
@@ -37,16 +37,16 @@ var unityWebView =
                         if ($this.attr('method').toLowerCase() == 'get') {
                             message += '?' + $this.serialize();
                         }
-                        u.getUnity().SendMessage(name, "CallFromJS", message);
+                        unityInstance.SendMessage(name, "CallFromJS", message);
                         return false;
                     }
                     return true;
-                }); 
+                });
             });
     },
 
     sendMessage: function (name, message) {
-        u.getUnity().SendMessage(name, "CallFromJS", message);
+        unityInstance.SendMessage(name, "CallFromJS", message);
     },
 
     setMargins: function (name, left, top, right, bottom) {
@@ -82,14 +82,14 @@ var unityWebView =
         if ($iframe.attr('loaded') === 'true') {
             $iframe[0].contentWindow.eval(js);
         } else {
-            $iframe.load(function(){
+            $iframe.on('load', function(){
                 $(this)[0].contentWindow.eval(js);
             });
         }
     },
 
     destroy: function (name) {
-        this.iframe(name).remove();
+        this.iframe(name).parent().parent().remove();
     },
 
     iframe: function (name) {

@@ -142,18 +142,18 @@ https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-a
 
 ##### Unity 2017.x - 2018.0
 
-Unity forcibly set `android:hardwareAccelerated="false"` regardless of its setting in `Plugins/Android/AndroidManifest.xml`, as discussed in https://github.com/gree/unity-webview/issues/382 (see also https://github.com/gree/unity-webview/issues/342 and https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ ), and there is no solution for automatically correcting this setting. Please export the project and manually correct AndroidManifest.xml.
+Unity forcibly set `android:hardwareAccelerated="false"` regardless of its setting in `Plugins/Android/AndroidManifest.xml`, as discussed in https://github.com/gree/unity-webview/issues/382 (see also https://github.com/gree/unity-webview/issues/342 and https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/ ), and there is no solution for automatically correcting this setting. Please export the project and manually correct `AndroidManifest.xml`.
 
 ##### Unity 5.x or older
 
 After the initial build, `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` will copy
-`sample/Temp/StatingArea/AndroidManifest-main.xml` to
-`sample/Assets/Plugins/Android/AndroidManifest.xml`, edit the latter to add
+`Temp/StatingArea/AndroidManifest-main.xml` to
+`Assets/Plugins/Android/AndroidManifest.xml`, edit the latter to add
 `android:hardwareAccelerated="true"` to `<activity
 android:name="com.unity3d.player.UnityPlayerActivity" ...`. Then you need to build the app again to
 reflect this change.
 
-*NOTE: Unity 5.6.1p4 or newer (including 2017 1.0) seems to fix the following issue. cf. https://github.com/gree/unity-webview/pull/212#issuecomment-314952793*
+*NOTE: Unity 5.6.1p4 or newer (including 2017 1.0) seems to fix the following issue (cf. https://github.com/gree/unity-webview/pull/212#issuecomment-314952793)*
 
 For Unity 5.6.0 and 5.6.1 (except 5.6.1p4), you also need to modify `android:name` from
 `com.unity3d.player.UnityPlayerActivity` to
@@ -163,12 +163,74 @@ implementation will adjust Unity's SurfaceView z order. Please refer
 and `plugins/Android/src/net/gree/unitywebview/CUnityPlayer.java` if
 you already have your own activity implementation.
 
+#### Camera Permission/Feature
+
+In order to allow camera access (`navigator.mediaDevices.getUserMedia({ video:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
+
+```xml
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-feature android:name="android.hardware.camera" />
+```
+
+Details for each Unity version are the same as for hardwareAccelerated. Please also note that it is necessary to request permissions at runtime for Android API 23 or later as below:
+
+```diff
+diff --git a/sample/Assets/Scripts/SampleWebView.cs b/sample/Assets/Scripts/SampleWebView.cs
+index a62c1ca..a5efe9f 100644
+--- a/sample/Assets/Scripts/SampleWebView.cs
++++ b/sample/Assets/Scripts/SampleWebView.cs
+@@ -24,6 +24,9 @@ using UnityEngine;
+ using UnityEngine.UI;
+ using UnityEngine.Networking;
+ #endif
++#if !UNITY_EDITOR && UNITY_ANDROID
++using UnityEngine.Android;
++#endif
+ 
+ public class SampleWebView : MonoBehaviour
+ {
+@@ -31,8 +34,29 @@ public class SampleWebView : MonoBehaviour
+     public GUIText status;
+     WebViewObject webViewObject;
+ 
++#if !UNITY_EDITOR && UNITY_ANDROID
++    bool inRequestingCameraPermission;
++
++    void OnApplicationFocus(bool hasFocus)
++    {
++        if (inRequestingCameraPermission && hasFocus) {
++            inRequestingCameraPermission = false;
++        }
++    }
++#endif
++
+     IEnumerator Start()
+     {
++#if !UNITY_EDITOR && UNITY_ANDROID
++        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
++        {
++            inRequestingCameraPermission = true;
++            Permission.RequestUserPermission(Permission.Camera);
++        }        
++        while (inRequestingCameraPermission) {
++            yield return new WaitForSeconds(0.5f);
++        }
++#endif
+         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+         webViewObject.Init(
+             cb: (msg) =>
+```
+
+(cf. https://github.com/gree/unity-webview/issues/473#issuecomment-559412496)
+(cf. https://docs.unity3d.com/Manual/android-RequestingPermissions.html)
+
 #### How to build WebViewPlugin.jar
 
 The following steps are for Mac but you can follow similar ones for Windows.
 
-1. Install [Android Studio](https://developer.android.com/studio/install).
-2. Open Android Studio and select "Configure/SDK Manager", select the followings with "Show Package Details",
+1. Place Unity 5.6.1f1 as `/Applications/Unity5.6.1f1` on osx or `\Program Files\Unity5.6.1f1\` on windows.
+2. Install [Android Studio](https://developer.android.com/studio/install).
+3. Open Android Studio and select "Configure/SDK Manager", select the followings with "Show Package Details",
    and click OK.
   * SDK Platforms
     * Android 6.0 (Marshmallow)
@@ -176,7 +238,7 @@ The following steps are for Mac but you can follow similar ones for Windows.
   * SDK Tools
     * Android SDK Build Tools
       * 28.0.2
-3. Open Terminal.app and perform the followings. You should find
+4. Open Terminal.app and perform the followings. You should find
    `unity-webview/build/Packager/Assets/Plugins/Android/WebViewPlugin.jar` if successful.
 
 ```bash
