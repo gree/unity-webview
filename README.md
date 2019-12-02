@@ -163,13 +163,20 @@ implementation will adjust Unity's SurfaceView z order. Please refer
 and `plugins/Android/src/net/gree/unitywebview/CUnityPlayer.java` if
 you already have your own activity implementation.
 
-#### Camera Permission/Feature
+#### Camera/Audio Permission/Feature
 
-In order to allow camera access (`navigator.mediaDevices.getUserMedia({ video:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
+For allowing camera access (`navigator.mediaDevices.getUserMedia({ video:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
 
 ```xml
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-feature android:name="android.hardware.camera" />
+```
+
+For allowing microphone access (`navigator.mediaDevices.getUserMedia({ audio:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
+
+```xml
+  <uses-permission android:name="android.permission.MICROPHONE" />
+  <uses-feature android:name="android.hardware.microphone" />
 ```
 
 Details for each Unity version are the same as for hardwareAccelerated. Please also note that it is necessary to request permissions at runtime for Android API 23 or later as below:
