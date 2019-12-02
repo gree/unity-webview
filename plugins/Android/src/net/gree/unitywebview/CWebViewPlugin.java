@@ -163,11 +163,14 @@ public class CWebViewPlugin {
                 public void onPermissionRequest(final PermissionRequest request) {
                     final String[] requestedResources = request.getResources();
                     for (String r : requestedResources) {
-                        if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                        if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) || r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
                             request.grant(requestedResources);
                             // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             //     a.runOnUiThread(new Runnable() {public void run() {
-                            //         final String[] permissions = { "android.permission.CAMERA" };
+                            //         final String[] permissions = {
+                            //             "android.permission.CAMERA",
+                            //             "android.permission.RECORD_AUDIO",
+                            //         };
                             //         ActivityCompat.requestPermissions(a, permissions, 0);
                             //     }});
                             // }

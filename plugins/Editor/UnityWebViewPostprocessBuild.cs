@@ -26,6 +26,9 @@ public class UnityWebViewPostprocessBuild
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
         changed = (androidManifest.AddCamera() || changed);
 #endif
+#if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
+        changed = (androidManifest.AddMicrophone() || changed);
+#endif
         if (changed) {
             androidManifest.Save();
             Debug.Log("unitywebview: adjusted AndroidManifest.xml.");
@@ -68,6 +71,9 @@ public class UnityWebViewPostprocessBuild
             changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
             changed = (androidManifest.AddCamera() || changed);
+#endif
+#if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
+            changed = (androidManifest.AddMicrophone() || changed);
 #endif
 #if UNITY_5_6_0 || UNITY_5_6_1
             changed = (androidManifest.SetActivityName("net.gree.unitywebview.CUnityPlayerActivity") || changed);
@@ -171,6 +177,23 @@ internal class AndroidManifest : AndroidXmlDocument {
         if (SelectNodes("/manifest/uses-feature[@android:name='android.hardware.camera']", nsMgr).Count == 0) {
             var elem = CreateElement("uses-feature");
             elem.Attributes.Append(CreateAndroidAttribute("name", "android.hardware.camera"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool AddMicrophone() {
+        bool changed = false;
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.MICROPHONE']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.MICROPHONE"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/uses-feature[@android:name='android.hardware.microphone']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-feature");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.hardware.microphone"));
             ManifestElement.AppendChild(elem);
             changed = true;
         }
