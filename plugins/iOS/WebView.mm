@@ -497,20 +497,6 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     return (NSURLRequest *)[convertedRequest copy];
 }
 
-- (void)setFrame:(NSInteger)x positionY:(NSInteger)y width:(NSInteger)width height:(NSInteger)height
-{
-    if (webView == nil)
-        return;
-    UIView* view = UnityGetGLViewController().view;
-    CGRect frame = webView.frame;
-    CGRect screen = view.bounds;
-    frame.origin.x = x + ((screen.size.width - width) / 2);
-    frame.origin.y = -y + ((screen.size.height - height) / 2);
-    frame.size.width = width;
-    frame.size.height = height;
-    webView.frame = frame;
-}
-
 - (void)setMargins:(float)left top:(float)top right:(float)right bottom:(float)bottom relative:(BOOL)relative
 {
     if (webView == nil)
@@ -654,7 +640,6 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 extern "C" {
     void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView);
     void _CWebViewPlugin_Destroy(void *instance);
-    void _CWebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -687,19 +672,6 @@ void _CWebViewPlugin_Destroy(void *instance)
     [_instances removeObject:webViewPlugin];
     [webViewPlugin dispose];
     webViewPlugin = nil;
-}
-
-void _CWebViewPlugin_SetFrame(void* instance, int x, int y, int width, int height)
-{
-    float screenScale = [UIScreen instancesRespondToSelector:@selector(scale)] ? [UIScreen mainScreen].scale : 1.0f;
-    CWebViewPlugin* webViewPlugin = (__bridge CWebViewPlugin*)instance;
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && screenScale == 2.0f)
-        screenScale = 1.0f;
-    [webViewPlugin
-        setFrame:x / screenScale
-        positionY:y / screenScale
-        width:width / screenScale
-        height:height / screenScale];
 }
 
 void _CWebViewPlugin_SetMargins(
@@ -1197,20 +1169,6 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     return (NSURLRequest *)[convertedRequest copy];
 }
 
-- (void)setFrame:(NSInteger)x positionY:(NSInteger)y width:(NSInteger)width height:(NSInteger)height
-{
-    if (webView == nil)
-        return;
-    UIView* view = UnityGetGLViewController().view;
-    CGRect frame = webView.frame;
-    CGRect screen = view.bounds;
-    frame.origin.x = x + ((screen.size.width - width) / 2);
-    frame.origin.y = -y + ((screen.size.height - height) / 2);
-    frame.size.width = width;
-    frame.size.height = height;
-    webView.frame = frame;
-}
-
 - (void)setMargins:(float)left top:(float)top right:(float)right bottom:(float)bottom relative:(BOOL)relative
 {
     if (webView == nil)
@@ -1354,7 +1312,6 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 extern "C" {
     void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView);
     void _CWebViewPlugin_Destroy(void *instance);
-    void _CWebViewPlugin_SetFrame(void* instace, int x, int y, int width, int height);
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -1391,21 +1348,6 @@ void _CWebViewPlugin_Destroy(void *instance)
     [_instances removeObject:webViewPlugin];
     [webViewPlugin dispose];
     webViewPlugin = nil;
-}
-
-void _CWebViewPlugin_SetFrame(void* instance, int x, int y, int width, int height)
-{
-    if (instance == NULL)
-        return;
-    float screenScale = [UIScreen instancesRespondToSelector:@selector(scale)] ? [UIScreen mainScreen].scale : 1.0f;
-    CWebViewPlugin* webViewPlugin = (__bridge CWebViewPlugin*)instance;
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad && screenScale == 2.0f)
-        screenScale = 1.0f;
-    [webViewPlugin
-        setFrame:x / screenScale
-        positionY:y / screenScale
-        width:width / screenScale
-        height:height / screenScale];
 }
 
 void _CWebViewPlugin_SetMargins(

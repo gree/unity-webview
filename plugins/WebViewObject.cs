@@ -311,9 +311,6 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_GoForward(
         IntPtr instance);
     [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetFrame(
-        IntPtr instance, int x , int y , int width , int height);
-    [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
     [DllImport("__Internal")]
     private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
@@ -447,21 +444,20 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    /** Use this function instead of SetMargins to easily set up a centered window */
+    // Use this function instead of SetMargins to easily set up a centered window
+    // NOTE: for historical reasons, `center` means the lower left corner and positive y values extend up.
     public void SetCenterPositionWithScale(Vector2 center, Vector2 scale)
     {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
         //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        rect.x = center.x + (Screen.width - scale.x)/2;
-        rect.y = center.y + (Screen.height - scale.y)/2;
-        rect.width = scale.x;
-        rect.height = scale.y;
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero) return;
-        _CWebViewPlugin_SetFrame(webView,(int)center.x,(int)center.y,(int)scale.x,(int)scale.y);
+#else
+        float left = (Screen.width - scale.x) / 2.0f + center.x;
+        float right = Screen.width - (left + scale.x);
+        float bottom = (Screen.height - scale.y) / 2.0f + center.y;
+        float top = Screen.height - (bottom + scale.y);
+        SetMargins((int)left, (int)top, (int)right, (int)bottom);
 #endif
     }
 
