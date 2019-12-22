@@ -20,11 +20,12 @@
 
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SampleWebView : MonoBehaviour
 {
     public string Url;
-    public GUIText status;
+    public Text status;
     WebViewObject webViewObject;
 
     IEnumerator Start()
