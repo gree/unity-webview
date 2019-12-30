@@ -255,7 +255,19 @@ $ cd unity-webview/plugins/Android
 $ ./install.sh
 ```
 
+### WebGL
+
+After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy `WebGLTemplates/Default/TemplateData` from your Unity installation to `Assets/WebGLTemplates/unity-webivew`. If you utilize Unity 2019.4.13f1 for example,
+
+```bash
+$ cp -a /Applications/Unity/Hub/Editor/2018.4.13f1/PlaybackEngines/WebGLSupport/BuildTools/WebGLTemplates/Default/TemplateData Assets/WebGLTemplates/unity-webview
+```
+
+Then in `Project Settings/Player/Resolution and Presentation`, please select `unity-webview` in `WebGL Template`.
+
 ### Web Player
+
+*NOTE: Web Player is obsolete so that the support for it will be removed.*
 
 The implementation utilizes IFRAME so please put both
 "an\_unityplayer\_page.html" and "a\_page\_loaded\_in\_webview.html"
