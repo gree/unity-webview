@@ -88,8 +88,11 @@ public class UnityWebViewPostprocessBuild
             string projPath = path + "/Unity-iPhone.xcodeproj/project.pbxproj";
             PBXProject proj = new PBXProject();
             proj.ReadFromString(File.ReadAllText(projPath));
-            string target = proj.TargetGuidByName("Unity-iPhone");
-            proj.AddFrameworkToProject(target, "WebKit.framework", false);
+#if UNITY_2019_3_OR_NEWER
+            proj.AddFrameworkToProject(proj.GetUnityFrameworkTargetGuid(), "WebKit.framework", false);
+#else
+            proj.AddFrameworkToProject(proj.TargetGuidByName("Unity-iPhone"), "WebKit.framework", false);
+#endif
             File.WriteAllText(projPath, proj.WriteToString());
         }
     }
