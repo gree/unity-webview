@@ -54,6 +54,7 @@ public class WebViewObject : MonoBehaviour
     Callback onStarted;
     Callback onLoaded;
     bool visibility;
+    bool alertDialogEnabled = true;
     int mMarginLeft;
     int mMarginTop;
     int mMarginRight;
@@ -286,6 +287,9 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetVisibility(
         IntPtr instance, bool visibility);
+    [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetAlertDialogEnabled(
+        IntPtr instance, bool enabled);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_LoadURL(
         IntPtr instance, string url);
@@ -544,6 +548,29 @@ public class WebViewObject : MonoBehaviour
     public bool GetVisibility()
     {
         return visibility;
+    }
+
+    public void SetAlertDialogEnabled(bool e)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetAlertDialogEnabled(webView, e);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetAlertDialogEnabled", e);
+#else
+        // TODO: UNSUPPORTED
+#endif
+        alertDialogEnabled = e;
+    }
+
+    public bool GetAlertDialogEnabled()
+    {
+        return alertDialogEnabled;
     }
 
     public void LoadURL(string url)

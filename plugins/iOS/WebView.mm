@@ -124,6 +124,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
+    BOOL alertDialogEnabled;
 }
 - (void)dispose;
 + (void)clearCookies;
@@ -140,6 +141,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
     customRequestHeader = [[NSMutableDictionary alloc] init];
+    alertDialogEnabled = true;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [[NSUserDefaults standardUserDefaults]
             registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
@@ -423,6 +425,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 // alert
 - (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler
 {
+    if (!alertDialogEnabled) {
+        completionHandler();
+        return;
+    }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
                                                                              message:message
                                                                       preferredStyle:UIAlertControllerStyleAlert];
@@ -437,6 +443,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 // confirm
 - (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL))completionHandler
 {
+    if (!alertDialogEnabled) {
+        completionHandler(NO);
+        return;
+    }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
                                                                              message:message
                                                                       preferredStyle:UIAlertControllerStyleAlert];
@@ -456,6 +466,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 // prompt
 - (void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString *))completionHandler
 {
+    if (!alertDialogEnabled) {
+        completionHandler(nil);
+        return;
+    }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
                                                                              message:prompt
                                                                       preferredStyle:UIAlertControllerStyleAlert];
@@ -531,6 +545,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     if (webView == nil)
         return;
     webView.hidden = visibility ? NO : YES;
+}
+
+- (void)setAlertDialogEnabled:(BOOL)enabled
+{
+    alertDialogEnabled = enabled;
 }
 
 - (void)loadURL:(const char *)url
@@ -643,6 +662,7 @@ extern "C" {
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -685,6 +705,12 @@ void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
+}
+
+void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setAlertDialogEnabled:enabled];
 }
 
 void _CWebViewPlugin_LoadURL(void *instance, const char *url)
@@ -836,6 +862,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
+    BOOL alertDialogEnabled;
 }
 - (void)dispose;
 + (void)clearCookies;
@@ -1095,6 +1122,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 // alert
 - (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler
 {
+    if (!alertDialogEnabled) {
+        completionHandler();
+        return;
+    }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
                                                                              message:message
                                                                       preferredStyle:UIAlertControllerStyleAlert];
@@ -1109,6 +1140,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 // confirm
 - (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL))completionHandler
 {
+    if (!alertDialogEnabled) {
+        completionHandler(NO);
+        return;
+    }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
                                                                              message:message
                                                                       preferredStyle:UIAlertControllerStyleAlert];
@@ -1128,6 +1163,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 // prompt
 - (void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString *))completionHandler
 {
+    if (!alertDialogEnabled) {
+        completionHandler(nil);
+        return;
+    }
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@""
                                                                              message:prompt
                                                                       preferredStyle:UIAlertControllerStyleAlert];
@@ -1203,6 +1242,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     if (webView == nil)
         return;
     webView.hidden = visibility ? NO : YES;
+}
+
+- (void)setAlertDialogEnabled:(BOOL)enabled
+{
+    alertDialogEnabled = enabled;
 }
 
 - (void)loadURL:(const char *)url
@@ -1315,6 +1359,7 @@ extern "C" {
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -1365,6 +1410,14 @@ void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
+}
+
+void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setAlertDialogEnabled:enabled];
 }
 
 void _CWebViewPlugin_LoadURL(void *instance, const char *url)
