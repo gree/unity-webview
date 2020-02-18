@@ -37,6 +37,7 @@ static BOOL inEditor;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
     NSMutableArray *messages;
+    BOOL alertDialogEnabled;
 }
 @end
 
@@ -47,6 +48,7 @@ static BOOL inEditor;
     self = [super init];
     messages = [[NSMutableArray alloc] init];
     customRequestHeader = [[NSMutableDictionary alloc] init];
+    alertDialogEnabled = true;
     webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
     webView.hidden = YES;
     if (transparent) {

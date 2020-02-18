@@ -36,6 +36,8 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.webkit.JavascriptInterface;
+import android.webkit.JsResult;
+import android.webkit.JsPromptResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -91,6 +93,7 @@ public class CWebViewPlugin {
     private int progress;
     private boolean canGoBack;
     private boolean canGoForward;
+    private boolean mAlertDialogEnabled;
     private Hashtable<String, String> mCustomHeaders;
     private String mWebViewUA;
 
@@ -132,6 +135,7 @@ public class CWebViewPlugin {
             if (mWebView != null) {
                 return;
             }
+            mAlertDialogEnabled = true;
             mCustomHeaders = new Hashtable<String, String>();
             
             final WebView webView = new WebView(a);
@@ -203,6 +207,34 @@ public class CWebViewPlugin {
                         videoView = null;
                     }
                 }
+
+                @Override
+                public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+                    if (!mAlertDialogEnabled) {
+                        result.cancel();
+                        return true;
+                    }
+                    return super.onJsAlert(view, url, message, result);
+                }
+
+                @Override
+                public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
+                    if (!mAlertDialogEnabled) {
+                        result.cancel();
+                        return true;
+                    }
+                    return super.onJsConfirm(view, url, message, result);
+                }
+
+                @Override
+                public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+                    if (!mAlertDialogEnabled) {
+                        result.cancel();
+                        return true;
+                    }
+                   return super.onJsPrompt(view, url, message, defaultValue, result);
+                }
+
             });
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
@@ -476,6 +508,13 @@ public class CWebViewPlugin {
             } else {
                 mWebView.setVisibility(View.GONE);
             }
+        }});
+    }
+
+    public void SetAlertDialogEnabled(final boolean enabled) {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            mAlertDialogEnabled = enabled;
         }});
     }
 
