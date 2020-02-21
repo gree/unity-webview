@@ -46,6 +46,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 - (void)goBack;
 - (void)goForward;
 - (void)stopLoading;
+- (void)setScrollBounce:(BOOL)enable;
 @end
 
 @interface WKWebView(WebViewProtocolConformed) <WebViewProtocol>
@@ -82,6 +83,12 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     [webView loadHTMLString:html baseURL:baseUrl];
 }
 
+- (void)setScrollBounce:(BOOL)enable
+{
+    WKWebView *webView = (WKWebView *)self;
+    webView.scrollView.bounces = enable;
+}
+
 @end
 
 @interface UIWebView(WebViewProtocolConformed) <WebViewProtocol>
@@ -115,6 +122,12 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     if (completionHandler) {
         completionHandler(result, nil);
     }
+}
+
+- (void)setScrollBounce:(BOOL)enable
+{
+    UIWebView *webView = (UIWebView *)self;
+    webView.scrollView.bounces = enable;
 }
 
 @end
@@ -552,6 +565,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     alertDialogEnabled = enabled;
 }
 
+- (void)setScrollBounceEnabled:(BOOL)enabled
+{
+    [webView setScrollBounce:enabled];
+}
+
 - (void)loadURL:(const char *)url
 {
     if (webView == nil)
@@ -663,6 +681,7 @@ extern "C" {
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -711,6 +730,12 @@ void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setAlertDialogEnabled:enabled];
+}
+
+void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setScrollBounceEnabled:enabled];
 }
 
 void _CWebViewPlugin_LoadURL(void *instance, const char *url)
@@ -821,6 +846,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 - (void)goBack;
 - (void)goForward;
 - (void)stopLoading;
+- (void)setScrollBounce:(BOOL)enable;
 @end
 
 @interface WKWebView(WebViewProtocolConformed) <WebViewProtocol>
@@ -853,6 +879,12 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 {
     WKWebView *webView = (WKWebView *)self;
     [webView loadHTMLString:html baseURL:baseUrl];
+}
+
+- (void)setScrollBounce:(BOOL)enable
+{
+    WKWebView *webView = (WKWebView *)self;
+    webView.scrollView.bounces = enable;
 }
 
 @end
@@ -1249,6 +1281,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     alertDialogEnabled = enabled;
 }
 
+- (void)setScrollBounceEnabled:(BOOL)enabled
+{
+    [webView setScrollBounce:enabled];
+}
+
 - (void)loadURL:(const char *)url
 {
     if (webView == nil)
@@ -1360,6 +1397,7 @@ extern "C" {
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -1426,6 +1464,14 @@ void _CWebViewPlugin_LoadURL(void *instance, const char *url)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin loadURL:url];
+}
+
+void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setScrollBounceEnabled:enabled];
 }
 
 void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl)
