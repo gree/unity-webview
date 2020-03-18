@@ -235,6 +235,10 @@ public class CWebViewPlugin {
                    return super.onJsPrompt(view, url, message, defaultValue, result);
                 }
 
+                @Override
+                public void onGeolocationPermissionsShowPrompt(String origin, Callback callback) {
+                    callback.invoke(origin, true, false);
+                }
             });
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
@@ -338,6 +342,7 @@ public class CWebViewPlugin {
             webSettings.setLoadWithOverviewMode(true);
             webSettings.setUseWideViewPort(true);
             webSettings.setJavaScriptEnabled(true);
+            webSettings.setGeolocationEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
