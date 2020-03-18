@@ -3,15 +3,31 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Unity WebView</title>
     <script src="sample.js"></script>
+    <!-- geolocation example
+    <script>
+      window.addEventListener(
+        'load',
+        function() {
+          if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+              document.getElementById('msg').innerHTML = '[' + position.coords.latitude + ', ' + position.coords.longitude + ']';
+            });
+          }
+        });
+    </script>
+    -->
   </head>
   <body>
     <h1>Hello Unity WebView!</h1>
     <hr/>
+    <!-- geolocation example
     <p id="msg">()</p>
+    -->
     <p><a href="https://google.com">https://google.com</a> (for testing go/back buttons)</p>
     <p><a href="http://httpbin.org/headers">http://httpbin.org/headers</a> (for testing custom headers.)</p>
     <p><img src="sample.jpg"/> (local image)</p>
     <hr/>
+    <div id="msg">[]</div>
     <p><a href="javascript:void(0)" onclick="Unity.call('anchor');">[Send Message!]</a></p>
     <form method="get" action="form">
       <input id="input1" type="text" value="hoge" name="msg"/>
