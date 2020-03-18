@@ -35,6 +35,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
+import android.webkit.GeolocationPermissions.Callback;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsResult;
 import android.webkit.JsPromptResult;
