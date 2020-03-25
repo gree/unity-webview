@@ -531,11 +531,16 @@ public class CWebViewPlugin {
             if (mWebView == null) {
                 return;
             }
-            if (paused) {
-                mWebView.onPause();
-                mWebView.pauseTimers();
-            } else {
-                mWebView.onResume();
+            if (mWebView.getVisibility() == View.VISIBLE){
+                if (paused) {
+                    mWebView.onPause();
+                    //cf. https://qiita.com/nbhd/items/d31711faa8852143f3a4
+                    mWebView.pauseTimers();
+                } else {
+                    mWebView.onResume();
+                    mWebView.resumeTimers();
+                }
+            }else{
                 mWebView.resumeTimers();
             }
         }});
