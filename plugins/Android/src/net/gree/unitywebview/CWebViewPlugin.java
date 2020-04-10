@@ -50,6 +50,7 @@ import android.webkit.CookieSyncManager;
 import android.widget.FrameLayout;
 import android.webkit.PermissionRequest;
 // import android.support.v4.app.ActivityCompat;
+// import android.util.Log;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -59,6 +60,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.unity3d.player.UnityPlayer;
 
@@ -97,6 +100,8 @@ public class CWebViewPlugin {
     private boolean mAlertDialogEnabled;
     private Hashtable<String, String> mCustomHeaders;
     private String mWebViewUA;
+    private Pattern mAllowRegex;
+    private Pattern mDenyRegex;
 
     public CWebViewPlugin() {
     }
@@ -312,6 +317,15 @@ public class CWebViewPlugin {
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
+                    boolean pass = true;
+                    if (mAllowRegex != null && mAllowRegex.matcher(url).find()) {
+                        pass = true;
+                    } else if (mDenyRegex != null && mDenyRegex.matcher(url).find()) {
+                        pass = false;
+                    }
+                    if (!pass) {
+                        return true;
+                    }
                     if (url.startsWith("http://") || url.startsWith("https://")
                         || url.startsWith("file://") || url.startsWith("javascript:")) {
                         // Let webview handle the URL
@@ -424,6 +438,22 @@ public class CWebViewPlugin {
             mWebView.destroy();
             mWebView = null;
         }});
+    }
+
+    public boolean SetURLPattern(final String allowPattern, final String denyPattern)
+    {
+        try {
+            final Pattern allow = (allowPattern == null || allowPattern.length() == 0) ? null : Pattern.compile(allowPattern);
+            final Pattern deny = (denyPattern == null || denyPattern.length() == 0) ? null : Pattern.compile(denyPattern);
+            final Activity a = UnityPlayer.currentActivity;
+            a.runOnUiThread(new Runnable() {public void run() {
+                mAllowRegex = allow;
+                mDenyRegex = deny;
+            }});
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void LoadURL(final String url) {
