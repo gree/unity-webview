@@ -138,6 +138,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
     BOOL alertDialogEnabled;
+    NSRegularExpression *allowRegex;
+    NSRegularExpression *denyRegex;
 }
 - (void)dispose;
 + (void)clearCookies;
@@ -155,6 +157,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
     customRequestHeader = [[NSMutableDictionary alloc] init];
     alertDialogEnabled = true;
+    allowRegex = nil;
+    denyRegex = nil;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [[NSUserDefaults standardUserDefaults]
             registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
@@ -219,6 +223,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         [webView0 removeFromSuperview];
         [webView0 removeObserver:self forKeyPath:@"loading"];
     }
+    denyRegex = nil;
+    allowRegex = nil;
     customRequestHeader = nil;
     gameObjectName = nil;
 }
@@ -365,6 +371,15 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         return YES;
 
     NSString *url = [[request URL] absoluteString];
+    BOOL pass = YES;
+    if (allowRegex != nil && [allowRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = YES;
+    } else if (denyRegex != nil && [denyRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = NO;
+    }
+    if (!pass) {
+        return NO;
+    }
     if ([url hasPrefix:@"unity:"]) {
         UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
         return NO;
@@ -386,6 +401,16 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     }
     NSURL *nsurl = [navigationAction.request URL];
     NSString *url = [nsurl absoluteString];
+    BOOL pass = YES;
+    if (allowRegex != nil && [allowRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = YES;
+    } else if (denyRegex != nil && [denyRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = NO;
+    }
+    if (!pass) {
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
     if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
         [[UIApplication sharedApplication] openURL:nsurl];
         decisionHandler(WKNavigationActionPolicyCancel);
@@ -572,6 +597,40 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     [webView setScrollBounce:enabled];
 }
 
+- (BOOL)setURLPattern:(const char *)allowPattern and:(const char *)denyPattern
+{
+    NSError *err = nil;
+    NSRegularExpression *allow = nil;
+    NSRegularExpression *deny = nil;
+    if (allowPattern == nil || *allowPattern == '\0') {
+        allow = nil;
+    } else {
+        allow
+            = [NSRegularExpression
+                regularExpressionWithPattern:[NSString stringWithUTF8String:allowPattern]
+                                     options:0
+                                       error:&err];
+        if (err != nil) {
+            return NO;
+        }
+    }
+    if (denyPattern == nil || *denyPattern == '\0') {
+        deny = nil;
+    } else {
+        deny
+            = [NSRegularExpression
+                regularExpressionWithPattern:[NSString stringWithUTF8String:denyPattern]
+                                     options:0
+                                       error:&err];
+        if (err != nil) {
+            return NO;
+        }
+    }
+    allowRegex = allow;
+    denyRegex = deny;
+    return YES;
+}
+
 - (void)loadURL:(const char *)url
 {
     if (webView == nil)
@@ -684,6 +743,7 @@ extern "C" {
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
+    BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -742,20 +802,28 @@ void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
     [webViewPlugin setAlertDialogEnabled:enabled];
 }
 
-void _CWebViewPlugin_LoadURL(void *instance, const char *url)
-{
-    if (instance == NULL)
-        return;
-    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin loadURL:url];
-}
-
 void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)
 {
     if (instance == NULL)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setScrollBounceEnabled:enabled];
+}
+
+BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern)
+{
+    if (instance == NULL)
+        return NO;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    return [webViewPlugin setURLPattern:allowPattern and:denyPattern];
+}
+
+void _CWebViewPlugin_LoadURL(void *instance, const char *url)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin loadURL:url];
 }
 
 void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl)
