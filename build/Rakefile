@@ -33,6 +33,7 @@ SRCS[0]=%W|
   Editor/UnityWebViewPostprocessBuild.cs
   WebViewObject.cs
   iOS/WebView.mm
+  iOS/WebViewWithUIWebView.mm
   unity-webview-webgl-plugin.jslib
 |
 SRCDIR[1]="../plugins"

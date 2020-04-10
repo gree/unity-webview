@@ -19,7 +19,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#if !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0
 
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
@@ -34,6 +34,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
 @property (nonatomic, getter=isHidden) BOOL hidden;
 @property (nonatomic) CGRect frame;
+@property (nullable, nonatomic, assign) id <UIWebViewDelegate> delegate;
 @property (nullable, nonatomic, weak) id <WKNavigationDelegate> navigationDelegate;
 @property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
 @property (nullable, nonatomic, readonly, copy) NSURL *URL;
@@ -52,6 +53,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @end
 
 @implementation WKWebView(WebViewProtocolConformed)
+
+@dynamic delegate;
 
 - (void)load:(NSURLRequest *)request
 {
@@ -88,7 +91,48 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @end
 
-@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
+@interface UIWebView(WebViewProtocolConformed) <WebViewProtocol>
+@end
+
+@implementation UIWebView(WebViewProtocolConformed)
+
+@dynamic navigationDelegate;
+@dynamic UIDelegate;
+
+- (NSURL *)URL
+{
+    return [NSURL URLWithString:[self stringByEvaluatingJavaScriptFromString:@"document.URL"]];
+}
+
+- (void)load:(NSURLRequest *)request
+{
+    UIWebView *webView = (UIWebView *)self;
+    [webView loadRequest:request];
+}
+
+- (void)loadHTML:(NSString *)html baseURL:(NSURL *)baseUrl
+{
+    UIWebView *webView = (UIWebView *)self;
+    [webView loadHTMLString:html baseURL:baseUrl];
+}
+
+- (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler
+{
+    NSString *result = [self stringByEvaluatingJavaScriptFromString:javaScriptString];
+    if (completionHandler) {
+        completionHandler(result, nil);
+    }
+}
+
+- (void)setScrollBounce:(BOOL)enable
+{
+    UIWebView *webView = (UIWebView *)self;
+    webView.scrollView.bounces = enable;
+}
+
+@end
+
+@interface CWebViewPlugin : NSObject<UIWebViewDelegate, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
@@ -110,6 +154,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
     customRequestHeader = [[NSMutableDictionary alloc] init];
+    alertDialogEnabled = true;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [[NSUserDefaults standardUserDefaults]
             registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
@@ -139,8 +184,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
     } else {
-        webView = nil;
-        return self;
+        UIWebView *uiwebview = [[UIWebView alloc] initWithFrame:view.frame];
+        uiwebview.allowsInlineMediaPlayback = YES;
+        uiwebview.mediaPlaybackRequiresUserAction = NO;
+        webView = uiwebview;
+        webView.delegate = self;
     }
     if (transparent) {
         webView.opaque = NO;
@@ -158,17 +206,17 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
 - (void)dispose
 {
-    if (webView != nil) {
-        UIView <WebViewProtocol> *webView0 = webView;
-        webView = nil;
-        if ([webView0 isKindOfClass:[WKWebView class]]) {
-            webView0.UIDelegate = nil;
-            webView0.navigationDelegate = nil;
-        }
-        [webView0 stopLoading];
-        [webView0 removeFromSuperview];
-        [webView0 removeObserver:self forKeyPath:@"loading"];
+    UIView <WebViewProtocol> *webView0 = webView;
+    webView = nil;
+    if ([webView0 isKindOfClass:[WKWebView class]]) {
+        webView0.UIDelegate = nil;
+        webView0.navigationDelegate = nil;
+    } else {
+        webView0.delegate = nil;
     }
+    [webView0 stopLoading];
+    [webView0 removeFromSuperview];
+    [webView0 removeObserver:self forKeyPath:@"loading"];
     customRequestHeader = nil;
     gameObjectName = nil;
 }
@@ -281,6 +329,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     }
 }
 
+- (void)webView:(UIWebView *)uiWebView didFailLoadWithError:(NSError *)error
+{
+    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
@@ -289,6 +342,38 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
+- (void)webViewDidFinishLoad:(UIWebView *)uiWebView {
+    if (webView == nil)
+        return;
+    // cf. http://stackoverflow.com/questions/10996028/uiwebview-when-did-a-page-really-finish-loading/15916853#15916853
+    if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]
+        && [webView URL] != nil) {
+        UnitySendMessage(
+            [gameObjectName UTF8String],
+            "CallOnLoaded",
+            [[[webView URL] absoluteString] UTF8String]);
+    }
+}
+
+- (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
+{
+    if (webView == nil)
+        return YES;
+
+    NSString *url = [[request URL] absoluteString];
+    if ([url hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        return NO;
+    } else {
+        if (![self isSetupedCustomHeader:request]) {
+            [uiWebView loadRequest:[self constructionCustomHeader:request]];
+            return NO;
+        }
+        UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
+        return YES;
+    }
 }
 
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
@@ -615,8 +700,6 @@ extern "C" {
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
 {
-    if (! (enableWKWebView && [WKWebView class]))
-        return nil;
     CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
     [_instances addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
@@ -624,8 +707,6 @@ void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const c
 
 void _CWebViewPlugin_Destroy(void *instance)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
     [_instances removeObject:webViewPlugin];
     [webViewPlugin dispose];
@@ -635,120 +716,90 @@ void _CWebViewPlugin_Destroy(void *instance)
 void _CWebViewPlugin_SetMargins(
     void *instance, float left, float top, float right, float bottom, BOOL relative)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setMargins:left top:top right:right bottom:bottom relative:relative];
 }
 
 void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
 }
 
 void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setAlertDialogEnabled:enabled];
 }
 
-void _CWebViewPlugin_LoadURL(void *instance, const char *url)
-{
-    if (instance == NULL)
-        return;
-    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin loadURL:url];
-}
-
 void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setScrollBounceEnabled:enabled];
 }
 
+void _CWebViewPlugin_LoadURL(void *instance, const char *url)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin loadURL:url];
+}
+
 void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin loadHTML:html baseURL:baseUrl];
 }
 
 void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
 }
 
 int _CWebViewPlugin_Progress(void *instance)
 {
-    if (instance == NULL)
-        return 0;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin progress];
 }
 
 BOOL _CWebViewPlugin_CanGoBack(void *instance)
 {
-    if (instance == NULL)
-        return false;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin canGoBack];
 }
 
 BOOL _CWebViewPlugin_CanGoForward(void *instance)
 {
-    if (instance == NULL)
-        return false;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin canGoForward];
 }
 
 void _CWebViewPlugin_GoBack(void *instance)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goBack];
 }
 
 void _CWebViewPlugin_GoForward(void *instance)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goForward];
 }
 
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin addCustomRequestHeader:headerKey value:headerValue];
 }
 
 void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin removeCustomRequestHeader:headerKey];
 }
 
 void _CWebViewPlugin_ClearCustomHeader(void *instance)
 {
-    if (instance == NULL)
-        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin clearCustomRequestHeader];
 }
@@ -765,10 +816,8 @@ const char *_CWebViewPlugin_GetCookies(const char *url)
 
 const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey)
 {
-    if (instance == NULL)
-        return NULL;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin getCustomRequestHeaderValue:headerKey];
 }
 
-#endif // !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
+#endif // __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0
