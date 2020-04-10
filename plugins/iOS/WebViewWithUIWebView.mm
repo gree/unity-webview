@@ -19,7 +19,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#if !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0
 
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
@@ -34,6 +34,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
 @property (nonatomic, getter=isHidden) BOOL hidden;
 @property (nonatomic) CGRect frame;
+@property (nullable, nonatomic, assign) id <UIWebViewDelegate> delegate;
 @property (nullable, nonatomic, weak) id <WKNavigationDelegate> navigationDelegate;
 @property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
 @property (nullable, nonatomic, readonly, copy) NSURL *URL;
@@ -52,6 +53,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @end
 
 @implementation WKWebView(WebViewProtocolConformed)
+
+@dynamic delegate;
 
 - (void)load:(NSURLRequest *)request
 {
@@ -88,7 +91,48 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @end
 
-@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
+@interface UIWebView(WebViewProtocolConformed) <WebViewProtocol>
+@end
+
+@implementation UIWebView(WebViewProtocolConformed)
+
+@dynamic navigationDelegate;
+@dynamic UIDelegate;
+
+- (NSURL *)URL
+{
+    return [NSURL URLWithString:[self stringByEvaluatingJavaScriptFromString:@"document.URL"]];
+}
+
+- (void)load:(NSURLRequest *)request
+{
+    UIWebView *webView = (UIWebView *)self;
+    [webView loadRequest:request];
+}
+
+- (void)loadHTML:(NSString *)html baseURL:(NSURL *)baseUrl
+{
+    UIWebView *webView = (UIWebView *)self;
+    [webView loadHTMLString:html baseURL:baseUrl];
+}
+
+- (void)evaluateJavaScript:(NSString *)javaScriptString completionHandler:(void (^ __nullable)(__nullable id, NSError * __nullable error))completionHandler
+{
+    NSString *result = [self stringByEvaluatingJavaScriptFromString:javaScriptString];
+    if (completionHandler) {
+        completionHandler(result, nil);
+    }
+}
+
+- (void)setScrollBounce:(BOOL)enable
+{
+    UIWebView *webView = (UIWebView *)self;
+    webView.scrollView.bounces = enable;
+}
+
+@end
+
+@interface CWebViewPlugin : NSObject<UIWebViewDelegate, WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
@@ -140,8 +184,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
     } else {
-        webView = nil;
-        return self;
+        UIWebView *uiwebview = [[UIWebView alloc] initWithFrame:view.frame];
+        uiwebview.allowsInlineMediaPlayback = YES;
+        uiwebview.mediaPlaybackRequiresUserAction = NO;
+        webView = uiwebview;
+        webView.delegate = self;
     }
     if (transparent) {
         webView.opaque = NO;
@@ -165,6 +212,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         if ([webView0 isKindOfClass:[WKWebView class]]) {
             webView0.UIDelegate = nil;
             webView0.navigationDelegate = nil;
+        } else {
+            webView0.delegate = nil;
         }
         [webView0 stopLoading];
         [webView0 removeFromSuperview];
@@ -282,6 +331,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     }
 }
 
+- (void)webView:(UIWebView *)uiWebView didFailLoadWithError:(NSError *)error
+{
+    UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
@@ -290,6 +344,38 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
+}
+
+- (void)webViewDidFinishLoad:(UIWebView *)uiWebView {
+    if (webView == nil)
+        return;
+    // cf. http://stackoverflow.com/questions/10996028/uiwebview-when-did-a-page-really-finish-loading/15916853#15916853
+    if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]
+        && [webView URL] != nil) {
+        UnitySendMessage(
+            [gameObjectName UTF8String],
+            "CallOnLoaded",
+            [[[webView URL] absoluteString] UTF8String]);
+    }
+}
+
+- (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
+{
+    if (webView == nil)
+        return YES;
+
+    NSString *url = [[request URL] absoluteString];
+    if ([url hasPrefix:@"unity:"]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        return NO;
+    } else {
+        if (![self isSetupedCustomHeader:request]) {
+            [uiWebView loadRequest:[self constructionCustomHeader:request]];
+            return NO;
+        }
+        UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
+        return YES;
+    }
 }
 
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
@@ -616,8 +702,6 @@ extern "C" {
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
 {
-    if (! (enableWKWebView && [WKWebView class]))
-        return nil;
     CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
     [_instances addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
@@ -772,4 +856,4 @@ const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *hea
     return [webViewPlugin getCustomRequestHeaderValue:headerKey];
 }
 
-#endif // !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
+#endif // __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0

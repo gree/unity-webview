@@ -112,17 +112,9 @@ Apple recently sends the following warning for an app submission,
 > UIWebView APIs . See https://developer.apple.com/documentation/uikit/uiwebview for more
 > information.
 
-so the current implementation for iOS (Assets/Plugins/iOS/WebView.mmWebView) has two variations, in
-which new one utilizes only WKWebView if iOS deployment target is iOS9 or later. Please modify
-the following part of WebView.mm if you want to change this behaviour.
-
-```c++
-...
-
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0
-
-...
-```
+so the current implementation for iOS has two variations (Assets/Plugins/iOS/WebView.mm and Assets/Plugins/iOS/WebViewWithUIWebView.mm), in
+which new one (Assets/Plugins/iOS/WebView.mm) utilizes only WKWebView if iOS deployment target is iOS9 or later. Please modify
+`#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0` in those files if you need to change this behavior.
 
 (Note: WKWebView is available since iOS8 but was largely changed in iOS9, so we use `___IPHONE_9_0`
 instead of `__IPHONE_8_0`)
