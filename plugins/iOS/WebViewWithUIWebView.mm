@@ -206,17 +206,19 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
 - (void)dispose
 {
-    UIView <WebViewProtocol> *webView0 = webView;
-    webView = nil;
-    if ([webView0 isKindOfClass:[WKWebView class]]) {
-        webView0.UIDelegate = nil;
-        webView0.navigationDelegate = nil;
-    } else {
-        webView0.delegate = nil;
+    if (webView != nil) {
+        UIView <WebViewProtocol> *webView0 = webView;
+        webView = nil;
+        if ([webView0 isKindOfClass:[WKWebView class]]) {
+            webView0.UIDelegate = nil;
+            webView0.navigationDelegate = nil;
+        } else {
+            webView0.delegate = nil;
+        }
+        [webView0 stopLoading];
+        [webView0 removeFromSuperview];
+        [webView0 removeObserver:self forKeyPath:@"loading"];
     }
-    [webView0 stopLoading];
-    [webView0 removeFromSuperview];
-    [webView0 removeObserver:self forKeyPath:@"loading"];
     customRequestHeader = nil;
     gameObjectName = nil;
 }
@@ -707,6 +709,8 @@ void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const c
 
 void _CWebViewPlugin_Destroy(void *instance)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
     [_instances removeObject:webViewPlugin];
     [webViewPlugin dispose];
@@ -716,90 +720,120 @@ void _CWebViewPlugin_Destroy(void *instance)
 void _CWebViewPlugin_SetMargins(
     void *instance, float left, float top, float right, float bottom, BOOL relative)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setMargins:left top:top right:right bottom:bottom relative:relative];
 }
 
 void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
 }
 
 void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setAlertDialogEnabled:enabled];
 }
 
-void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)
-{
-    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin setScrollBounceEnabled:enabled];
-}
-
 void _CWebViewPlugin_LoadURL(void *instance, const char *url)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin loadURL:url];
 }
 
+void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setScrollBounceEnabled:enabled];
+}
+
 void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin loadHTML:html baseURL:baseUrl];
 }
 
 void _CWebViewPlugin_EvaluateJS(void *instance, const char *js)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin evaluateJS:js];
 }
 
 int _CWebViewPlugin_Progress(void *instance)
 {
+    if (instance == NULL)
+        return 0;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin progress];
 }
 
 BOOL _CWebViewPlugin_CanGoBack(void *instance)
 {
+    if (instance == NULL)
+        return false;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin canGoBack];
 }
 
 BOOL _CWebViewPlugin_CanGoForward(void *instance)
 {
+    if (instance == NULL)
+        return false;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin canGoForward];
 }
 
 void _CWebViewPlugin_GoBack(void *instance)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goBack];
 }
 
 void _CWebViewPlugin_GoForward(void *instance)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goForward];
 }
 
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin addCustomRequestHeader:headerKey value:headerValue];
 }
 
 void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin removeCustomRequestHeader:headerKey];
 }
 
 void _CWebViewPlugin_ClearCustomHeader(void *instance)
 {
+    if (instance == NULL)
+        return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin clearCustomRequestHeader];
 }
@@ -816,6 +850,8 @@ const char *_CWebViewPlugin_GetCookies(const char *url)
 
 const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey)
 {
+    if (instance == NULL)
+        return NULL;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin getCustomRequestHeaderValue:headerKey];
 }
