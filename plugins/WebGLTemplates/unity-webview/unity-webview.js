@@ -6,7 +6,7 @@ var unityWebView =
         $containers = $('.webviewContainer');
         if ($containers.length === 0) {
             $('<div style="position: absolute; left: 0px; width: 100%; height: 100%; top: 0px; pointer-events: none;"><div class="webviewContainer" style="overflow: hidden; position: relative; width: 100%; height: 100%; z-index: 1;"></div></div>')
-                .appendTo($('#unityPlayer'));
+                .appendTo($('#gameContainer'));
         }
         var $last = $('.webviewContainer:last');
         var clonedTop = parseInt($last.css('top')) - 100;
