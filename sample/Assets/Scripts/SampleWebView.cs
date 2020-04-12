@@ -20,11 +20,12 @@
 
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SampleWebView : MonoBehaviour
 {
     public string Url;
-    public GUIText status;
+    public Text status;
     WebViewObject webViewObject;
 
     IEnumerator Start()
@@ -99,10 +100,12 @@ public class SampleWebView : MonoBehaviour
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
 #endif
+        //webViewObject.SetAlertDialogEnabled(false);
+        //webViewObject.SetURLPattern("", "^https://www.google.com");
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
 
-#if !UNITY_WEBPLAYER
+#if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
         } else {
@@ -148,7 +151,7 @@ public class SampleWebView : MonoBehaviour
         yield break;
     }
 
-#if !UNITY_WEBPLAYER
+#if !UNITY_WEBPLAYER && !UNITY_WEBGL
     void OnGUI()
     {
         GUI.enabled = webViewObject.CanGoBack();

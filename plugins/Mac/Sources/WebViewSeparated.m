@@ -39,6 +39,8 @@ static BOOL inEditor;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
     NSMutableArray *messages;
+    NSRegularExpression *allowRegex;
+    NSRegularExpression *denyRegex;
 }
 @end
 
@@ -56,6 +58,8 @@ static WKProcessPool *_sharedProcessPool;
     }
     messages = [[NSMutableArray alloc] init];
     customRequestHeader = [[NSMutableDictionary alloc] init];
+    allowRegex = nil;
+    denyRegex = nil;
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     WKUserContentController *controller = [[WKUserContentController alloc] init];
     WKPreferences *preferences = [[WKPreferences alloc] init];
@@ -107,21 +111,14 @@ static WKProcessPool *_sharedProcessPool;
             [webView stopLoading:nil];
             webView = nil;
         }
-        if (gameObject != nil) {
-            gameObject = nil;
-        }
-        if (bitmap != nil) {
-            bitmap = nil;
-        }
-        if (window != nil) {
-            window = nil;
-        }
-        if (windowController != nil){
-            windowController = nil;
-        }
-        if (messages != nil) {
-            messages = nil;
-        }
+        gameObject = nil;
+        bitmap = nil;
+        window = nil;
+        windowController = nil;
+        denyRegex = nil;
+        allowRegex = nil;
+        customRequestHeader = nil;
+        messages = nil;
     }
 }
 
@@ -139,6 +136,16 @@ static WKProcessPool *_sharedProcessPool;
 - (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
 {
     NSString *url = [[request URL] absoluteString];
+    BOOL pass = YES;
+    if (allowRegex != nil && [allowRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = YES;
+    } else if (denyRegex != nil && [denyRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = NO;
+    }
+    if (!pass) {
+        [listener ignore];
+        return;
+    }
     if ([url hasPrefix:@"unity:"]) {
         [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
         [listener ignore];
@@ -180,6 +187,16 @@ static WKProcessPool *_sharedProcessPool;
         return;
     }
     NSString *url = [[navigationAction.request URL] absoluteString];
+    BOOL pass = YES;
+    if (allowRegex != nil && [allowRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = YES;
+    } else if (denyRegex != nil && [denyRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+         pass = NO;
+    }
+    if (!pass) {
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
     //if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
     // [[UIApplication sharedApplication] openURL:url];
     // decisionHandler(WKNavigationActionPolicyCancel);
@@ -269,6 +286,40 @@ static WKProcessPool *_sharedProcessPool;
         [convertedRequest setValue:customRequestHeader[key] forHTTPHeaderField:key];
     }
     return convertedRequest;
+}
+
+- (BOOL)setURLPattern:(const char *)allowPattern and:(const char *)denyPattern
+{
+    NSError *err = nil;
+    NSRegularExpression *allow = nil;
+    NSRegularExpression *deny = nil;
+    if (allowPattern == nil || *allowPattern == '\0') {
+        allow = nil;
+    } else {
+        allow
+            = [NSRegularExpression
+                regularExpressionWithPattern:[NSString stringWithUTF8String:allowPattern]
+                                     options:0
+                                       error:&err];
+        if (err != nil) {
+            return NO;
+        }
+    }
+    if (denyPattern == nil || *denyPattern == '\0') {
+        deny = nil;
+    } else {
+        deny
+            = [NSRegularExpression
+                regularExpressionWithPattern:[NSString stringWithUTF8String:denyPattern]
+                                     options:0
+                                       error:&err];
+        if (err != nil) {
+            return NO;
+        }
+    }
+    allowRegex = allow;
+    denyRegex = deny;
+    return YES;
 }
 
 - (void)loadURL:(const char *)url
@@ -508,6 +559,7 @@ extern "C" {
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetRect(void *instance, int width, int height);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
+    BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -574,6 +626,12 @@ void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
+}
+
+BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    return [webViewPlugin setURLPattern:allowPattern and:denyPattern];
 }
 
 void _CWebViewPlugin_LoadURL(void *instance, const char *url)

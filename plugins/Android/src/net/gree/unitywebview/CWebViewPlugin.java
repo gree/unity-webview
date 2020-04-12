@@ -38,19 +38,23 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-import android.webkit.CookieManager;
-import android.webkit.CookieSyncManager;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
+import android.webkit.GeolocationPermissions.Callback;
 import android.webkit.JavascriptInterface;
-import android.webkit.PermissionRequest;
-import android.webkit.ValueCallback;
+import android.webkit.JsResult;
+import android.webkit.JsPromptResult;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 import android.widget.FrameLayout;
 import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
+// import android.support.v4.app.ActivityCompat;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,6 +68,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.unity3d.player.UnityPlayer;
 
@@ -94,12 +100,16 @@ class CWebViewPluginInterface {
 public class CWebViewPlugin extends Fragment {
     private static FrameLayout layout = null;
     private WebView mWebView;
+    private OnGlobalLayoutListener mGlobalLayoutListener;
     private CWebViewPluginInterface mWebViewPlugin;
     private int progress;
     private boolean canGoBack;
     private boolean canGoForward;
+    private boolean mAlertDialogEnabled;
     private Hashtable<String, String> mCustomHeaders;
     private String mWebViewUA;
+    private Pattern mAllowRegex;
+    private Pattern mDenyRegex;
 
     private static final int INPUT_FILE_REQUEST_CODE = 1;
     private ValueCallback<Uri> mUploadMessage;
@@ -201,6 +211,7 @@ public class CWebViewPlugin extends Fragment {
             if (mWebView != null) {
                 return;
             }
+            mAlertDialogEnabled = true;
             mCustomHeaders = new Hashtable<String, String>();
             
             final WebView webView = new WebView(a);
@@ -216,6 +227,7 @@ public class CWebViewPlugin extends Fragment {
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
+
             // webView.setWebChromeClient(new WebChromeClient() {
             //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
             //         Log.d("Webview", cm.message());
@@ -231,8 +243,17 @@ public class CWebViewPlugin extends Fragment {
                 public void onPermissionRequest(final PermissionRequest request) {
                     final String[] requestedResources = request.getResources();
                     for (String r : requestedResources) {
-                        if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
-                            request.grant(request.getResources());
+                        if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) || r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+                            request.grant(requestedResources);
+                            // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            //     a.runOnUiThread(new Runnable() {public void run() {
+                            //         final String[] permissions = {
+                            //             "android.permission.CAMERA",
+                            //             "android.permission.RECORD_AUDIO",
+                            //         };
+                            //         ActivityCompat.requestPermissions(a, permissions, 0);
+                            //     }});
+                            // }
                             break;
                         }
                     }
@@ -261,6 +282,38 @@ public class CWebViewPlugin extends Fragment {
                         layout.setBackgroundColor(0x00000000);
                         videoView = null;
                     }
+                }
+
+                @Override
+                public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
+                    if (!mAlertDialogEnabled) {
+                        result.cancel();
+                        return true;
+                    }
+                    return super.onJsAlert(view, url, message, result);
+                }
+
+                @Override
+                public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
+                    if (!mAlertDialogEnabled) {
+                        result.cancel();
+                        return true;
+                    }
+                    return super.onJsConfirm(view, url, message, result);
+                }
+
+                @Override
+                public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+                    if (!mAlertDialogEnabled) {
+                        result.cancel();
+                        return true;
+                    }
+                   return super.onJsPrompt(view, url, message, defaultValue, result);
+                }
+
+                @Override
+                public void onGeolocationPermissionsShowPrompt(String origin, Callback callback) {
+                    callback.invoke(origin, true, false);
                 }
 
                 // For Android < 3.0 (won't work because we cannot utilize FragmentActivity)
@@ -421,6 +474,15 @@ public class CWebViewPlugin extends Fragment {
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
+                    boolean pass = true;
+                    if (mAllowRegex != null && mAllowRegex.matcher(url).find()) {
+                        pass = true;
+                    } else if (mDenyRegex != null && mDenyRegex.matcher(url).find()) {
+                        pass = false;
+                    }
+                    if (!pass) {
+                        return true;
+                    }
                     if (url.startsWith("http://") || url.startsWith("https://")
                         || url.startsWith("file://") || url.startsWith("javascript:")) {
                         mWebViewPlugin.call("CallOnStarted", url);
@@ -453,6 +515,7 @@ public class CWebViewPlugin extends Fragment {
             webSettings.setLoadWithOverviewMode(true);
             webSettings.setUseWideViewPort(true);
             webSettings.setJavaScriptEnabled(true);
+            webSettings.setGeolocationEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
@@ -489,7 +552,7 @@ public class CWebViewPlugin extends Fragment {
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();
-        activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+        mGlobalLayoutListener = new OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 android.graphics.Rect r = new android.graphics.Rect();
@@ -513,7 +576,8 @@ public class CWebViewPlugin extends Fragment {
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "false");
                 }
             }
-        });
+        };
+        activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(mGlobalLayoutListener);
     }
 
     public void Destroy() {
@@ -522,11 +586,32 @@ public class CWebViewPlugin extends Fragment {
             if (mWebView == null) {
                 return;
             }
+            if (mGlobalLayoutListener != null) {
+                View activityRootView = a.getWindow().getDecorView().getRootView();
+                activityRootView.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
+                mGlobalLayoutListener = null;
+            }
             mWebView.stopLoading();
             layout.removeView(mWebView);
             mWebView.destroy();
             mWebView = null;
         }});
+    }
+
+    public boolean SetURLPattern(final String allowPattern, final String denyPattern)
+    {
+        try {
+            final Pattern allow = (allowPattern == null || allowPattern.length() == 0) ? null : Pattern.compile(allowPattern);
+            final Pattern deny = (denyPattern == null || denyPattern.length() == 0) ? null : Pattern.compile(denyPattern);
+            final Activity a = UnityPlayer.currentActivity;
+            a.runOnUiThread(new Runnable() {public void run() {
+                mAllowRegex = allow;
+                mDenyRegex = deny;
+            }});
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public void LoadURL(final String url) {
@@ -620,6 +705,13 @@ public class CWebViewPlugin extends Fragment {
         }});
     }
 
+    public void SetAlertDialogEnabled(final boolean enabled) {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            mAlertDialogEnabled = enabled;
+        }});
+    }
+
     // cf. https://stackoverflow.com/questions/31788748/webview-youtube-videos-playing-in-background-on-rotation-and-minimise/31789193#31789193
     public void OnApplicationPause(final boolean paused) {
         final Activity a = UnityPlayer.currentActivity;
@@ -629,7 +721,10 @@ public class CWebViewPlugin extends Fragment {
             }
             if (paused) {
                 mWebView.onPause();
-                mWebView.pauseTimers();
+                if (mWebView.getVisibility() == View.VISIBLE) {
+                    // cf. https://qiita.com/nbhd/items/d31711faa8852143f3a4
+                    mWebView.pauseTimers();
+                }
             } else {
                 mWebView.onResume();
                 mWebView.resumeTimers();
