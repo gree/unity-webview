@@ -30,9 +30,9 @@
     <div id="msg">[]</div>
     <p><a href="javascript:void(0)" onclick="Unity.call('anchor');">[Send Message!]</a></p>
     <form method="get" action="form">
-      <input type="file" name="datafile"/>
       <input id="input1" type="text" value="hoge" name="msg"/>
-      <input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/>
+      <input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/><br/>
+      <input type="file" name="datafile"/>
     </form>
   </body>
 </html>
