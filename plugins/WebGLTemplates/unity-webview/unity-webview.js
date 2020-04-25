@@ -50,9 +50,9 @@ var unityWebView =
     },
 
     setMargins: function (name, left, top, right, bottom) {
-        var $player = $('#unityPlayer');
-        var width = $player.width();
-        var height = $player.height();
+        var container = $('#gameContainer');
+        var width = container.width();
+        var height = container.height();
 
         var lp = left / width * 100;
         var tp = top / height * 100;
