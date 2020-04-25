@@ -151,7 +151,6 @@ public class SampleWebView : MonoBehaviour
         yield break;
     }
 
-#if !UNITY_WEBPLAYER && !UNITY_WEBGL
     void OnGUI()
     {
         GUI.enabled = webViewObject.CanGoBack();
@@ -183,5 +182,4 @@ public class SampleWebView : MonoBehaviour
         }
         GUI.enabled = true;
     }
-#endif
 }
