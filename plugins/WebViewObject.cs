@@ -107,6 +107,8 @@ public class WebViewObject : MonoBehaviour
         {
             mIsKeyboardVisible0 = mIsKeyboardVisible;
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
+        } else if (mIsKeyboardVisible) {
+            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
         }
     }
     
