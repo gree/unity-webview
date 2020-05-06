@@ -111,6 +111,9 @@ static WKProcessPool *_sharedProcessPool;
             [webView stopLoading:nil];
             webView = nil;
         }
+        if (window != nil) {
+            [window close];
+        }
         gameObject = nil;
         bitmap = nil;
         window = nil;
