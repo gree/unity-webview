@@ -116,16 +116,10 @@ public class CWebViewPlugin extends Fragment {
     private ValueCallback<Uri[]> mFilePathCallback;
     private String mCameraPhotoPath;
 
+    private static long instanceCount;
+    private long mInstanceId;
+
     public CWebViewPlugin() {
-        final Activity a = UnityPlayer.currentActivity;
-        final CWebViewPlugin self = this;
-        a.runOnUiThread(new Runnable() {public void run() {
-            a
-                .getFragmentManager()
-                .beginTransaction()
-                .add(0, self, "CWebViewPlugin")
-                .commit();
-        }});
     }
 
     @Override
@@ -211,6 +205,16 @@ public class CWebViewPlugin extends Fragment {
             if (mWebView != null) {
                 return;
             }
+
+            setRetainInstance(true);
+            instanceCount++;
+            mInstanceId = instanceCount;
+            a
+                .getFragmentManager()
+                .beginTransaction()
+                .add(0, self, "CWebViewPlugin" + mInstanceId)
+                .commit();
+
             mAlertDialogEnabled = true;
             mCustomHeaders = new Hashtable<String, String>();
             
@@ -582,6 +586,7 @@ public class CWebViewPlugin extends Fragment {
 
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
+        final CWebViewPlugin self = this;
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -595,6 +600,12 @@ public class CWebViewPlugin extends Fragment {
             layout.removeView(mWebView);
             mWebView.destroy();
             mWebView = null;
+
+            a
+                .getFragmentManager()
+                .beginTransaction()
+                .remove(self)
+                .commit();
         }});
     }
 
