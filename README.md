@@ -17,6 +17,8 @@ below:
    might be easier to extract `dist/unity-webview.zip` instead if
    you've imported unity-webview before.
 
+*NOTE: The current implementation for Android utilizes Android Fragment for enabling the file input field after https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278 and may cause new issues that were not found before. If you don't need the file input field, you can install `dist/unity-webview-no-fragment.unitypackage` or `dist/unity-webview-no-fragment.zip`.*
+
 ## Common Notes
 
 ### UnityWebViewPostprocessBuild.cs
@@ -116,10 +118,11 @@ so the current implementation for iOS has two variations (Assets/Plugins/iOS/Web
 which new one (Assets/Plugins/iOS/WebView.mm) utilizes only WKWebView if iOS deployment target is iOS9 or later. Please modify
 `#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0` in those files if you need to change this behavior.
 
-(Note: WKWebView is available since iOS8 but was largely changed in iOS9, so we use `___IPHONE_9_0`
-instead of `__IPHONE_8_0`)
+*NOTE: WKWebView is available since iOS8 but was largely changed in iOS9, so we use `___IPHONE_9_0` instead of `__IPHONE_8_0`*
 
 ### Android
+
+*NOTE: The current implementation for Android utilizes Android Fragment for enabling the file input field after https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278 and may cause new issues that were not found before. If you don't need the file input field, you can install `dist/unity-webview-no-fragment.unitypackage` or `dist/unity-webview-no-fragment.zip`.*
 
 #### hardwareAccelerated
 
