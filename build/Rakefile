@@ -94,8 +94,9 @@ end
 
 desc "commit"
 task :commit do
-  rev = open("|git show HEAD|head -1|awk '{print $2}'").read
-  sh "git commit -m \"updated binaries for #{rev} .\" ../dist/unity-webview*"
+  rev = open("|git show HEAD|head -1|awk '{print $2}'").read.strip
+  sh "git add ../dist"
+  sh "git commit -m 'updated binaries (#{rev}).'"
 end
 
 desc "clean"
