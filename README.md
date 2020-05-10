@@ -119,6 +119,7 @@ which new one (Assets/Plugins/iOS/WebView.mm) utilizes only WKWebView if iOS dep
 `#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0` in those files if you need to change this behavior.
 
 *NOTE: WKWebView is available since iOS8 but was largely changed in iOS9, so we use `___IPHONE_9_0` instead of `__IPHONE_8_0`*
+*NOTE: Several versions of Unity themselves also have the ITMS-90809 issue (cf. https://issuetracker.unity3d.com/issues/ios-apple-throws-deprecated-api-usage-warning-for-using-uiwebview-when-submitting-builds-to-the-app-store-connect ).*/
 
 ### Android
 
