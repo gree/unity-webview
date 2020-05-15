@@ -53,6 +53,7 @@ public class WebViewObject : MonoBehaviour
     Callback onHttpError;
     Callback onStarted;
     Callback onLoaded;
+    Callback onHooked;
     bool visibility;
     bool alertDialogEnabled = true;
     bool scrollBounceEnabled = true;
@@ -168,7 +169,7 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance, bool visibility);
     [DllImport("WebViewSeparated")]
     private static extern bool _CWebViewPlugin_SetURLPattern(
-        IntPtr instance, string allowPattern, string denyPattern);
+        IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
     [DllImport("WebViewSeparated")]
     private static extern void _CWebViewPlugin_LoadURL(
         IntPtr instance, string url);
@@ -234,7 +235,7 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance, bool visibility);
     [DllImport("WebView")]
     private static extern bool _CWebViewPlugin_SetURLPattern(
-        IntPtr instance, string allowPattern, string denyPattern);
+        IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_LoadURL(
         IntPtr instance, string url);
@@ -304,7 +305,7 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance, bool enabled);
     [DllImport("__Internal")]
     private static extern bool _CWebViewPlugin_SetURLPattern(
-        IntPtr instance, string allowPattern, string denyPattern);
+        IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_LoadURL(
         IntPtr instance, string url);
@@ -373,13 +374,15 @@ public class WebViewObject : MonoBehaviour
         Callback httpErr = null,
         Callback ld = null,
         bool enableWKWebView = false,
-        Callback started = null)
+        Callback started = null,
+        Callback hooked = null)
     {
         onJS = cb;
         onError = err;
         onHttpError = httpErr;
         onStarted = started;
         onLoaded = ld;
+        onHooked = hooked;
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_init(name);
@@ -609,7 +612,7 @@ public class WebViewObject : MonoBehaviour
         return scrollBounceEnabled;
     }
 
-    public bool SetURLPattern(string allowPattern, string denyPattern)
+    public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern)
     {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
@@ -620,11 +623,11 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return false;
-        return _CWebViewPlugin_SetURLPattern(webView, allowPattern, denyPattern);
+        return _CWebViewPlugin_SetURLPattern(webView, allowPattern, denyPattern, hookPattern);
 #elif UNITY_ANDROID
         if (webView == null)
             return false;
-        return webView.Call<bool>("SetURLPattern", allowPattern, denyPattern);
+        return webView.Call<bool>("SetURLPattern", allowPattern, denyPattern, hookPattern);
 #endif
     }
 
@@ -831,6 +834,21 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    public void CallOnHooked(string message)
+    {
+        if (onHooked != null)
+        {
+#if !UNITY_ANDROID
+#if UNITY_2018_4_OR_NEWER
+            message = UnityWebRequest.UnEscapeURL(message);
+#else // UNITY_2018_4_OR_NEWER
+            message = WWW.UnEscapeURL(message);
+#endif // UNITY_2018_4_OR_NEWER
+#endif // !UNITY_ANDROID
+            onHooked(message);
+        }
+    }
+
 
     public void AddCustomHeader(string headerKey, string headerValue)
     {
@@ -970,6 +988,9 @@ public class WebViewObject : MonoBehaviour
                 break;
             case 'J':
                 CallFromJS(s.Substring(1));
+                break;
+            case 'H':
+                CallOnHooked(s.Substring(1));
                 break;
             }
         }
