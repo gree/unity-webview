@@ -20,7 +20,9 @@
 
 using System.Collections;
 using UnityEngine;
+#if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
+#endif
 using UnityEngine.UI;
 
 public class SampleWebView : MonoBehaviour
@@ -125,9 +127,16 @@ public class SampleWebView : MonoBehaviour
                 var dst = System.IO.Path.Combine(Application.persistentDataPath, url);
                 byte[] result = null;
                 if (src.Contains("://")) {  // for Android
+#if UNITY_2018_4_OR_NEWER
+                    // NOTE: a more complete code that utilizes UnityWebRequest can be found in https://github.com/gree/unity-webview/commit/2a07e82f760a8495aa3a77a23453f384869caba7#diff-4379160fa4c2a287f414c07eb10ee36d
                     var unityWebRequest = UnityWebRequest.Get(src);
                     yield return unityWebRequest.SendWebRequest();
                     result = unityWebRequest.downloadHandler.data;
+#else
+                    var www = new WWW(src);
+                    yield return www;
+                    result = www.bytes;
+#endif
                 } else {
                     result = System.IO.File.ReadAllBytes(src);
                 }
