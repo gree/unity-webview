@@ -41,6 +41,7 @@ static BOOL inEditor;
     NSMutableArray *messages;
     NSRegularExpression *allowRegex;
     NSRegularExpression *denyRegex;
+    NSRegularExpression *hookRegex;
 }
 @end
 
@@ -60,6 +61,7 @@ static WKProcessPool *_sharedProcessPool;
     customRequestHeader = [[NSMutableDictionary alloc] init];
     allowRegex = nil;
     denyRegex = nil;
+    hookRegex = nil;
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     WKUserContentController *controller = [[WKUserContentController alloc] init];
     WKPreferences *preferences = [[WKPreferences alloc] init];
@@ -118,6 +120,7 @@ static WKProcessPool *_sharedProcessPool;
         bitmap = nil;
         window = nil;
         windowController = nil;
+        hookRegex = nil;
         denyRegex = nil;
         allowRegex = nil;
         customRequestHeader = nil;
@@ -149,8 +152,14 @@ static WKProcessPool *_sharedProcessPool;
         [listener ignore];
         return;
     }
-    if ([url hasPrefix:@"unity:"]) {
+    if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
+        [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
+        [listener ignore];
+    } else if ([url hasPrefix:@"unity:"]) {
         [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
+        [listener ignore];
+    } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+        [self addMessage:[NSString stringWithFormat:@"H%@",url]];
         [listener ignore];
     } else {
         if ([customRequestHeader count] > 0) {
@@ -200,12 +209,14 @@ static WKProcessPool *_sharedProcessPool;
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
-    //if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
-    // [[UIApplication sharedApplication] openURL:url];
-    // decisionHandler(WKNavigationActionPolicyCancel);
-    //} else
-    if ([url hasPrefix:@"unity:"]) {
+    if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
+        [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else if ([url hasPrefix:@"unity:"]) {
         [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+        [self addMessage:[NSString stringWithFormat:@"H%@",url]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
@@ -291,11 +302,12 @@ static WKProcessPool *_sharedProcessPool;
     return convertedRequest;
 }
 
-- (BOOL)setURLPattern:(const char *)allowPattern and:(const char *)denyPattern
+- (BOOL)setURLPattern:(const char *)allowPattern and:(const char *)denyPattern and:(const char *)hookPattern
 {
     NSError *err = nil;
     NSRegularExpression *allow = nil;
     NSRegularExpression *deny = nil;
+    NSRegularExpression *hook = nil;
     if (allowPattern == nil || *allowPattern == '\0') {
         allow = nil;
     } else {
@@ -320,8 +332,21 @@ static WKProcessPool *_sharedProcessPool;
             return NO;
         }
     }
+    if (hookPattern == nil || *hookPattern == '\0') {
+        hook = nil;
+    } else {
+        hook
+            = [NSRegularExpression
+                regularExpressionWithPattern:[NSString stringWithUTF8String:hookPattern]
+                                     options:0
+                                       error:&err];
+        if (err != nil) {
+            return NO;
+        }
+    }
     allowRegex = allow;
     denyRegex = deny;
+    hookRegex = hook;
     return YES;
 }
 
@@ -562,7 +587,7 @@ extern "C" {
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetRect(void *instance, int width, int height);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
-    BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern);
+    BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern, const char *hookPattern);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -631,10 +656,10 @@ void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
     [webViewPlugin setVisibility:visibility];
 }
 
-BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern)
+BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern, const char *hookPattern)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    return [webViewPlugin setURLPattern:allowPattern and:denyPattern];
+    return [webViewPlugin setURLPattern:allowPattern and:denyPattern and:hookPattern];
 }
 
 void _CWebViewPlugin_LoadURL(void *instance, const char *url)

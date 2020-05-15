@@ -48,6 +48,10 @@ public class SampleWebView : MonoBehaviour
             {
                 Debug.Log(string.Format("CallOnStarted[{0}]", msg));
             },
+            hooked: (msg) =>
+            {
+                Debug.Log(string.Format("CallOnHooked[{0}]", msg));
+            },
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
@@ -101,7 +105,7 @@ public class SampleWebView : MonoBehaviour
         webViewObject.bitmapRefreshCycle = 1;
 #endif
         //webViewObject.SetAlertDialogEnabled(false);
-        //webViewObject.SetURLPattern("", "^https://www.google.com");
+        //webViewObject.SetURLPattern("", "^https://www.google.com", "^https://www.youtube.com");
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
 

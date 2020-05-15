@@ -100,6 +100,7 @@ public class CWebViewPlugin {
     private String mWebViewUA;
     private Pattern mAllowRegex;
     private Pattern mDenyRegex;
+    private Pattern mHookRegex;
 
     public CWebViewPlugin() {
     }
@@ -324,15 +325,18 @@ public class CWebViewPlugin {
                     if (!pass) {
                         return true;
                     }
-                    if (url.startsWith("http://") || url.startsWith("https://")
+                    if (url.startsWith("unity:")) {
+                        String message = url.substring(6);
+                        mWebViewPlugin.call("CallFromJS", message);
+                        return true;
+                    } else if (mHookRegex != null && mHookRegex.matcher(url).find()) {
+                        mWebViewPlugin.call("CallOnHooked", url);
+                        return true;
+                    } else if (url.startsWith("http://") || url.startsWith("https://")
                         || url.startsWith("file://") || url.startsWith("javascript:")) {
                         mWebViewPlugin.call("CallOnStarted", url);
                         // Let webview handle the URL
                         return false;
-                    } else if (url.startsWith("unity:")) {
-                        String message = url.substring(6);
-                        mWebViewPlugin.call("CallFromJS", message);
-                        return true;
                     }
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     PackageManager pm = a.getPackageManager();
@@ -439,15 +443,17 @@ public class CWebViewPlugin {
         }});
     }
 
-    public boolean SetURLPattern(final String allowPattern, final String denyPattern)
+    public boolean SetURLPattern(final String allowPattern, final String denyPattern, final String hookPattern)
     {
         try {
             final Pattern allow = (allowPattern == null || allowPattern.length() == 0) ? null : Pattern.compile(allowPattern);
             final Pattern deny = (denyPattern == null || denyPattern.length() == 0) ? null : Pattern.compile(denyPattern);
+            final Pattern hook = (hookPattern == null || hookPattern.length() == 0) ? null : Pattern.compile(hookPattern);
             final Activity a = UnityPlayer.currentActivity;
             a.runOnUiThread(new Runnable() {public void run() {
                 mAllowRegex = allow;
                 mDenyRegex = deny;
+                mHookRegex = hook;
             }});
             return true;
         } catch (Exception e) {

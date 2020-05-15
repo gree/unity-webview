@@ -96,6 +96,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     BOOL alertDialogEnabled;
     NSRegularExpression *allowRegex;
     NSRegularExpression *denyRegex;
+    NSRegularExpression *hookRegex;
 }
 - (void)dispose;
 + (void)clearCookies;
@@ -115,6 +116,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     alertDialogEnabled = true;
     allowRegex = nil;
     denyRegex = nil;
+    hookRegex = nil;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [[NSUserDefaults standardUserDefaults]
             registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
@@ -174,6 +176,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         [webView0 removeFromSuperview];
         [webView0 removeObserver:self forKeyPath:@"loading"];
     }
+    hookRegex = nil;
     denyRegex = nil;
     allowRegex = nil;
     customRequestHeader = nil;
@@ -322,6 +325,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         return;
     } else if ([url hasPrefix:@"unity:"]) {
         UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallOnHooked", url]);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if (![url hasPrefix:@"about:blank"]  // for loadHTML(), cf. #365
@@ -502,7 +509,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     [webView setScrollBounce:enabled];
 }
 
-- (BOOL)setURLPattern:(const char *)allowPattern and:(const char *)denyPattern
+- (BOOL)setURLPattern:(const char *)allowPattern and:(const char *)denyPattern and:(const char *)hookPattern
 {
     NSError *err = nil;
     NSRegularExpression *allow = nil;
@@ -531,8 +538,21 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
             return NO;
         }
     }
+    if (hookPattern == nil || *hookPattern == '\0') {
+        hook = nil;
+    } else {
+        hook
+            = [NSRegularExpression
+                regularExpressionWithPattern:[NSString stringWithUTF8String:hookPattern]
+                                     options:0
+                                       error:&err];
+        if (err != nil) {
+            return NO;
+        }
+    }
     allowRegex = allow;
     denyRegex = deny;
+    hookRegex = hook;
     return YES;
 }
 
@@ -648,7 +668,7 @@ extern "C" {
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
-    BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern);
+    BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern, const char *hookPattern);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
     void _CWebViewPlugin_LoadHTML(void *instance, const char *html, const char *baseUrl);
     void _CWebViewPlugin_EvaluateJS(void *instance, const char *url);
@@ -717,12 +737,12 @@ void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)
     [webViewPlugin setScrollBounceEnabled:enabled];
 }
 
-BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern)
+BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern, const char *hookPattern)
 {
     if (instance == NULL)
         return NO;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    return [webViewPlugin setURLPattern:allowPattern and:denyPattern];
+    return [webViewPlugin setURLPattern:allowPattern and:denyPattern and:hookPattern];
 }
 
 void _CWebViewPlugin_LoadURL(void *instance, const char *url)
