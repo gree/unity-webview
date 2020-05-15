@@ -20,6 +20,7 @@
 
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 
 public class SampleWebView : MonoBehaviour
@@ -124,9 +125,9 @@ public class SampleWebView : MonoBehaviour
                 var dst = System.IO.Path.Combine(Application.persistentDataPath, url);
                 byte[] result = null;
                 if (src.Contains("://")) {  // for Android
-                    var www = new WWW(src);
-                    yield return www;
-                    result = www.bytes;
+                    var unityWebRequest = UnityWebRequest.Get(src);
+                    yield return unityWebRequest.SendWebRequest();
+                    result = unityWebRequest.downloadHandler.data;
                 } else {
                     result = System.IO.File.ReadAllBytes(src);
                 }
