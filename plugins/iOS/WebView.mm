@@ -328,7 +328,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
-        UnitySendMessage([gameObjectName UTF8String], "CallOnHooked", url]);
+        UnitySendMessage([gameObjectName UTF8String], "CallOnHooked", [url UTF8String]);
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if (![url hasPrefix:@"about:blank"]  // for loadHTML(), cf. #365
@@ -514,6 +514,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     NSError *err = nil;
     NSRegularExpression *allow = nil;
     NSRegularExpression *deny = nil;
+    NSRegularExpression *hook = nil;
     if (allowPattern == nil || *allowPattern == '\0') {
         allow = nil;
     } else {
