@@ -128,64 +128,15 @@ static WKProcessPool *_sharedProcessPool;
     }
 }
 
-/*
-- (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
 }
 
-- (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
+- (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    [self addMessage:[NSString stringWithFormat:@"L%@",[[[[frame dataSource] request] URL] absoluteString]]];
+    [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
 }
-
-- (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
-{
-    NSString *url = [[request URL] absoluteString];
-    BOOL pass = YES;
-    if (allowRegex != nil && [allowRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
-         pass = YES;
-    } else if (denyRegex != nil && [denyRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
-         pass = NO;
-    }
-    if (!pass) {
-        [listener ignore];
-        return;
-    }
-    if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
-        [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
-        [listener ignore];
-    } else if ([url hasPrefix:@"unity:"]) {
-        [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
-        [listener ignore];
-    } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
-        [self addMessage:[NSString stringWithFormat:@"H%@",url]];
-        [listener ignore];
-    } else {
-        if ([customRequestHeader count] > 0) {
-            bool isCustomized = YES;
-
-            // Check for additional custom header.
-            for (NSString *key in [customRequestHeader allKeys])
-            {
-                if (![[[request allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
-                    isCustomized = NO;
-                    break;
-                }
-            }
-
-            // If the custom header is not attached, give it and make a request again.
-            if (!isCustomized) {
-                [listener ignore];
-                [frame loadRequest:[self constructionCustomHeader:request]];
-                return;
-            }
-        }
-
-        [listener use];
-    }
-}
-*/
 
 - (void)webView:(WKWebView*)wkWebView didCommitNavigation:(null_unspecified WKNavigation *)navigation
 {
