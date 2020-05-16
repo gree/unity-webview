@@ -108,7 +108,7 @@ public class SampleWebView : MonoBehaviour
         webViewObject.bitmapRefreshCycle = 1;
 #endif
         //webViewObject.SetAlertDialogEnabled(false);
-        //webViewObject.SetURLPattern("", "^https://www.google.com", "^https://www.youtube.com");
+        //webViewObject.SetURLPattern("", "^https://.*youtube.com", "^https://.*google.com");
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
 
