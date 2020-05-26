@@ -341,6 +341,8 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_ClearCookies();
     [DllImport("__Internal")]
+    private static extern void   _CWebViewPlugin_SaveCookies();
+    [DllImport("__Internal")]
     private static extern string _CWebViewPlugin_GetCookies(string url);
 #elif UNITY_WEBGL
 	[DllImport("__Internal")]
@@ -932,6 +934,24 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("ClearCookies");
+#endif
+    }
+
+
+    public void SaveCookies()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE && !UNITY_EDITOR
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SaveCookies();
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("SaveCookies");
 #endif
     }
 

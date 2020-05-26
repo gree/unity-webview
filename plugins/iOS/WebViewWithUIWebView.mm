@@ -142,8 +142,6 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     NSRegularExpression *denyRegex;
     NSRegularExpression *hookRegex;
 }
-- (void)dispose;
-+ (void)clearCookies;
 @end
 
 @implementation CWebViewPlugin
@@ -258,6 +256,18 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
                                                    modifiedSince:date
                                                completionHandler:^{}];
     }
+}
+
++ saveCookies
+{
+    // cf. https://stackoverflow.com/questions/33156567/getting-all-cookies-from-wkwebview/49744695#49744695
+    _sharedProcessPool = [[WKProcessPool alloc] init];
+    [_instances enumerateObjectsUsingBlock:^(CWebViewPlugin *obj, NSUInteger idx, BOOL *stop) {
+        if ([obj->webView isKindOfClass:[WKWebView class]]) {
+            WKWebView *webView = (WKWebView *)obj->webView;
+            webView.configuration.processPool = _sharedProcessPool;
+        }
+    }];
 }
 
 + (const char *)getCookies:(const char *)url
@@ -783,6 +793,7 @@ extern "C" {
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
     void _CWebViewPlugin_ClearCookies();
+    void _CWebViewPlugin_SaveCookies();
     const char *_CWebViewPlugin_GetCookies(const char *url);
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
 }
@@ -936,6 +947,11 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
 void _CWebViewPlugin_ClearCookies()
 {
     [CWebViewPlugin clearCookies];
+}
+
+void _CWebViewPlugin_SaveCookies()
+{
+    [CWebViewPlugin saveCookies];
 }
 
 const char *_CWebViewPlugin_GetCookies(const char *url)
