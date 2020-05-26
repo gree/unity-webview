@@ -807,6 +807,20 @@ public class CWebViewPlugin extends Fragment {
         }
     }
 
+    public void SaveCookies()
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+        {
+           CookieManager.getInstance().flush();
+        } else {
+           final Activity a = UnityPlayer.currentActivity;
+           CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(a);
+           cookieSyncManager.startSync();
+           cookieSyncManager.stopSync();
+           cookieSyncManager.sync();
+        }
+    }
+
     public String GetCookies(String url)
     {
         CookieManager cookieManager = CookieManager.getInstance();
