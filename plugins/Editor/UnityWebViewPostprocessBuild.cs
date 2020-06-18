@@ -23,6 +23,9 @@ public class UnityWebViewPostprocessBuild
         var changed = false;
         var androidManifest = new AndroidManifest(GetManifestPath(basePath));
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
+#if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
+        changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
+#endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
         changed = (androidManifest.AddCamera() || changed);
 #endif
@@ -69,6 +72,9 @@ public class UnityWebViewPostprocessBuild
             var changed = false;
             var androidManifest = new AndroidManifest(manifest);
             changed = (androidManifest.SetHardwareAccelerated(true) || changed);
+#if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
+            changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
+#endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
             changed = (androidManifest.AddCamera() || changed);
 #endif
@@ -147,6 +153,16 @@ internal class AndroidManifest : AndroidXmlDocument {
                 "/manifest/application/activity[intent-filter/action/@android:name='android.intent.action.MAIN' and "
                 + "intent-filter/category/@android:name='android.intent.category.LAUNCHER']",
                 nsMgr);
+    }
+
+    internal bool SetUsesCleartextTraffic(bool enabled) {
+        // android:usesCleartextTraffic
+        bool changed = false;
+        if (ApplicationElement.GetAttribute("usesCleartextTraffic", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
+            ApplicationElement.SetAttribute("usesCleartextTraffic", AndroidXmlNamespace, (enabled) ? "true" : "false");
+            changed = true;
+        }
+        return changed;
     }
 
     internal bool SetHardwareAccelerated(bool enabled) {
