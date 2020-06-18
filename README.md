@@ -159,6 +159,10 @@ implementation will adjust Unity's SurfaceView z order. Please refer
 and `plugins/Android/src/net/gree/unitywebview/CUnityPlayer.java` if
 you already have your own activity implementation.
 
+#### usesCleartextTraffic
+
+For allowing http cleartext traffic for Android API level 28 or higher, please define `UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds `android:usesCleartextTraffic="true"` to the applicaiton.
+
 #### Camera/Audio Permission/Feature
 
 For allowing camera access (`navigator.mediaDevices.getUserMedia({ video:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
