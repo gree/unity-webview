@@ -383,7 +383,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     if (webView == nil)
         return YES;
 
-    NSString *url = [[request URL] absoluteString];
+    NSURL *nsurl = [request URL];
+    NSString *url = [nsurl absoluteString];
     BOOL pass = YES;
     if (allowRegex != nil && [allowRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
          pass = YES;
