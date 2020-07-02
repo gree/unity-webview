@@ -36,6 +36,7 @@ import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.webkit.GeolocationPermissions.Callback;
+import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsResult;
 import android.webkit.JsPromptResult;
@@ -101,6 +102,9 @@ public class CWebViewPlugin {
     private Pattern mAllowRegex;
     private Pattern mDenyRegex;
     private Pattern mHookRegex;
+
+    private String mBasicAuthUserName;
+    private String mBasicAuthPassword;
 
     public CWebViewPlugin() {
     }
@@ -281,6 +285,15 @@ public class CWebViewPlugin {
                 public void onLoadResource(WebView view, String url) {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
+                }
+
+                @Override
+                public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
+                    if (mBasicAuthUserName != null && mBasicAuthPassword != null) {
+                        handler.proceed(mBasicAuthUserName, mBasicAuthPassword);
+                    } else {
+                        handler.cancel();
+                    }
                 }
 
                 @Override
@@ -655,5 +668,11 @@ public class CWebViewPlugin {
     {
         CookieManager cookieManager = CookieManager.getInstance();
         return cookieManager.getCookie(url);
+    }
+
+    public void SetBasicAuthInfo(final String userName, final String password)
+    {
+        mBasicAuthUserName = userName;
+        mBasicAuthPassword = password;
     }
 }
