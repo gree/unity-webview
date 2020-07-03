@@ -107,8 +107,18 @@ public class SampleWebView : MonoBehaviour
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
 #endif
+        // cf. https://github.com/gree/unity-webview/pull/512
+        // Added alertDialogEnabled flag to enable/disable alert/confirm/prompt dialogs. by KojiNakamaru · Pull Request #512 · gree/unity-webview
         //webViewObject.SetAlertDialogEnabled(false);
+
+        // cf. https://github.com/gree/unity-webview/pull/550
+        // introduced SetURLPattern(..., hookPattern). by KojiNakamaru · Pull Request #550 · gree/unity-webview
         //webViewObject.SetURLPattern("", "^https://.*youtube.com", "^https://.*google.com");
+
+        // cf. https://github.com/gree/unity-webview/pull/570
+        // Add BASIC authentication feature (Android and iOS with WKWebView only) by takeh1k0 · Pull Request #570 · gree/unity-webview
+        //webViewObject.SetBasicAuthInfo("id", "password");
+
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetVisibility(true);
 
