@@ -344,6 +344,8 @@ public class WebViewObject : MonoBehaviour
     private static extern void   _CWebViewPlugin_SaveCookies();
     [DllImport("__Internal")]
     private static extern string _CWebViewPlugin_GetCookies(string url);
+    [DllImport("__Internal")]
+    private static extern void   _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
 #elif UNITY_WEBGL
 	[DllImport("__Internal")]
 	private static extern void _gree_unity_webview_init(string name);
@@ -975,6 +977,25 @@ public class WebViewObject : MonoBehaviour
 #else
         //TODO: UNSUPPORTED
         return "";
+#endif
+    }
+
+    public void SetBasicAuthInfo(string userName, string password)
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetBasicAuthInfo(webView, userName, password);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetBasicAuthInfo", userName, password);
 #endif
     }
 

@@ -141,6 +141,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     NSRegularExpression *allowRegex;
     NSRegularExpression *denyRegex;
     NSRegularExpression *hookRegex;
+    NSString *basicAuthUserName;
+    NSString *basicAuthPassword;
 }
 @end
 
@@ -159,6 +161,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     allowRegex = nil;
     denyRegex = nil;
     hookRegex = nil;
+    basicAuthUserName = nil;
+    basicAuthPassword = nil;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [[NSUserDefaults standardUserDefaults]
             registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
@@ -223,6 +227,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         [webView0 removeFromSuperview];
         [webView0 removeObserver:self forKeyPath:@"loading"];
     }
+    basicAuthPassword = nil;
+    basicAuthUserName = nil;
     hookRegex = nil;
     denyRegex = nil;
     allowRegex = nil;
@@ -554,6 +560,20 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     [UnityGetGLViewController() presentViewController:alertController animated:YES completion:^{}];
 }
 
+- (void)webView:(WKWebView *)webView didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
+{
+    NSURLSessionAuthChallengeDisposition disposition;
+    NSURLCredential *credential;
+    if (basicAuthUserName && basicAuthPassword && [challenge previousFailureCount] == 0) {
+        disposition = NSURLSessionAuthChallengeUseCredential;
+        credential = [NSURLCredential credentialWithUser:basicAuthUserName password:basicAuthPassword persistence:NSURLCredentialPersistenceForSession];
+    } else {
+        disposition = NSURLSessionAuthChallengePerformDefaultHandling;
+        credential = nil;
+    }
+    completionHandler(disposition, credential);
+}
+
 - (BOOL)isSetupedCustomHeader:(NSURLRequest *)targetRequest
 {
     // Check for additional custom header.
@@ -771,6 +791,12 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     strcpy(r, s);
     return r;
 }
+
+- (void)setBasicAuthInfo:(const char *)userName password:(const char *)password
+{
+    basicAuthUserName = [NSString stringWithUTF8String:userName];
+    basicAuthPassword = [NSString stringWithUTF8String:password];
+}
 @end
 
 extern "C" {
@@ -797,6 +823,7 @@ extern "C" {
     void _CWebViewPlugin_SaveCookies();
     const char *_CWebViewPlugin_GetCookies(const char *url);
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
+    void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
 }
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
@@ -966,6 +993,14 @@ const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *hea
         return NULL;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin getCustomRequestHeaderValue:headerKey];
+}
+
+void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setBasicAuthInfo:userName password:password];
 }
 
 #endif // __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0
