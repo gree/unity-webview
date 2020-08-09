@@ -27,6 +27,7 @@
 #import <Metal/Metal.h>
 #import <OpenGL/gl.h>
 #import <unistd.h>
+#include <unordered_map>
 
 static BOOL s_inEditor;
 static BOOL s_useMetal;
@@ -52,6 +53,80 @@ static BOOL s_useMetal;
 @implementation CWebViewPlugin
 
 static WKProcessPool *_sharedProcessPool;
+static std::unordered_map<int, int> _nskey2cgkey{
+    { NSUpArrowFunctionKey,          126 },
+    { NSDownArrowFunctionKey,        125 },
+    { NSLeftArrowFunctionKey,        123 },
+    { NSRightArrowFunctionKey,       124 },
+    { NSF1FunctionKey,                 0 },
+    { NSF2FunctionKey,                 0 },
+    { NSF3FunctionKey,                 0 },
+    { NSF4FunctionKey,                 0 },
+    { NSF5FunctionKey,                 0 },
+    { NSF6FunctionKey,                 0 },
+    { NSF7FunctionKey,                 0 },
+    { NSF8FunctionKey,                 0 },
+    { NSF9FunctionKey,                 0 },
+    { NSF10FunctionKey,                0 },
+    { NSF11FunctionKey,                0 },
+    { NSF12FunctionKey,                0 },
+    { NSF13FunctionKey,                0 },
+    { NSF14FunctionKey,                0 },
+    { NSF15FunctionKey,                0 },
+    { NSF16FunctionKey,                0 },
+    { NSF17FunctionKey,                0 },
+    { NSF18FunctionKey,                0 },
+    { NSF19FunctionKey,                0 },
+    { NSF20FunctionKey,                0 },
+    { NSF21FunctionKey,                0 },
+    { NSF22FunctionKey,                0 },
+    { NSF23FunctionKey,                0 },
+    { NSF24FunctionKey,                0 },
+    { NSF25FunctionKey,                0 },
+    { NSF26FunctionKey,                0 },
+    { NSF27FunctionKey,                0 },
+    { NSF28FunctionKey,                0 },
+    { NSF29FunctionKey,                0 },
+    { NSF30FunctionKey,                0 },
+    { NSF31FunctionKey,                0 },
+    { NSF32FunctionKey,                0 },
+    { NSF33FunctionKey,                0 },
+    { NSF34FunctionKey,                0 },
+    { NSF35FunctionKey,                0 },
+    { NSInsertFunctionKey,             0 },
+    { NSDeleteFunctionKey,             0 },
+    { NSHomeFunctionKey,               0 },
+    { NSBeginFunctionKey,              0 },
+    { NSEndFunctionKey,                0 },
+    { NSPageUpFunctionKey,             0 },
+    { NSPageDownFunctionKey,           0 },
+    { NSPrintScreenFunctionKey,        0 },
+    { NSScrollLockFunctionKey,         0 },
+    { NSPauseFunctionKey,              0 },
+    { NSSysReqFunctionKey,             0 },
+    { NSBreakFunctionKey,              0 },
+    { NSResetFunctionKey,              0 },
+    { NSStopFunctionKey,               0 },
+    { NSMenuFunctionKey,               0 },
+    { NSUserFunctionKey,               0 },
+    { NSSystemFunctionKey,             0 },
+    { NSPrintFunctionKey,              0 },
+    { NSClearLineFunctionKey,          0 },
+    { NSClearDisplayFunctionKey,       0 },
+    { NSInsertLineFunctionKey,         0 },
+    { NSDeleteLineFunctionKey,         0 },
+    { NSInsertCharFunctionKey,         0 },
+    { NSDeleteCharFunctionKey,         0 },
+    { NSPrevFunctionKey,               0 },
+    { NSNextFunctionKey,               0 },
+    { NSSelectFunctionKey,             0 },
+    { NSExecuteFunctionKey,            0 },
+    { NSUndoFunctionKey,               0 },
+    { NSRedoFunctionKey,               0 },
+    { NSFindFunctionKey,               0 },
+    { NSHelpFunctionKey,               0 },
+    { NSModeSwitchFunctionKey,         0 },
+};
 
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua separated:(BOOL)separated
 {
@@ -447,20 +522,9 @@ static WKProcessPool *_sharedProcessPool;
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
     NSString *characters = [NSString stringWithUTF8String:keyChars];
     CGKeyCode cgKeyCode = 0;
-    switch (keyCode) {
-    case 63232:
-        cgKeyCode = 126;
-        break;
-    case 63233:
-        cgKeyCode = 125;
-        break;
-    case 63234:
-        cgKeyCode = 123;
-        break;
-    case 63235:
-        cgKeyCode = 124;
-        break;
-    }
+    if (0xf700 <= keyCode && keyCode <= 0xf8ff
+        && _nskey2cgkey.find(keyCode) != _nskey2cgkey.end())
+        cgKeyCode = _nskey2cgkey.at(keyCode);
     dispatch_async(
         dispatch_get_main_queue(),
         ^{

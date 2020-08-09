@@ -11,7 +11,7 @@
 		81B8C535151078DB000C56DC /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C534151078DB000C56DC /* WebKit.framework */; };
 		81B8C53815108B89000C56DC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C53715108B89000C56DC /* Carbon.framework */; };
 		81E2C20C14C5684A004CE5C2 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81E2C20B14C5684A004CE5C2 /* Cocoa.framework */; };
-		81F4B4D914C6888B001B4465 /* WebView.m in Sources */ = {isa = PBXBuildFile; fileRef = 81F4B4D814C6888B001B4465 /* WebView.m */; };
+		81F4B4D914C6888B001B4465 /* WebView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81F4B4D814C6888B001B4465 /* WebView.mm */; };
 		81F81AED14D76D2400845D4C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81F81AEC14D76D2400845D4C /* OpenGL.framework */; };
 /* End PBXBuildFile section */
 
@@ -26,7 +26,7 @@
 		81E2C20B14C5684A004CE5C2 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		81E2C20E14C5684A004CE5C2 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		81E2C21014C5684A004CE5C2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		81F4B4D814C6888B001B4465 /* WebView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = WebView.m; path = Sources/WebView.m; sourceTree = "<group>"; };
+		81F4B4D814C6888B001B4465 /* WebView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = WebView.mm; path = Sources/WebView.mm; sourceTree = "<group>"; };
 		81F81AEC14D76D2400845D4C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -48,7 +48,7 @@
 		8102525914C573EB0022296D /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				81F4B4D814C6888B001B4465 /* WebView.m */,
+				81F4B4D814C6888B001B4465 /* WebView.mm */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -175,7 +175,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				81F4B4D914C6888B001B4465 /* WebView.m in Sources */,
+				81F4B4D914C6888B001B4465 /* WebView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -283,8 +283,10 @@
 		81E2C21B14C5684A004CE5C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Resources/Prefix.pch;
 				INFOPLIST_FILE = Resources/Info.plist;
@@ -303,8 +305,10 @@
 		81E2C21C14C5684A004CE5C2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Resources/Prefix.pch;
 				INFOPLIST_FILE = Resources/Info.plist;
