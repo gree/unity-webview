@@ -30,6 +30,7 @@ using UnityEngine.Networking;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
 using System.IO;
 using System.Text.RegularExpressions;
+using UnityEngine.Rendering;
 #endif
 
 using Callback = System.Action<string>;
@@ -158,8 +159,11 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern string _CWebViewPlugin_GetAppPath();
     [DllImport("WebView")]
+    private static extern IntPtr _CWebViewPlugin_InitStatic(
+        bool inEditor, bool useMetal);
+    [DllImport("WebView")]
     private static extern IntPtr _CWebViewPlugin_Init(
-        string gameObject, bool transparent, int width, int height, string ua, bool separated, bool ineditor);
+        string gameObject, bool transparent, int width, int height, string ua, bool separated);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("WebView")]
@@ -206,7 +210,7 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
     [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SetTextureId(IntPtr instance, int textureId);
+    private static extern void _CWebViewPlugin_SetTextureId(IntPtr instance, IntPtr textureId);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SetCurrentInstance(IntPtr instance);
     [DllImport("WebView")]
@@ -320,6 +324,11 @@ public class WebViewObject : MonoBehaviour
 #endif
         )
     {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        _CWebViewPlugin_InitStatic(
+            Application.platform == RuntimePlatform.OSXEditor,
+            SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal);
+#endif
         onJS = cb;
         onError = err;
         onHttpError = httpErr;
@@ -356,9 +365,9 @@ public class WebViewObject : MonoBehaviour
             Screen.height,
             ua,
 #if UNITY_EDITOR
-            separated,
+            separated
 #endif
-            Application.platform == RuntimePlatform.OSXEditor);
+            );
         // define pseudo requestAnimationFrame.
         EvaluateJS(@"(function() {
             var vsync = 1000 / 60;
@@ -1041,7 +1050,7 @@ public class WebViewObject : MonoBehaviour
                     texture.wrapMode = TextureWrapMode.Clamp;
                 }
             }
-            _CWebViewPlugin_SetTextureId(webView, (int)texture.GetNativeTexturePtr());
+            _CWebViewPlugin_SetTextureId(webView, texture.GetNativeTexturePtr());
             _CWebViewPlugin_SetCurrentInstance(webView);
 #if UNITY_4_6 || UNITY_5_0 || UNITY_5_1
             GL.IssuePluginEvent(-1);

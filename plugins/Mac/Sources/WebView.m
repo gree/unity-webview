@@ -24,10 +24,12 @@
 #import <WebKit/WebKit.h>
 #import <Carbon/Carbon.h>
 #import <CoreGraphics/CGContext.h>
+#import <Metal/Metal.h>
 #import <OpenGL/gl.h>
 #import <unistd.h>
 
-static BOOL inEditor;
+static BOOL s_inEditor;
+static BOOL s_useMetal;
 
 @interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
@@ -36,7 +38,7 @@ static BOOL inEditor;
     WKWebView *webView;
     NSString *gameObject;
     NSBitmapImageRep *bitmap;
-    int textureId;
+    void *textureId;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
     NSMutableArray *messages;
@@ -578,7 +580,7 @@ static WKProcessPool *_sharedProcessPool;
     }
 }
 
-- (void)setTextureId:(int)tId
+- (void)setTextureId:(void *)tId
 {
     @synchronized(self) {
         textureId = tId;
@@ -595,25 +597,25 @@ static WKProcessPool *_sharedProcessPool;
         if (bitmap == nil)
             return;
 
-        int rowLength = 0;
-        int unpackAlign = 0;
-        glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
-        glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)[bitmap pixelsWide]);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        glTexSubImage2D(
-            GL_TEXTURE_2D,
-            0,
-            0,
-            0,
-            (GLsizei)[bitmap pixelsWide],
-            (GLsizei)[bitmap pixelsHigh],
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            [bitmap bitmapData]);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
+        NSInteger w = [bitmap pixelsWide];
+        NSInteger h = [bitmap pixelsHigh];
+        NSInteger r = w * [bitmap samplesPerPixel];
+        void *d = [bitmap bitmapData];
+        if (s_useMetal) {
+            id<MTLTexture> tex = (__bridge id<MTLTexture>)textureId;
+            [tex replaceRegion:MTLRegionMake3D(0, 0, 0, w, h, 1) mipmapLevel:0 withBytes:d bytesPerRow:r];
+        } else {
+            int rowLength = 0;
+            int unpackAlign = 0;
+            glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
+            glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)w);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glBindTexture(GL_TEXTURE_2D, (GLuint)(long)textureId);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)w, (GLsizei)h, GL_RGBA, GL_UNSIGNED_BYTE, d);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
+        }
     }
 }
 
@@ -660,8 +662,9 @@ typedef void (*UnityRenderEventFunc)(int eventId);
 extern "C" {
 #endif
     const char *_CWebViewPlugin_GetAppPath(void);
+    void _CWebViewPlugin_InitStatic(BOOL inEditor, BOOL useMetal);
     void *_CWebViewPlugin_Init(
-        const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated, BOOL ineditor);
+        const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetRect(void *instance, int width, int height);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -679,7 +682,7 @@ extern "C" {
     void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap);
     int _CWebViewPlugin_BitmapWidth(void *instance);
     int _CWebViewPlugin_BitmapHeight(void *instance);
-    void _CWebViewPlugin_SetTextureId(void *instance, int textureId);
+    void _CWebViewPlugin_SetTextureId(void *instance, void *textureId);
     void _CWebViewPlugin_SetCurrentInstance(void *instance);
     void UnityRenderEvent(int eventId);
     UnityRenderEventFunc GetRenderEventFunc(void);
@@ -702,13 +705,18 @@ const char *_CWebViewPlugin_GetAppPath(void)
 
 static NSMutableSet *pool;
 
+void _CWebViewPlugin_InitStatic(BOOL inEditor, BOOL useMetal)
+{
+    s_inEditor = inEditor;
+    s_useMetal = useMetal;
+}
+
 void *_CWebViewPlugin_Init(
-    const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated, BOOL ineditor)
+    const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated)
 {
     if (pool == 0)
         pool = [[NSMutableSet alloc] init];
 
-    inEditor = ineditor;
     CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua separated:separated];
     [pool addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
@@ -819,7 +827,7 @@ int _CWebViewPlugin_BitmapHeight(void *instance)
     return [webViewPlugin bitmapHigh];
 }
 
-void _CWebViewPlugin_SetTextureId(void *instance, int textureId)
+void _CWebViewPlugin_SetTextureId(void *instance, void *textureId)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setTextureId:textureId];
