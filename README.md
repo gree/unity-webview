@@ -33,18 +33,9 @@ out adequate parts in the script.
 
 ### Mac (Editor)
 
+#### macOS Version
+
 The current implementation utilizes https://developer.apple.com/documentation/webkit/wkwebview/2873260-takesnapshotwithconfiguration to capture an offscreen webview image so that macOS 10.13 (High Sierra) or later is required.
-
-#### Auto Graphics API/Metal Editor Support
-
-The current implementation reiles on several OpenGL APIs so you need to disable "Auto graphics API"
-and specify OpenGLCore as below.
-
-![auto-graphics-api-setting-for-mac.png](doc/img/auto-graphics-api-setting-for-mac.png)
-
-If you work only in (recent) Unity Editor, you may just disable "Metal Editor Support" (cf. https://github.com/gree/unity-webview/issues/383 ).
-
-![metal-editor-support-setting-for-mac.png](doc/img/metal-editor-support-setting-for-mac.png)
 
 #### App Transport Security
 
