@@ -51,7 +51,7 @@ static BOOL inEditor;
 
 static WKProcessPool *_sharedProcessPool;
 
-- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
+- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua separated:(BOOL)separated
 {
     self = [super init];
     @synchronized(self) {
@@ -93,15 +93,15 @@ static WKProcessPool *_sharedProcessPool;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
-/*
-    window = [[NSWindow alloc] initWithContentRect:frame
-                                         styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
-                                           backing:NSBackingStoreBuffered
-                                             defer:NO];
-    [window setContentView:webView];
-    [window orderFront:NSApp];
-    windowController = [[NSWindowController alloc] initWithWindow:window];
-*/
+    if (separated) {
+        window = [[NSWindow alloc] initWithContentRect:frame
+                                             styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
+                                               backing:NSBackingStoreBuffered
+                                                 defer:NO];
+        [window setContentView:webView];
+        [window orderFront:NSApp];
+        windowController = [[NSWindowController alloc] initWithWindow:window];
+    }
     return self;
 }
 
@@ -405,21 +405,21 @@ static WKProcessPool *_sharedProcessPool;
             NSEvent *event;
             switch (mouseState) {
             case 1:
-                event = [NSEvent mouseEventWithType:NSLeftMouseDown
+                event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown
                                            location:NSMakePoint(x, y) modifierFlags:0
                                           timestamp:GetCurrentEventTime() windowNumber:0
                                             context:context eventNumber:0 clickCount:1 pressure:1];
                 [view mouseDown:event];
                 break;
             case 2:
-                event = [NSEvent mouseEventWithType:NSLeftMouseDragged
+                event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDragged
                                            location:NSMakePoint(x, y) modifierFlags:0
                                           timestamp:GetCurrentEventTime() windowNumber:0
                                             context:context eventNumber:0 clickCount:0 pressure:1];
                 [view mouseDragged:event];
                 break;
             case 3:
-                event = [NSEvent mouseEventWithType:NSLeftMouseUp
+                event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp
                                            location:NSMakePoint(x, y) modifierFlags:0
                                           timestamp:GetCurrentEventTime() windowNumber:0
                                             context:context eventNumber:0 clickCount:0 pressure:0];
@@ -532,28 +532,33 @@ static WKProcessPool *_sharedProcessPool;
                 // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
             }
             inRendering = YES;
-            NSBitmapImageRep *bmpRep = bitmap;
-            // memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
-            // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
-            WKWebView *wkv = webView;
-            WKSnapshotConfiguration *cfg = [WKSnapshotConfiguration new];
-            //cfg.snapshotWidth = [NSNumber numberWithLong:[bitmap pixelsWide]];
-            //cfg.rect = webView.frame;
-            [wkv takeSnapshotWithConfiguration:cfg
-                             completionHandler:^(NSImage *nsImg, NSError *err) {
-                if (err == nil) {
-                    NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bmpRep];
-                    [NSGraphicsContext saveGraphicsState];
-                    [NSGraphicsContext setCurrentContext:ctx];
-                    [nsImg drawAtPoint:CGPointZero
-                              fromRect:CGRectMake(0, 0, [bmpRep pixelsWide], [bmpRep pixelsHigh])
-                             operation:NSCompositingOperationCopy
-                              fraction:1.0];
-                    [[NSGraphicsContext currentContext] flushGraphics];
-                    [NSGraphicsContext restoreGraphicsState];
-                }
-                self->inRendering = NO;
-            }];
+            if (window != nil) {
+                memset([bitmap bitmapData], 128, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+                inRendering = NO;
+            } else {
+                NSBitmapImageRep *bmpRep = bitmap;
+                // memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+                // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+                WKWebView *wkv = webView;
+                WKSnapshotConfiguration *cfg = [WKSnapshotConfiguration new];
+                //cfg.snapshotWidth = [NSNumber numberWithLong:[bitmap pixelsWide]];
+                //cfg.rect = webView.frame;
+                [wkv takeSnapshotWithConfiguration:cfg
+                                 completionHandler:^(NSImage *nsImg, NSError *err) {
+                    if (err == nil) {
+                        NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bmpRep];
+                        [NSGraphicsContext saveGraphicsState];
+                        [NSGraphicsContext setCurrentContext:ctx];
+                        [nsImg drawAtPoint:CGPointZero
+                                  fromRect:CGRectMake(0, 0, [bmpRep pixelsWide], [bmpRep pixelsHigh])
+                                 operation:NSCompositingOperationCopy
+                                  fraction:1.0];
+                        [[NSGraphicsContext currentContext] flushGraphics];
+                        [NSGraphicsContext restoreGraphicsState];
+                    }
+                    self->inRendering = NO;
+                }];
+            }
         }
         needsDisplay = refreshBitmap;
     }
@@ -656,7 +661,7 @@ extern "C" {
 #endif
     const char *_CWebViewPlugin_GetAppPath(void);
     void *_CWebViewPlugin_Init(
-        const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor);
+        const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated, BOOL ineditor);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetRect(void *instance, int width, int height);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -698,13 +703,13 @@ const char *_CWebViewPlugin_GetAppPath(void)
 static NSMutableSet *pool;
 
 void *_CWebViewPlugin_Init(
-    const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor)
+    const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated, BOOL ineditor)
 {
     if (pool == 0)
         pool = [[NSMutableSet alloc] init];
 
     inEditor = ineditor;
-    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua];
+    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua separated:separated];
     [pool addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
 }
