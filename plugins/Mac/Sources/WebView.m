@@ -23,14 +23,17 @@
 #import <AppKit/AppKit.h>
 #import <WebKit/WebKit.h>
 #import <Carbon/Carbon.h>
+#import <CoreGraphics/CGContext.h>
 #import <OpenGL/gl.h>
 #import <unistd.h>
 
 static BOOL inEditor;
 
-@interface CWebViewPlugin : NSObject
+@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
-    WebView *webView;
+    NSWindow *window;
+    NSWindowController *windowController;
+    WKWebView *webView;
     NSString *gameObject;
     NSBitmapImageRep *bitmap;
     int textureId;
@@ -40,31 +43,65 @@ static BOOL inEditor;
     NSRegularExpression *allowRegex;
     NSRegularExpression *denyRegex;
     NSRegularExpression *hookRegex;
+    BOOL inRendering;
 }
 @end
 
 @implementation CWebViewPlugin
 
+static WKProcessPool *_sharedProcessPool;
+
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua
 {
     self = [super init];
+    @synchronized(self) {
+        if (_sharedProcessPool == NULL) {
+            _sharedProcessPool = [[WKProcessPool alloc] init];
+        }
+    }
     messages = [[NSMutableArray alloc] init];
     customRequestHeader = [[NSMutableDictionary alloc] init];
     allowRegex = nil;
     denyRegex = nil;
     hookRegex = nil;
-    webView = [[WebView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+    WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
+    WKUserContentController *controller = [[WKUserContentController alloc] init];
+    WKPreferences *preferences = [[WKPreferences alloc] init];
+    preferences.javaScriptEnabled = true;
+    preferences.plugInsEnabled = true;
+    [controller addScriptMessageHandler:self name:@"unityControl"];
+    configuration.userContentController = controller;
+    configuration.processPool = _sharedProcessPool;
+    // configuration.preferences = preferences;
+    NSRect frame = NSMakeRect(0, 0, width, height);
+    webView = [[WKWebView alloc] initWithFrame:frame
+                                 configuration:configuration];
+    [[[webView configuration] preferences] setValue:@YES forKey:@"developerExtrasEnabled"];
+    webView.UIDelegate = self;
+    webView.navigationDelegate = self;
     webView.hidden = YES;
     if (transparent) {
-        [webView setDrawsBackground:NO];
+        [webView setValue:@NO forKey:@"drawsBackground"];
     }
+    // webView.translatesAutoresizingMaskIntoConstraints = NO;
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
-    [webView setFrameLoadDelegate:(id)self];
-    [webView setPolicyDelegate:(id)self];
+    // [webView setFrameLoadDelegate:(id)self];
+    // [webView setPolicyDelegate:(id)self];
+    webView.UIDelegate = self;
+    webView.navigationDelegate = self;
     gameObject = [NSString stringWithUTF8String:gameObject_];
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
+/*
+    window = [[NSWindow alloc] initWithContentRect:frame
+                                         styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
+                                           backing:NSBackingStoreBuffered
+                                             defer:NO];
+    [window setContentView:webView];
+    [window orderFront:NSApp];
+    windowController = [[NSWindowController alloc] initWithWindow:window];
+*/
     return self;
 }
 
@@ -72,13 +109,20 @@ static BOOL inEditor;
 {
     @synchronized(self) {
         if (webView != nil) {
-            [webView setFrameLoadDelegate:nil];
-            [webView setPolicyDelegate:nil];
+            // [webView setFrameLoadDelegate:nil];
+            // [webView setPolicyDelegate:nil];
+            webView.UIDelegate = nil;
+            webView.navigationDelegate = nil;
             [webView stopLoading:nil];
             webView = nil;
         }
+        if (window != nil) {
+            [window close];
+        }
         gameObject = nil;
         bitmap = nil;
+        window = nil;
+        windowController = nil;
         hookRegex = nil;
         denyRegex = nil;
         allowRegex = nil;
@@ -87,19 +131,28 @@ static BOOL inEditor;
     }
 }
 
-- (void)webView:(WebView *)sender didFailProvisionalLoadWithError:(NSError *)error forFrame:(WebFrame *)frame
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
 }
 
-- (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
+- (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    [self addMessage:[NSString stringWithFormat:@"L%@",[[[[frame dataSource] request] URL] absoluteString]]];
+    [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
 }
 
-- (void)webView:(WebView *)sender decidePolicyForNavigationAction:(NSDictionary *)actionInformation request:(NSURLRequest *)request frame:(WebFrame *)frame decisionListener:(id<WebPolicyDecisionListener>)listener
+- (void)webView:(WKWebView*)wkWebView didCommitNavigation:(null_unspecified WKNavigation *)navigation
 {
-    NSString *url = [[request URL] absoluteString];
+    [self addMessage:[NSString stringWithFormat:@"L%s","Unknown URL"]];
+}
+
+- (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
+{
+    if (webView == nil) {
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    NSString *url = [[navigationAction.request URL] absoluteString];
     BOOL pass = YES;
     if (allowRegex != nil && [allowRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
          pass = YES;
@@ -107,18 +160,23 @@ static BOOL inEditor;
          pass = NO;
     }
     if (!pass) {
-        [listener ignore];
+        decisionHandler(WKNavigationActionPolicyCancel);
         return;
     }
     if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
         [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
-        [listener ignore];
+        decisionHandler(WKNavigationActionPolicyCancel);
     } else if ([url hasPrefix:@"unity:"]) {
         [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
-        [listener ignore];
+        decisionHandler(WKNavigationActionPolicyCancel);
     } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
         [self addMessage:[NSString stringWithFormat:@"H%@",url]];
-        [listener ignore];
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
+               && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
+        // cf. for target="_blank", cf. http://qiita.com/ShingoFukuyama/items/b3a1441025a36ab7659c
+        [webView loadRequest:navigationAction.request];
+        decisionHandler(WKNavigationActionPolicyCancel);
     } else {
         if ([customRequestHeader count] > 0) {
             bool isCustomized = YES;
@@ -126,7 +184,7 @@ static BOOL inEditor;
             // Check for additional custom header.
             for (NSString *key in [customRequestHeader allKeys])
             {
-                if (![[[request allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
+                if (![[[navigationAction.request allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
                     isCustomized = NO;
                     break;
                 }
@@ -134,14 +192,32 @@ static BOOL inEditor;
 
             // If the custom header is not attached, give it and make a request again.
             if (!isCustomized) {
-                [listener ignore];
-                [frame loadRequest:[self constructionCustomHeader:request]];
+                decisionHandler(WKNavigationActionPolicyCancel);
+                [webView loadRequest:[self constructionCustomHeader:navigationAction.request]];
                 return;
             }
         }
         [self addMessage:[NSString stringWithFormat:@"S%@",url]];
-        [listener use];
+        decisionHandler(WKNavigationActionPolicyAllow);
     }
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message {
+
+    // Log out the message received
+    NSLog(@"Received event %@", message.body);
+    [self addMessage:[NSString stringWithFormat:@"J%@",message.body]];
+
+    /*
+    // Then pull something from the device using the message body
+    NSString *version = [[UIDevice currentDevice] valueForKey:message.body];
+
+    // Execute some JavaScript using the result?
+    NSString *exec_template = @"set_headline(\"received: %@\");";
+    NSString *exec = [NSString stringWithFormat:exec_template, version];
+    [webView evaluateJavaScript:exec completionHandler:nil];
+    */
 }
 
 - (void)addMessage:(NSString*)msg
@@ -177,6 +253,10 @@ static BOOL inEditor;
     webView.frame = frame;
     if (bitmap != nil) {
         bitmap = nil;
+    }
+    if (window != nil) {
+        frame.origin = window.frame.origin;
+        [window setFrame:frame display:YES];
     }
 }
 
@@ -250,8 +330,14 @@ static BOOL inEditor;
         return;
     NSString *urlStr = [NSString stringWithUTF8String:url];
     NSURL *nsurl = [NSURL URLWithString:urlStr];
-    NSURLRequest *request = [self constructionCustomHeader:[NSMutableURLRequest requestWithURL:nsurl]];
-    [[webView mainFrame] loadRequest:request];
+    NSURLRequest *request = [NSURLRequest requestWithURL:nsurl];
+
+    if ([nsurl.absoluteString hasPrefix:@"file:"]) {
+        NSURL *top = [NSURL URLWithString:[[nsurl absoluteString] stringByDeletingLastPathComponent]];
+        [webView loadFileURL:nsurl allowingReadAccessToURL:top];
+    } else {
+        [webView loadRequest:request];
+    }
 }
 
 - (void)loadHTML:(const char *)html baseURL:(const char *)baseUrl
@@ -261,7 +347,7 @@ static BOOL inEditor;
     NSString *htmlStr = [NSString stringWithUTF8String:html];
     NSString *baseStr = [NSString stringWithUTF8String:baseUrl];
     NSURL *baseNSUrl = [NSURL URLWithString:baseStr];
-    [[webView mainFrame] loadHTMLString:htmlStr baseURL:baseNSUrl];
+    [webView loadHTMLString:htmlStr baseURL:baseNSUrl];
 }
 
 - (void)evaluateJS:(const char *)js
@@ -269,7 +355,7 @@ static BOOL inEditor;
     if (webView == nil)
         return;
     NSString *jsStr = [NSString stringWithUTF8String:js];
-    [webView stringByEvaluatingJavaScriptFromString:jsStr];
+    [webView evaluateJavaScript:jsStr completionHandler:nil];
 }
 
 - (int)progress
@@ -307,65 +393,167 @@ static BOOL inEditor;
     [webView goForward];
 }
 
-- (void)update:(int)x y:(int)y deltaY:(float)deltaY buttonDown:(BOOL)buttonDown buttonPress:(BOOL)buttonPress buttonRelease:(BOOL)buttonRelease keyPress:(BOOL)keyPress keyCode:(unsigned short)keyCode keyChars:(const char*)keyChars refreshBitmap:(BOOL)refreshBitmap
+- (void)sendMouseEvent:(int)x y:(int)y deltaY:(float)deltaY mouseState:(int)mouseState
 {
     if (webView == nil)
         return;
-
-    NSView *view = [[[webView mainFrame] frameView] documentView];
+    NSView *view = webView;
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
-    NSEvent *event;
-    NSString *characters;
-
-    if (buttonDown) {
-        if (buttonPress) {
-            event = [NSEvent mouseEventWithType:NSLeftMouseDown
-                                       location:NSMakePoint(x, y) modifierFlags:nil
-                                      timestamp:GetCurrentEventTime() windowNumber:0
-                                        context:context eventNumber:nil clickCount:1 pressure:1];
-            [view mouseDown:event];
-        } else {
-            event = [NSEvent mouseEventWithType:NSLeftMouseDragged
-                                       location:NSMakePoint(x, y) modifierFlags:nil
-                                      timestamp:GetCurrentEventTime() windowNumber:0
-                                        context:context eventNumber:nil clickCount:0 pressure:1];
-            [view mouseDragged:event];
-        }
-    } else if (buttonRelease) {
-        event = [NSEvent mouseEventWithType:NSLeftMouseUp
-                                   location:NSMakePoint(x, y) modifierFlags:nil
-                                  timestamp:GetCurrentEventTime() windowNumber:0
-                                    context:context eventNumber:nil clickCount:0 pressure:0];
-        [view mouseUp:event];
-    }
-
-    if (keyPress) {
-        characters = [NSString stringWithUTF8String:keyChars];
-        event = [NSEvent keyEventWithType:NSKeyDown
-                                 location:NSMakePoint(x, y) modifierFlags:nil
-                                timestamp:GetCurrentEventTime() windowNumber:0
-                                  context:context
-                               characters:characters
-                         charactersIgnoringModifiers:characters
-                                isARepeat:NO keyCode:(unsigned short)keyCode];
-        [view keyDown:event];
-    }
-
-    if (deltaY != 0) {
-        CGEventRef cgEvent = CGEventCreateScrollWheelEvent(NULL,
-                                                           kCGScrollEventUnitLine, 1, deltaY * 3, 0);
-        NSEvent *scrollEvent = [NSEvent eventWithCGEvent:cgEvent];
-        CFRelease(cgEvent);
-        [view scrollWheel:scrollEvent];
-    }
-
-    @synchronized(self) {
-        if (refreshBitmap) {
-            if (bitmap == nil) {
-                bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
+    dispatch_async(
+        dispatch_get_main_queue(),
+        ^{
+            NSEvent *event;
+            switch (mouseState) {
+            case 1:
+                event = [NSEvent mouseEventWithType:NSLeftMouseDown
+                                           location:NSMakePoint(x, y) modifierFlags:0
+                                          timestamp:GetCurrentEventTime() windowNumber:0
+                                            context:context eventNumber:0 clickCount:1 pressure:1];
+                [view mouseDown:event];
+                break;
+            case 2:
+                event = [NSEvent mouseEventWithType:NSLeftMouseDragged
+                                           location:NSMakePoint(x, y) modifierFlags:0
+                                          timestamp:GetCurrentEventTime() windowNumber:0
+                                            context:context eventNumber:0 clickCount:0 pressure:1];
+                [view mouseDragged:event];
+                break;
+            case 3:
+                event = [NSEvent mouseEventWithType:NSLeftMouseUp
+                                           location:NSMakePoint(x, y) modifierFlags:0
+                                          timestamp:GetCurrentEventTime() windowNumber:0
+                                            context:context eventNumber:0 clickCount:0 pressure:0];
+                [view mouseUp:event];
+                break;
+            default:
+                break;
             }
-            memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
-            [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+            {
+                CGEventRef cgEvent = CGEventCreateScrollWheelEvent(NULL, kCGScrollEventUnitLine, 1, deltaY * 3, 0);
+                NSEvent *scrollEvent = [NSEvent eventWithCGEvent:cgEvent];
+                CFRelease(cgEvent);
+                [view scrollWheel:scrollEvent];
+            }
+        });
+}
+
+- (void)sendKeyEvent:(int)x y:(int)y keyChars:(char *)keyChars keyCode:(unsigned short)keyCode keyState:(int)keyState
+{
+    if (webView == nil)
+        return;
+    NSView *view = webView;
+    NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    NSString *characters = [NSString stringWithUTF8String:keyChars];
+    CGKeyCode cgKeyCode = 0;
+    switch (keyCode) {
+    case 63232:
+        cgKeyCode = 126;
+        break;
+    case 63233:
+        cgKeyCode = 125;
+        break;
+    case 63234:
+        cgKeyCode = 123;
+        break;
+    case 63235:
+        cgKeyCode = 124;
+        break;
+    }
+    dispatch_async(
+        dispatch_get_main_queue(),
+        ^{
+            NSEvent *event;
+            switch (keyState) {
+            case 1:
+                if (cgKeyCode == 0 || CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
+                    event = [NSEvent keyEventWithType:NSEventTypeKeyDown
+                                             location:NSMakePoint(x, y) modifierFlags:0
+                                            timestamp:GetCurrentEventTime() windowNumber:0
+                                              context:context
+                                           characters:characters
+                                     charactersIgnoringModifiers:characters
+                                            isARepeat:NO keyCode:0];
+                    [view keyDown:event];
+                }
+                break;
+            case 2:
+                if (cgKeyCode == 0 || CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
+                    event = [NSEvent keyEventWithType:NSEventTypeKeyDown
+                                             location:NSMakePoint(x, y) modifierFlags:0
+                                            timestamp:GetCurrentEventTime() windowNumber:0
+                                              context:context
+                                           characters:characters
+                                     charactersIgnoringModifiers:characters
+                                            isARepeat:YES keyCode:0];
+                    [view keyDown:event];
+                }
+                break;
+            case 3:
+                if (cgKeyCode == 0 || !CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
+                    event = [NSEvent keyEventWithType:NSEventTypeKeyUp
+                                             location:NSMakePoint(x, y) modifierFlags:0
+                                            timestamp:GetCurrentEventTime() windowNumber:0
+                                              context:context
+                                           characters:characters
+                                     charactersIgnoringModifiers:characters
+                                            isARepeat:NO keyCode:0];
+                    [view keyUp:event];
+                }
+                break;
+            default:
+                break;
+            }
+        });
+}
+
+- (void)update:(BOOL)refreshBitmap
+{
+    if (webView == nil)
+        return;
+    @synchronized(self) {
+        if (inRendering)
+            return;
+        if (refreshBitmap) {
+            // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+            NSRect rect = webView.frame;
+            if (bitmap == nil) {
+                bitmap
+                    = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nil
+                                                              pixelsWide:rect.size.width
+                                                              pixelsHigh:rect.size.height
+                                                           bitsPerSample:8
+                                                         samplesPerPixel:4
+                                                                hasAlpha:YES
+                                                                isPlanar:NO
+                                                          colorSpaceName:NSCalibratedRGBColorSpace
+                                                            bitmapFormat:0
+                                                             bytesPerRow:(4 * rect.size.width)
+                                                            bitsPerPixel:32];
+                // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
+            }
+            inRendering = YES;
+            NSBitmapImageRep *bmpRep = bitmap;
+            // memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+            // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+            WKWebView *wkv = webView;
+            WKSnapshotConfiguration *cfg = [WKSnapshotConfiguration new];
+            //cfg.snapshotWidth = [NSNumber numberWithLong:[bitmap pixelsWide]];
+            //cfg.rect = webView.frame;
+            [wkv takeSnapshotWithConfiguration:cfg
+                             completionHandler:^(NSImage *nsImg, NSError *err) {
+                if (err == nil) {
+                    NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bmpRep];
+                    [NSGraphicsContext saveGraphicsState];
+                    [NSGraphicsContext setCurrentContext:ctx];
+                    [nsImg drawAtPoint:CGPointZero
+                              fromRect:CGRectMake(0, 0, [bmpRep pixelsWide], [bmpRep pixelsHigh])
+                             operation:NSCompositingOperationCopy
+                              fraction:1.0];
+                    [[NSGraphicsContext currentContext] flushGraphics];
+                    [NSGraphicsContext restoreGraphicsState];
+                }
+                self->inRendering = NO;
+            }];
         }
         needsDisplay = refreshBitmap;
     }
@@ -395,29 +583,30 @@ static BOOL inEditor;
 - (void)render
 {
     @synchronized(self) {
-        if (webView == nil || !needsDisplay || bitmap == nil) {
+        if (webView == nil)
             return;
-        }
-        int samplesPerPixel = (int)[bitmap samplesPerPixel];
+        if (!needsDisplay)
+            return;
+        if (bitmap == nil)
+            return;
+
         int rowLength = 0;
         int unpackAlign = 0;
         glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
         glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)[bitmap bytesPerRow] / samplesPerPixel);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)[bitmap pixelsWide]);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glBindTexture(GL_TEXTURE_2D, textureId);
-        if (![bitmap isPlanar] && (samplesPerPixel == 3 || samplesPerPixel == 4)) {
-            glTexSubImage2D(
-                GL_TEXTURE_2D,
-                0,
-                0,
-                0,
-                (GLsizei)[bitmap pixelsWide],
-                (GLsizei)[bitmap pixelsHigh],
-                samplesPerPixel == 4 ? GL_RGBA : GL_RGB,
-                GL_UNSIGNED_BYTE,
-                [bitmap bitmapData]);
-        }
+        glTexSubImage2D(
+            GL_TEXTURE_2D,
+            0,
+            0,
+            0,
+            (GLsizei)[bitmap pixelsWide],
+            (GLsizei)[bitmap pixelsHigh],
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            [bitmap bitmapData]);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
         glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
     }
@@ -480,9 +669,9 @@ extern "C" {
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
     void _CWebViewPlugin_GoBack(void *instance);
     void _CWebViewPlugin_GoForward(void *instance);
-    void _CWebViewPlugin_Update(void *instance, int x, int y, float deltaY,
-                                BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
-                                BOOL keyPress, unsigned char keyCode, const char *keyChars, BOOL refreshBitmap);
+    void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState);
+    void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, unsigned short keyCode, int keyState);
+    void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap);
     int _CWebViewPlugin_BitmapWidth(void *instance);
     int _CWebViewPlugin_BitmapHeight(void *instance);
     void _CWebViewPlugin_SetTextureId(void *instance, int textureId);
@@ -511,9 +700,9 @@ static NSMutableSet *pool;
 void *_CWebViewPlugin_Init(
     const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL ineditor)
 {
-    if (pool == 0) {
+    if (pool == 0)
         pool = [[NSMutableSet alloc] init];
-    }
+
     inEditor = ineditor;
     CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua];
     [pool addObject:webViewPlugin];
@@ -595,14 +784,22 @@ void _CWebViewPlugin_GoForward(void *instance)
     [webViewPlugin goForward];
 }
 
-void _CWebViewPlugin_Update(void *instance, int x, int y, float deltaY,
-                            BOOL buttonDown, BOOL buttonPress, BOOL buttonRelease,
-                            BOOL keyPress, unsigned char keyCode, const char *keyChars, BOOL refreshBitmap)
+void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin update:x y:y deltaY:deltaY buttonDown:buttonDown
-              buttonPress:buttonPress buttonRelease:buttonRelease keyPress:keyPress
-                  keyCode:keyCode keyChars:keyChars refreshBitmap:refreshBitmap];
+    [webViewPlugin sendMouseEvent:x y:y deltaY:deltaY mouseState:mouseState];
+}
+
+void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, unsigned short keyCode, int keyState)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin sendKeyEvent:x y:y keyChars:keyChars keyCode:keyCode keyState:keyState];
+}
+
+void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin update:refreshBitmap];
 }
 
 int _CWebViewPlugin_BitmapWidth(void *instance)
@@ -675,9 +872,8 @@ const char *_CWebViewPlugin_GetMessage(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     NSString *message = [webViewPlugin getMessage];
-    if (message == nil) {
+    if (message == nil)
         return NULL;
-    }
     const char *s = [message UTF8String];
     char *r = (char *)malloc(strlen(s) + 1);
     strcpy(r, s);

@@ -65,7 +65,9 @@ public class WebViewObject : MonoBehaviour
     IntPtr webView;
     Rect rect;
     Texture2D texture;
-    string inputString;
+    string inputString = "";
+    // string keyChars0 = "";
+    // ushort keyCode0 = 0;
     bool hasFocus;
 #elif UNITY_IPHONE
     IntPtr webView;
@@ -261,10 +263,11 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_GoForward(
         IntPtr instance);
     [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_Update(IntPtr instance,
-        int x, int y, float deltaY, bool down, bool press, bool release,
-        bool keyPress, short keyCode, string keyChars,
-        bool refreshBitmap);
+    private static extern void _CWebViewPlugin_SendMouseEvent(IntPtr instance, int x, int y, float deltaY, int mouseState);
+    [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_SendKeyEvent(IntPtr instance, int x, int y, string keyChars, ushort keyCode, int keyState);
+    [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_Update(IntPtr instance, bool refreshBitmap);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapWidth(IntPtr instance);
     [DllImport("WebView")]
@@ -1044,25 +1047,52 @@ public class WebViewObject : MonoBehaviour
         if (webView == IntPtr.Zero || !visibility)
             return;
 
-        Vector3 pos = Input.mousePosition;
-        bool down = Input.GetButton("Fire1");
-        bool press = Input.GetButtonDown("Fire1");
-        bool release = Input.GetButtonUp("Fire1");
-        float deltaY = Input.GetAxis("Mouse ScrollWheel");
-        bool keyPress = false;
-        string keyChars = "";
-        short keyCode = 0;
-        if (inputString != null && inputString.Length > 0) {
-            keyPress = true;
-            keyChars = inputString.Substring(0, 1);
-            keyCode = (short)inputString[0];
-            inputString = inputString.Substring(1);
+        Vector3 p;
+        p.x = Input.mousePosition.x - rect.x;
+        p.y = Input.mousePosition.y - rect.y;
+        {
+            int mouseState = 0;
+            if (Input.GetButtonDown("Fire1")) {
+                mouseState = 1;
+            } else if (Input.GetButtonUp("Fire1")) {
+                mouseState = 3;
+            } else if (Input.GetButton("Fire1")) {
+                mouseState = 2;
+            }
+            _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
+        }
+        {
+            string keyChars = "";
+            ushort keyCode = 0;
+            if (!string.IsNullOrEmpty(inputString)) {
+                keyChars = inputString.Substring(0, 1);
+                keyCode = (ushort)inputString[0];
+                inputString = inputString.Substring(1);
+                Debug.Log((ushort)KeyCode.DownArrow);
+            }
+            if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
+                _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+            }
+            // if (keyChars != keyChars0) {
+            //     if (!string.IsNullOrEmpty(keyChars0)) {
+            //         Debug.Log("XX1 " + (short)keyChars0[0]);
+            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars0, keyCode0, 3);
+            //     }
+            //     if (!string.IsNullOrEmpty(keyChars)) {
+            //         Debug.Log("XX2 " + (short)keyChars[0]);
+            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+            //     }
+            // } else {
+            //     if (!string.IsNullOrEmpty(keyChars)) {
+            //         Debug.Log("XX3");
+            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 2);
+            //     }
+            // }
+            // keyChars0 = keyChars;
+            // keyCode0 = keyCode;
         }
         bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
-        _CWebViewPlugin_Update(webView,
-            (int)(pos.x - rect.x), (int)(pos.y - rect.y), deltaY,
-            down, press, release, keyPress, keyCode, keyChars,
-            refreshBitmap);
+        _CWebViewPlugin_Update(webView, refreshBitmap);
         if (refreshBitmap) {
             {
                 var w = _CWebViewPlugin_BitmapWidth(webView);
