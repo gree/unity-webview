@@ -79,7 +79,7 @@ static WKProcessPool *_sharedProcessPool;
     webView.navigationDelegate = self;
     webView.hidden = NO;
     if (transparent) {
-        // [webView setDrawsBackground:NO];
+        // [webView setValue:@NO forKey:@"drawsBackground"];
     }
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
     // [webView setFrameLoadDelegate:(id)self];
@@ -175,11 +175,29 @@ static WKProcessPool *_sharedProcessPool;
         [webView loadRequest:navigationAction.request];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else {
+        if ([customRequestHeader count] > 0) {
+            bool isCustomized = YES;
+
+            // Check for additional custom header.
+            for (NSString *key in [customRequestHeader allKeys])
+            {
+                if (![[[navigationAction.request allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
+                    isCustomized = NO;
+                    break;
+                }
+            }
+
+            // If the custom header is not attached, give it and make a request again.
+            if (!isCustomized) {
+                decisionHandler(WKNavigationActionPolicyCancel);
+                [webView loadRequest:[self constructionCustomHeader:navigationAction.request]];
+                return;
+            }
+        }
         [self addMessage:[NSString stringWithFormat:@"S%@",url]];
         decisionHandler(WKNavigationActionPolicyAllow);
     }
 }
-
 
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message {
@@ -589,6 +607,7 @@ void *_CWebViewPlugin_Init(
 
 void _CWebViewPlugin_Destroy(void *instance)
 {
+    _CWebViewPlugin_SetCurrentInstance(NULL);
     CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
     [pool removeObject:webViewPlugin];
     [webViewPlugin dispose];
@@ -698,15 +717,13 @@ void _CWebViewPlugin_SetCurrentInstance(void *instance)
 
 void UnityRenderEvent(int eventId)
 {
-    @autoreleasepool {
-        if (_instance == nil) {
-            return;
-        }
-        CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)_instance;
-        _instance = nil;
-        if ([pool containsObject:webViewPlugin]) {
-            [webViewPlugin render];
-        }
+    if (_instance == nil) {
+        return;
+    }
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)_instance;
+    _instance = nil;
+    if ([pool containsObject:webViewPlugin]) {
+        [webViewPlugin render];
     }
 }
 
