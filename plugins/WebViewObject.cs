@@ -318,9 +318,9 @@ public class WebViewObject : MonoBehaviour
         Callback ld = null,
         bool enableWKWebView = false,
         Callback started = null,
-        Callback hooked = null,
+        Callback hooked = null
 #if UNITY_EDITOR
-        bool separated = false
+        , bool separated = false
 #endif
         )
     {
