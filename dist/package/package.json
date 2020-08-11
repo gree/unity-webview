@@ -1,0 +1,8 @@
+{
+    "name": "net.gree.unity-webview",
+    "displayName": "unity-webview",
+    "version": "1.0.0",
+    "unity": "2019.1",
+    "description": "A plugin to display native webview views.",
+    "dependencies": {}
+}

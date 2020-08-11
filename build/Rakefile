@@ -74,6 +74,7 @@ task :pack do
   sh "#{UNITY}/MacOS/Unity -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export -logFile LOG"
   FileUtils.mv "Packager/unity-webview.unitypackage", "../dist"
   sh "(cd Packager; rm -f ../../dist/unity-webview.zip; zip -qr9 ../../dist/unity-webview.zip `find Assets/Plugins -type f` `find Assets/WebGLTemplates -type f` `find Assets/WebPlayerTemplates -type f`)"
+  sh "(cd ../dist/package; rm -rf Assets; unzip -q ../unity-webview.zip)"
 end
 
 desc "buildnofragment"
