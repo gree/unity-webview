@@ -19,6 +19,19 @@ below:
 
 *NOTE: The current implementation for Android utilizes Android Fragment for enabling the file input field after https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278 and may cause new issues that were not found before. If you don't need the file input field, you can install `dist/unity-webview-nofragment.unitypackage` or `dist/unity-webview-nofragment.zip` for selecting the variant without Fragment.*
 
+## Package Manager
+
+If you use Unity 2019.1 or later, the plugin can also be imported with Package Manager, by adding
+the following entry in your `Packages/manifest.json`:
+
+```json
+{
+  "dependencies": {
+    "net.gree.unity-webview": "https://github.com/gree/unity-webview.git?path=/dist/package"
+  }
+}
+```
+
 ## Common Notes
 
 ### UnityWebViewPostprocessBuild.cs
