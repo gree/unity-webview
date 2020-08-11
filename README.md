@@ -28,7 +28,7 @@ the following entry in your `Packages/manifest.json`:
 {
   "dependencies": {
     ...
-    "net.gree.unity-webview": "https://github.com/gree/unity-webview.git?path=/dist/package"
+    "net.gree.unity-webview": "https://github.com/gree/unity-webview.git?path=/dist/package",
     ...
   }
 }
