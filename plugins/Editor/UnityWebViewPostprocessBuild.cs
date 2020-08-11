@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System.Collections;
 using System.IO;
 using System.Text;
@@ -219,3 +220,4 @@ internal class AndroidManifest : AndroidXmlDocument {
         return changed;
     }
 }
+#endif
