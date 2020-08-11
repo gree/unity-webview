@@ -7,23 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		183C36501EA488E50071D97B /* WebViewSeparated.m in Sources */ = {isa = PBXBuildFile; fileRef = 183C364F1EA488E50071D97B /* WebViewSeparated.m */; };
-		18E975FA1EA4873F00083D49 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C53715108B89000C56DC /* Carbon.framework */; };
-		18E975FB1EA4873F00083D49 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C534151078DB000C56DC /* WebKit.framework */; };
-		18E975FC1EA4873F00083D49 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81F81AEC14D76D2400845D4C /* OpenGL.framework */; };
-		18E975FD1EA4873F00083D49 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81E2C20B14C5684A004CE5C2 /* Cocoa.framework */; };
-		18E975FF1EA4873F00083D49 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8102525514C569D80022296D /* InfoPlist.strings */; };
 		8102525814C569D80022296D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8102525514C569D80022296D /* InfoPlist.strings */; };
 		81B8C535151078DB000C56DC /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C534151078DB000C56DC /* WebKit.framework */; };
 		81B8C53815108B89000C56DC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C53715108B89000C56DC /* Carbon.framework */; };
 		81E2C20C14C5684A004CE5C2 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81E2C20B14C5684A004CE5C2 /* Cocoa.framework */; };
-		81F4B4D914C6888B001B4465 /* WebView.m in Sources */ = {isa = PBXBuildFile; fileRef = 81F4B4D814C6888B001B4465 /* WebView.m */; };
+		81F4B4D914C6888B001B4465 /* WebView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81F4B4D814C6888B001B4465 /* WebView.mm */; };
 		81F81AED14D76D2400845D4C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81F81AEC14D76D2400845D4C /* OpenGL.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		183C364F1EA488E50071D97B /* WebViewSeparated.m */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.objc; fileEncoding = 4; name = WebViewSeparated.m; path = Sources/WebViewSeparated.m; sourceTree = "<group>"; };
-		18E976041EA4873F00083D49 /* WebViewSeparated.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WebViewSeparated.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		18E976051EA4873F00083D49 /* Info-WebViewSeparated.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = "Info-WebViewSeparated.plist"; path = "Resources/Info-WebViewSeparated.plist"; sourceTree = "<group>"; };
 		8102525414C569D80022296D /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Resources/Info.plist; sourceTree = SOURCE_ROOT; };
 		8102525514C569D80022296D /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = Resources/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
@@ -34,22 +26,11 @@
 		81E2C20B14C5684A004CE5C2 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		81E2C20E14C5684A004CE5C2 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		81E2C21014C5684A004CE5C2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		81F4B4D814C6888B001B4465 /* WebView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = WebView.m; path = Sources/WebView.m; sourceTree = "<group>"; };
+		81F4B4D814C6888B001B4465 /* WebView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = WebView.mm; path = Sources/WebView.mm; sourceTree = "<group>"; };
 		81F81AEC14D76D2400845D4C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		18E975F91EA4873F00083D49 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				18E975FA1EA4873F00083D49 /* Carbon.framework in Frameworks */,
-				18E975FB1EA4873F00083D49 /* WebKit.framework in Frameworks */,
-				18E975FC1EA4873F00083D49 /* OpenGL.framework in Frameworks */,
-				18E975FD1EA4873F00083D49 /* Cocoa.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		81E2C20514C5684A004CE5C2 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -67,8 +48,7 @@
 		8102525914C573EB0022296D /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				81F4B4D814C6888B001B4465 /* WebView.m */,
-				183C364F1EA488E50071D97B /* WebViewSeparated.m */,
+				81F4B4D814C6888B001B4465 /* WebView.mm */,
 			);
 			name = Sources;
 			sourceTree = "<group>";
@@ -87,7 +67,6 @@
 			isa = PBXGroup;
 			children = (
 				81E2C20814C5684A004CE5C2 /* WebView.bundle */,
-				18E976041EA4873F00083D49 /* WebViewSeparated.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -120,24 +99,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		18E975F61EA4873F00083D49 /* WebViewSeparated */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 18E976011EA4873F00083D49 /* Build configuration list for PBXNativeTarget "WebViewSeparated" */;
-			buildPhases = (
-				18E975F71EA4873F00083D49 /* Sources */,
-				18E975F91EA4873F00083D49 /* Frameworks */,
-				18E975FE1EA4873F00083D49 /* Resources */,
-				18E976001EA4873F00083D49 /* ShellScript */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = WebViewSeparated;
-			productName = WebView;
-			productReference = 18E976041EA4873F00083D49 /* WebViewSeparated.bundle */;
-			productType = "com.apple.product-type.bundle";
-		};
 		81E2C20714C5684A004CE5C2 /* WebView */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81E2C21A14C5684A004CE5C2 /* Build configuration list for PBXNativeTarget "WebView" */;
@@ -166,7 +127,7 @@
 			};
 			buildConfigurationList = 81E2C20214C5684A004CE5C2 /* Build configuration list for PBXProject "WebView" */;
 			compatibilityVersion = "Xcode 8.0";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
@@ -178,20 +139,11 @@
 			projectRoot = "";
 			targets = (
 				81E2C20714C5684A004CE5C2 /* WebView */,
-				18E975F61EA4873F00083D49 /* WebViewSeparated */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		18E975FE1EA4873F00083D49 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				18E975FF1EA4873F00083D49 /* InfoPlist.strings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		81E2C20614C5684A004CE5C2 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -203,19 +155,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		18E976001EA4873F00083D49 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "";
-		};
 		81F4B4F514C696C4001B4465 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -232,63 +171,17 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		18E975F71EA4873F00083D49 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				183C36501EA488E50071D97B /* WebViewSeparated.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		81E2C20414C5684A004CE5C2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				81F4B4D914C6888B001B4465 /* WebView.m in Sources */,
+				81F4B4D914C6888B001B4465 /* WebView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		18E976021EA4873F00083D49 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_CXX_LIBRARY = "compiler-default";
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Resources/Prefix.pch;
-				INFOPLIST_FILE = "Resources/Info-WebViewSeparated.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
-				LD_RUNPATH_SEARCH_PATHS = "";
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
-				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				VALID_ARCHS = x86_64;
-				WRAPPER_EXTENSION = bundle;
-			};
-			name = Debug;
-		};
-		18E976031EA4873F00083D49 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_CXX_LIBRARY = "compiler-default";
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = Resources/Prefix.pch;
-				INFOPLIST_FILE = "Resources/Info-WebViewSeparated.plist";
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
-				LD_RUNPATH_SEARCH_PATHS = "";
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
-				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				VALID_ARCHS = x86_64;
-				WRAPPER_EXTENSION = bundle;
-			};
-			name = Release;
-		};
 		81E2C21814C5684A004CE5C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -333,7 +226,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
@@ -379,7 +272,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = "";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 				USE_HEADERMAP = YES;
@@ -390,15 +283,17 @@
 		81E2C21B14C5684A004CE5C2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Resources/Prefix.pch;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
 				LD_RUNPATH_SEARCH_PATHS = "";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USE_HEADERMAP = YES;
@@ -410,15 +305,17 @@
 		81E2C21C14C5684A004CE5C2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_OBJC_WEAK = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = Resources/Prefix.pch;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Bundles";
 				LD_RUNPATH_SEARCH_PATHS = "";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USE_HEADERMAP = YES;
@@ -430,15 +327,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		18E976011EA4873F00083D49 /* Build configuration list for PBXNativeTarget "WebViewSeparated" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				18E976021EA4873F00083D49 /* Debug */,
-				18E976031EA4873F00083D49 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		81E2C20214C5684A004CE5C2 /* Build configuration list for PBXProject "WebView" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

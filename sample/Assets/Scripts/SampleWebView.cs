@@ -103,6 +103,9 @@ public class SampleWebView : MonoBehaviour
                 webViewObject.EvaluateJS(@"Unity.call('ua=' + navigator.userAgent)");
             },
             //ua: "custom user agent string",
+#if UNITY_EDITOR
+            separated: false,
+#endif
             enableWKWebView: true);
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;

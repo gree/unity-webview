@@ -33,16 +33,9 @@ out adequate parts in the script.
 
 ### Mac (Editor)
 
-#### Auto Graphics API/Metal Editor Support
+#### macOS Version
 
-The current implementation reiles on several OpenGL APIs so you need to disable "Auto graphics API"
-and specify OpenGLCore as below.
-
-![auto-graphics-api-setting-for-mac.png](doc/img/auto-graphics-api-setting-for-mac.png)
-
-If you work only in (recent) Unity Editor, you may just disable "Metal Editor Support" (cf. https://github.com/gree/unity-webview/issues/383 ).
-
-![metal-editor-support-setting-for-mac.png](doc/img/metal-editor-support-setting-for-mac.png)
+The current implementation utilizes https://developer.apple.com/documentation/webkit/wkwebview/2873260-takesnapshotwithconfiguration to capture an offscreen webview image so that macOS 10.13 (High Sierra) or later is required.
 
 #### App Transport Security
 
@@ -80,13 +73,22 @@ or invoke the following from your terminal,
 * https://github.com/gree/unity-webview/issues/64
 * https://onevcat.zendesk.com/hc/en-us/articles/215527307-I-cannot-open-the-web-page-in-Unity-Editor-
 
-#### WebViewSeparated.bundle
+#### Separeted Mode
 
-WebViewSeparated.bundle is a variation of WebView.bundle. It is based
-on https://github.com/gree/unity-webview/pull/161 . As noted in the
-pull-request, it shows a separate window and allows a developer to
-utilize the Safari debugger. For enabling it, please define
-`WEBVIEW_SEPARATED`.
+A separate window will be shown if `separated: true` is specified:
+
+```csharp
+        webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+        webViewObject.Init(
+            ...
+#if UNITY_EDITOR
+            separated: true
+#endif
+            ...);
+```
+
+This is based on https://github.com/gree/unity-webview/pull/161 and allows a developer to utilize
+the Safari debugger.
 
 ### iOS
 
