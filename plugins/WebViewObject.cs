@@ -363,9 +363,11 @@ public class WebViewObject : MonoBehaviour
             transparent,
             Screen.width,
             Screen.height,
-            ua,
+            ua
 #if UNITY_EDITOR
-            separated
+            , separated
+#else
+            , false
 #endif
             );
         // define pseudo requestAnimationFrame.
