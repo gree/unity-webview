@@ -160,7 +160,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
     [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
 
-    [view addSubview:webView];
+    [view.superview insertSubview:webView atIndex:0];
 
     return self;
 }
