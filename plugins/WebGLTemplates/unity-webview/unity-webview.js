@@ -42,6 +42,8 @@ var unityWebView =
                     }
                     return true;
                 });
+
+                unityInstance.SendMessage(name, "CallOnLoaded", location.href);
             });
     },
 
