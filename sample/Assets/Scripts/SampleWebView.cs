@@ -58,7 +58,7 @@ public class SampleWebView : MonoBehaviour
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
-#if UNITY_EDITOR_OSX || !UNITY_ANDROID
+#if UNITY_EDITOR_OSX || (!UNITY_ANDROID && !UNITY_WEBPLAYER && !UNITY_WEBGL)
                 // NOTE: depending on the situation, you might prefer
                 // the 'iframe' approach.
                 // cf. https://github.com/gree/unity-webview/issues/189
@@ -99,6 +99,13 @@ public class SampleWebView : MonoBehaviour
                   }
                 ");
 #endif
+#elif UNITY_WEBPLAYER || UNITY_WEBGL
+                webViewObject.EvaluateJS(
+                    "window.Unity = {" +
+                    "   call:function(msg) {" +
+                    "       parent.unityWebView.sendMessage('WebViewObject', msg)" +
+                    "   }" +
+                    "};");
 #endif
                 webViewObject.EvaluateJS(@"Unity.call('ua=' + navigator.userAgent)");
             },
@@ -166,14 +173,6 @@ public class SampleWebView : MonoBehaviour
         } else {
             webViewObject.LoadURL("StreamingAssets/" + Url.Replace(" ", "%20"));
         }
-        webViewObject.EvaluateJS(
-            "parent.$(function() {" +
-            "   window.Unity = {" +
-            "       call:function(msg) {" +
-            "           parent.unityWebView.sendMessage('WebViewObject', msg)" +
-            "       }" +
-            "   };" +
-            "});");
 #endif
         yield break;
     }
