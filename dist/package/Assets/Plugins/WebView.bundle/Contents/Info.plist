@@ -29,7 +29,7 @@
 	<key>DTCompiler</key>
 	<string>com.apple.compilers.llvm.clang.1_0</string>
 	<key>DTPlatformBuild</key>
-	<string>11E708</string>
+	<string>11E801a</string>
 	<key>DTPlatformVersion</key>
 	<string>GM</string>
 	<key>DTSDKBuild</key>
@@ -37,9 +37,9 @@
 	<key>DTSDKName</key>
 	<string>macosx10.15</string>
 	<key>DTXcode</key>
-	<string>1160</string>
+	<string>1170</string>
 	<key>DTXcodeBuild</key>
-	<string>11E708</string>
+	<string>11E801a</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.13</string>
 </dict>
