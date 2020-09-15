@@ -166,6 +166,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
     // [webView setPolicyDelegate:(id)self];
     webView.UIDelegate = self;
     webView.navigationDelegate = self;
+    [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
     gameObject = [NSString stringWithUTF8String:gameObject_];
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
@@ -186,12 +187,14 @@ static std::unordered_map<int, int> _nskey2cgkey{
 {
     @synchronized(self) {
         if (webView != nil) {
+            WKWebView *webView0 = webView;
+            webView = nil;
             // [webView setFrameLoadDelegate:nil];
             // [webView setPolicyDelegate:nil];
-            webView.UIDelegate = nil;
-            webView.navigationDelegate = nil;
-            [webView stopLoading:nil];
-            webView = nil;
+            webView0.UIDelegate = nil;
+            webView0.navigationDelegate = nil;
+            [webView0 stopLoading];
+            [webView0 removeObserver:self forKeyPath:@"loading"];
         }
         if (window != nil) {
             [window close];
@@ -216,11 +219,6 @@ static std::unordered_map<int, int> _nskey2cgkey{
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
-}
-
-- (void)webView:(WKWebView*)wkWebView didCommitNavigation:(null_unspecified WKNavigation *)navigation
-{
-    [self addMessage:[NSString stringWithFormat:@"L%s","Unknown URL"]];
 }
 
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
@@ -295,6 +293,19 @@ static std::unordered_map<int, int> _nskey2cgkey{
     NSString *exec = [NSString stringWithFormat:exec_template, version];
     [webView evaluateJavaScript:exec completionHandler:nil];
     */
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context {
+    if (webView == nil)
+        return;
+
+    if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0
+        && [webView URL] != nil) {
+        [self addMessage:[NSString stringWithFormat:@"L%s",[[[webView URL] absoluteString] UTF8String]]];
+    }
 }
 
 - (void)addMessage:(NSString*)msg
