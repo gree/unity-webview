@@ -200,6 +200,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_GoForward(
         IntPtr instance);
     [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_Reload(
+        IntPtr instance);
+    [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SendMouseEvent(IntPtr instance, int x, int y, float deltaY, int mouseState);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SendKeyEvent(IntPtr instance, int x, int y, string keyChars, ushort keyCode, int keyState);
@@ -268,6 +271,9 @@ public class WebViewObject : MonoBehaviour
         IntPtr instance);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_GoForward(
+        IntPtr instance);
+    [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_Reload(
         IntPtr instance);
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
@@ -741,6 +747,23 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("GoForward");
+#endif
+    }
+
+    public void Reload()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_Reload(webView);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("Reload");
 #endif
     }
 
