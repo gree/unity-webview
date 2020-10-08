@@ -45,6 +45,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nonatomic, readonly) BOOL canGoForward;
 - (void)goBack;
 - (void)goForward;
+- (void)reload;
 - (void)stopLoading;
 - (void)setScrollBounce:(BOOL)enable;
 @end
@@ -756,6 +757,13 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     [webView goForward];
 }
 
+- (void)reload
+{
+    if (webView == nil)
+        return;
+    [webView reload];
+}
+
 - (void)addCustomRequestHeader:(const char *)headerKey value:(const char *)headerValue
 {
     NSString *keyString = [NSString stringWithUTF8String:headerKey];
@@ -816,6 +824,7 @@ extern "C" {
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
     void _CWebViewPlugin_GoBack(void *instance);
     void _CWebViewPlugin_GoForward(void *instance);
+    void _CWebViewPlugin_Reload(void *instance);
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
@@ -946,6 +955,14 @@ void _CWebViewPlugin_GoForward(void *instance)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goForward];
+}
+
+void _CWebViewPlugin_Reload(void *instance)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin reload];
 }
 
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)

@@ -481,6 +481,13 @@ static std::unordered_map<int, int> _nskey2cgkey{
     [webView goForward];
 }
 
+- (void)reload
+{
+    if (webView == nil)
+        return;
+    [webView reload];
+}
+
 - (void)sendMouseEvent:(int)x y:(int)y deltaY:(float)deltaY mouseState:(int)mouseState
 {
     if (webView == nil)
@@ -752,6 +759,7 @@ extern "C" {
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
     void _CWebViewPlugin_GoBack(void *instance);
     void _CWebViewPlugin_GoForward(void *instance);
+    void _CWebViewPlugin_Reload(void *instance);
     void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState);
     void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, unsigned short keyCode, int keyState);
     void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap);
@@ -870,6 +878,12 @@ void _CWebViewPlugin_GoForward(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goForward];
+}
+
+void _CWebViewPlugin_Reload(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin reload];
 }
 
 void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState)
