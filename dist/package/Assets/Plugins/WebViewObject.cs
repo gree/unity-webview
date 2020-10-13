@@ -1011,58 +1011,8 @@ public class WebViewObject : MonoBehaviour
                 break;
             }
         }
-    }
-
-    public int bitmapRefreshCycle = 1;
-
-    void OnGUI()
-    {
         if (webView == IntPtr.Zero || !visibility)
             return;
-
-        Vector3 p;
-        p.x = Input.mousePosition.x - rect.x;
-        p.y = Input.mousePosition.y - rect.y;
-        {
-            int mouseState = 0;
-            if (Input.GetButtonDown("Fire1")) {
-                mouseState = 1;
-            } else if (Input.GetButtonUp("Fire1")) {
-                mouseState = 3;
-            } else if (Input.GetButton("Fire1")) {
-                mouseState = 2;
-            }
-            _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
-        }
-        {
-            string keyChars = "";
-            ushort keyCode = 0;
-            if (!string.IsNullOrEmpty(inputString)) {
-                keyChars = inputString.Substring(0, 1);
-                keyCode = (ushort)inputString[0];
-                inputString = inputString.Substring(1);
-            }
-            if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
-                _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
-            }
-            // if (keyChars != keyChars0) {
-            //     if (!string.IsNullOrEmpty(keyChars0)) {
-            //         Debug.Log("XX1 " + (short)keyChars0[0]);
-            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars0, keyCode0, 3);
-            //     }
-            //     if (!string.IsNullOrEmpty(keyChars)) {
-            //         Debug.Log("XX2 " + (short)keyChars[0]);
-            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
-            //     }
-            // } else {
-            //     if (!string.IsNullOrEmpty(keyChars)) {
-            //         Debug.Log("XX3");
-            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 2);
-            //     }
-            // }
-            // keyChars0 = keyChars;
-            // keyCode0 = keyCode;
-        }
         bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
         _CWebViewPlugin_Update(webView, refreshBitmap);
         if (refreshBitmap) {
@@ -1083,15 +1033,85 @@ public class WebViewObject : MonoBehaviour
             GL.IssuePluginEvent(GetRenderEventFunc(), -1);
 #endif
         }
-        if (texture != null) {
-            Matrix4x4 m = GUI.matrix;
-            GUI.matrix
-                = Matrix4x4.TRS(
-                    new Vector3(0, Screen.height, 0),
-                    Quaternion.identity,
-                    new Vector3(1, -1, 1));
-            GUI.DrawTexture(rect, texture);
-            GUI.matrix = m;
+    }
+
+    public int bitmapRefreshCycle = 1;
+
+    void OnGUI()
+    {
+        if (webView == IntPtr.Zero || !visibility)
+            return;
+
+        switch (Event.current.type) {
+        case EventType.MouseDown:
+        case EventType.MouseUp:
+        case EventType.MouseMove:
+        case EventType.MouseDrag:
+        case EventType.ScrollWheel:
+            {
+                Vector3 p;
+                p.x = Input.mousePosition.x - rect.x;
+                p.y = Input.mousePosition.y - rect.y;
+                {
+                    int mouseState = 0;
+                    if (Input.GetButtonDown("Fire1")) {
+                        mouseState = 1;
+                    } else if (Input.GetButtonUp("Fire1")) {
+                        mouseState = 3;
+                    } else if (Input.GetButton("Fire1")) {
+                        mouseState = 2;
+                    }
+                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
+                }
+            }
+            break;
+        case EventType.KeyDown:
+        case EventType.KeyUp:
+            {
+                string keyChars = "";
+                ushort keyCode = 0;
+                if (!string.IsNullOrEmpty(inputString)) {
+                    keyChars = inputString.Substring(0, 1);
+                    keyCode = (ushort)inputString[0];
+                        inputString = inputString.Substring(1);
+                }
+                if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
+                    Vector3 p;
+                    p.x = Input.mousePosition.x - rect.x;
+                    p.y = Input.mousePosition.y - rect.y;
+                    _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                }
+                // if (keyChars != keyChars0) {
+                //     if (!string.IsNullOrEmpty(keyChars0)) {
+                //         Debug.Log("XX1 " + (short)keyChars0[0]);
+                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars0, keyCode0, 3);
+                //     }
+                //     if (!string.IsNullOrEmpty(keyChars)) {
+                //         Debug.Log("XX2 " + (short)keyChars[0]);
+                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                //     }
+                // } else {
+                //     if (!string.IsNullOrEmpty(keyChars)) {
+                //         Debug.Log("XX3");
+                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 2);
+                //     }
+                // }
+                // keyChars0 = keyChars;
+                // keyCode0 = keyCode;
+            }
+            break;
+        case EventType.Repaint:
+            if (texture != null) {
+                Matrix4x4 m = GUI.matrix;
+                GUI.matrix
+                    = Matrix4x4.TRS(
+                        new Vector3(0, Screen.height, 0),
+                        Quaternion.identity,
+                        new Vector3(1, -1, 1));
+                GUI.DrawTexture(rect, texture);
+                GUI.matrix = m;
+            }
+            break;
         }
     }
 #endif
