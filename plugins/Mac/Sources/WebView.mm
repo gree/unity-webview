@@ -614,37 +614,34 @@ static std::unordered_map<int, int> _nskey2cgkey{
                                                              bytesPerRow:(4 * rect.size.width)
                                                             bitsPerPixel:32];
                 // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
+                needsDisplay = true;
             }
             inRendering = YES;
             if (window != nil) {
                 memset([bitmap bitmapData], 128, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+                needsDisplay = true;
                 inRendering = NO;
             } else {
-                NSBitmapImageRep *bmpRep = bitmap;
-                // memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
-                // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
-                WKWebView *wkv = webView;
-                WKSnapshotConfiguration *cfg = [WKSnapshotConfiguration new];
-                //cfg.snapshotWidth = [NSNumber numberWithLong:[bitmap pixelsWide]];
-                //cfg.rect = webView.frame;
-                [wkv takeSnapshotWithConfiguration:cfg
+                [webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
                                  completionHandler:^(NSImage *nsImg, NSError *err) {
-                    if (err == nil) {
-                        NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bmpRep];
-                        [NSGraphicsContext saveGraphicsState];
-                        [NSGraphicsContext setCurrentContext:ctx];
-                        [nsImg drawAtPoint:CGPointZero
-                                  fromRect:CGRectMake(0, 0, [bmpRep pixelsWide], [bmpRep pixelsHigh])
-                                 operation:NSCompositingOperationCopy
-                                  fraction:1.0];
-                        [[NSGraphicsContext currentContext] flushGraphics];
-                        [NSGraphicsContext restoreGraphicsState];
+                    @synchronized(self) {
+                        if (err == nil) {
+                            NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:self->bitmap];
+                            [NSGraphicsContext saveGraphicsState];
+                            [NSGraphicsContext setCurrentContext:ctx];
+                            [nsImg drawAtPoint:CGPointZero
+                                      fromRect:CGRectMake(0, 0, [self->bitmap pixelsWide], [self->bitmap pixelsHigh])
+                                     operation:NSCompositingOperationCopy
+                                      fraction:1.0];
+                            [[NSGraphicsContext currentContext] flushGraphics];
+                            [NSGraphicsContext restoreGraphicsState];
+                        }
+                        self->needsDisplay = true;
+                        self->inRendering = NO;
                     }
-                    self->inRendering = NO;
                 }];
             }
         }
-        needsDisplay = refreshBitmap;
     }
 }
 
@@ -698,6 +695,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
             glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
             glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
         }
+        needsDisplay = false;
     }
 }
 
