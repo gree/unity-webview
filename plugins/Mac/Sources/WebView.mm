@@ -624,21 +624,25 @@ static std::unordered_map<int, int> _nskey2cgkey{
             } else {
                 [webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
                                  completionHandler:^(NSImage *nsImg, NSError *err) {
-                    @synchronized(self) {
-                        if (err == nil) {
-                            NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:self->bitmap];
-                            [NSGraphicsContext saveGraphicsState];
-                            [NSGraphicsContext setCurrentContext:ctx];
-                            [nsImg drawAtPoint:CGPointZero
-                                      fromRect:CGRectMake(0, 0, [self->bitmap pixelsWide], [self->bitmap pixelsHigh])
-                                     operation:NSCompositingOperationCopy
-                                      fraction:1.0];
-                            [[NSGraphicsContext currentContext] flushGraphics];
-                            [NSGraphicsContext restoreGraphicsState];
-                        }
-                        self->needsDisplay = true;
-                        self->inRendering = NO;
-                    }
+                    dispatch_async(
+                        dispatch_get_main_queue(),
+                        ^{
+                            @synchronized(self) {
+                                if (err == nil && self->bitmap != nil) {
+                                    NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:self->bitmap];
+                                    [NSGraphicsContext saveGraphicsState];
+                                    [NSGraphicsContext setCurrentContext:ctx];
+                                    [nsImg drawAtPoint:CGPointZero
+                                              fromRect:CGRectMake(0, 0, [self->bitmap pixelsWide], [self->bitmap pixelsHigh])
+                                             operation:NSCompositingOperationCopy
+                                              fraction:1.0];
+                                    [[NSGraphicsContext currentContext] flushGraphics];
+                                    [NSGraphicsContext restoreGraphicsState];
+                                }
+                                self->needsDisplay = true;
+                                self->inRendering = NO;
+                            }
+                        });
                 }];
             }
         }
