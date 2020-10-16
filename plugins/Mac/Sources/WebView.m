@@ -363,10 +363,9 @@ static BOOL useMetal;
             if (bitmap == nil) {
                 bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
             }
-            memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
             [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+            needsDisplay = true;
         }
-        needsDisplay = refreshBitmap;
     }
 }
 
@@ -387,38 +386,43 @@ static BOOL useMetal;
 - (void)render:(void *)textureBuffer
 {
     @synchronized(self) {
-        if (bitmap != nil) {
-            int w = (int)[bitmap pixelsWide];
-            int h = (int)[bitmap pixelsHigh];
-            int p = (int)[bitmap samplesPerPixel];
-            int r = (int)[bitmap bytesPerRow];
-            uint8_t *s0 = (uint8_t *)[bitmap bitmapData];
-            uint32_t *d0 = (uint32_t *)textureBuffer;
-            if (p == 3) {
-                for (int y = 0; y < h; y++) {
-                    uint8_t *s = s0 + y * r;
-                    uint32_t *d = d0 + y * w;
-                    for (int x = 0; x < w; x++) {
-                        uint32_t r = *s++;
-                        uint32_t g = *s++;
-                        uint32_t b = *s++;
-                        *d++ = (0xff << 24) | (b << 16) | (g << 8) | r;
-                    }
+        if (webView == nil)
+            return;
+        if (!needsDisplay)
+            return;
+        if (bitmap == nil)
+            return;
+        int w = (int)[bitmap pixelsWide];
+        int h = (int)[bitmap pixelsHigh];
+        int p = (int)[bitmap samplesPerPixel];
+        int r = (int)[bitmap bytesPerRow];
+        uint8_t *s0 = (uint8_t *)[bitmap bitmapData];
+        uint32_t *d0 = (uint32_t *)textureBuffer;
+        if (p == 3) {
+            for (int y = 0; y < h; y++) {
+                uint8_t *s = s0 + y * r;
+                uint32_t *d = d0 + y * w;
+                for (int x = 0; x < w; x++) {
+                    uint32_t r = *s++;
+                    uint32_t g = *s++;
+                    uint32_t b = *s++;
+                    *d++ = (0xff << 24) | (b << 16) | (g << 8) | r;
                 }
-            } else if (p == 4) {
-                for (int y = 0; y < h; y++) {
-                    uint8_t *s = s0 + y * r;
-                    uint32_t *d = d0 + y * w;
-                    for (int x = 0; x < w; x++) {
-                        uint32_t r = *s++;
-                        uint32_t g = *s++;
-                        uint32_t b = *s++;
-                        uint32_t a = *s++;
-                        *d++ = (a << 24) | (b << 16) | (g << 8) | r;
-                    }
+            }
+        } else if (p == 4) {
+            for (int y = 0; y < h; y++) {
+                uint8_t *s = s0 + y * r;
+                uint32_t *d = d0 + y * w;
+                for (int x = 0; x < w; x++) {
+                    uint32_t r = *s++;
+                    uint32_t g = *s++;
+                    uint32_t b = *s++;
+                    uint32_t a = *s++;
+                    *d++ = (a << 24) | (b << 16) | (g << 8) | r;
                 }
             }
         }
+        needsDisplay = false;
     }
 }
 
