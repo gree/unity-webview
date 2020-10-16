@@ -206,6 +206,8 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebViewSeparated")]
     private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
     [DllImport("WebViewSeparated")]
+    private static extern void _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
+    [DllImport("WebViewSeparated")]
     private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
     [DllImport("WebViewSeparated")]
     private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
