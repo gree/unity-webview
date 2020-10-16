@@ -1023,8 +1023,6 @@ public class WebViewObject : MonoBehaviour
                     textureDataBuffer = new byte[w * h * 4];
                 }
             }
-            _CWebViewPlugin_SetTextureId(webView, texture.GetNativeTexturePtr());
-            _CWebViewPlugin_SetCurrentInstance(webView);
             var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
             _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
             gch.Free();
