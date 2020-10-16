@@ -23,8 +23,6 @@
 #import <AppKit/AppKit.h>
 #import <WebKit/WebKit.h>
 #import <Carbon/Carbon.h>
-#import <Metal/Metal.h>
-#import <OpenGL/gl.h>
 #import <unistd.h>
 
 static BOOL inEditor;
@@ -37,8 +35,6 @@ static BOOL useMetal;
     WKWebView *webView;
     NSString *gameObject;
     NSBitmapImageRep *bitmap;
-    uint32_t *pixels;
-    void *textureId;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
     NSMutableArray *messages;
@@ -120,10 +116,6 @@ static WKProcessPool *_sharedProcessPool;
             [window close];
         }
         gameObject = nil;
-        if (pixels != nil) {
-            free(pixels);
-            pixels = nil;
-        }
         bitmap = nil;
         window = nil;
         windowController = nil;
@@ -237,10 +229,6 @@ static WKProcessPool *_sharedProcessPool;
     // frame.origin.x = 0;
     // frame.origin.y = 0;
     // webView.frame = frame;
-    if (pixels != nil) {
-        free(pixels);
-        pixels = nil;
-    }
     if (bitmap != nil) {
         bitmap = nil;
     }
@@ -437,7 +425,6 @@ static WKProcessPool *_sharedProcessPool;
         if (refreshBitmap) {
             if (bitmap == nil) {
                 bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
-                pixels = (uint32_t *)calloc((int)[bitmap pixelsWide] * (int)[bitmap pixelsHigh], sizeof(uint32_t));
             }
             memset([bitmap bitmapData], 128, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
             // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
@@ -460,31 +447,17 @@ static WKProcessPool *_sharedProcessPool;
     }
 }
 
-- (void)setTextureId:(void *)tId
+- (void)render:(void *)textureBuffer
 {
     @synchronized(self) {
-        textureId = tId;
-    }
-}
-
-- (void)render
-{
-    @synchronized(self) {
-        if (webView == nil)
-            return;
-        if (!needsDisplay)
-            return;
-        if (bitmap == nil)
-            return;
-
-        if (useMetal) {
+        if (bitmap != nil) {
             int w = (int)[bitmap pixelsWide];
             int h = (int)[bitmap pixelsHigh];
             int p = (int)[bitmap samplesPerPixel];
             int r = (int)[bitmap bytesPerRow];
+            uint8_t *s0 = (uint8_t *)[bitmap bitmapData];
+            uint32_t *d0 = (uint32_t *)textureBuffer;
             if (p == 3) {
-                uint8_t *s0 = (uint8_t *)[bitmap bitmapData];
-                uint32_t *d0 = pixels;
                 for (int y = 0; y < h; y++) {
                     uint8_t *s = s0 + y * r;
                     uint32_t *d = d0 + y * w;
@@ -496,8 +469,6 @@ static WKProcessPool *_sharedProcessPool;
                     }
                 }
             } else if (p == 4) {
-                uint8_t *s0 = (uint8_t *)[bitmap bitmapData];
-                uint32_t *d0 = pixels;
                 for (int y = 0; y < h; y++) {
                     uint8_t *s = s0 + y * r;
                     uint32_t *d = d0 + y * w;
@@ -510,31 +481,6 @@ static WKProcessPool *_sharedProcessPool;
                     }
                 }
             }
-            id<MTLTexture> tex = (__bridge id<MTLTexture>)textureId;
-            [tex replaceRegion:MTLRegionMake3D(0, 0, 0, w, h, 1) mipmapLevel:0 withBytes:pixels bytesPerRow:(w * 4)];
-        } else {
-            int samplesPerPixel = (int)[bitmap samplesPerPixel];
-            int rowLength = 0;
-            int unpackAlign = 0;
-            glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
-            glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)[bitmap bytesPerRow] / samplesPerPixel);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glBindTexture(GL_TEXTURE_2D, (GLuint)(size_t)textureId);
-            if (![bitmap isPlanar] && (samplesPerPixel == 3 || samplesPerPixel == 4)) {
-                glTexSubImage2D(
-                    GL_TEXTURE_2D,
-                    0,
-                    0,
-                    0,
-                    (GLsizei)[bitmap pixelsWide],
-                    (GLsizei)[bitmap pixelsHigh],
-                    samplesPerPixel == 4 ? GL_RGBA : GL_RGB,
-                    GL_UNSIGNED_BYTE,
-                    [bitmap bitmapData]);
-                    }
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
         }
     }
 }
@@ -577,7 +523,6 @@ static WKProcessPool *_sharedProcessPool;
 
 @end
 
-typedef void (*UnityRenderEventFunc)(int eventId);
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -601,10 +546,7 @@ extern "C" {
                                 BOOL keyPress, unsigned char keyCode, const char *keyChars, BOOL refreshBitmap);
     int _CWebViewPlugin_BitmapWidth(void *instance);
     int _CWebViewPlugin_BitmapHeight(void *instance);
-    void _CWebViewPlugin_SetTextureId(void *instance, void *textureId);
-    void _CWebViewPlugin_SetCurrentInstance(void *instance);
-    void UnityRenderEvent(int eventId);
-    UnityRenderEventFunc GetRenderEventFunc(void);
+    void _CWebViewPlugin_Render(void *instance, void *textureBuffer);
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
@@ -733,36 +675,10 @@ int _CWebViewPlugin_BitmapHeight(void *instance)
     return [webViewPlugin bitmapHigh];
 }
 
-void _CWebViewPlugin_SetTextureId(void *instance, void *textureId)
+void _CWebViewPlugin_Render(void *instance, void *textureBuffer)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin setTextureId:textureId];
-}
-
-static void *_instance;
-
-void _CWebViewPlugin_SetCurrentInstance(void *instance)
-{
-    _instance = instance;
-}
-
-void UnityRenderEvent(int eventId)
-{
-    @autoreleasepool {
-        if (_instance == nil) {
-            return;
-        }
-        CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)_instance;
-        _instance = nil;
-        if ([pool containsObject:webViewPlugin]) {
-            [webViewPlugin render];
-        }
-    }
-}
-
-UnityRenderEventFunc GetRenderEventFunc(void)
-{
-    return UnityRenderEvent;
+    [webViewPlugin render:textureBuffer];
 }
 
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)
