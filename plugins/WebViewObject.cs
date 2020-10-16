@@ -66,6 +66,7 @@ public class WebViewObject : MonoBehaviour
     IntPtr webView;
     Rect rect;
     Texture2D texture;
+    byte[] textureDataBuffer;
     string inputString = "";
     // string keyChars0 = "";
     // ushort keyCode0 = 0;
@@ -213,11 +214,7 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
     [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SetTextureId(IntPtr instance, IntPtr textureId);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SetCurrentInstance(IntPtr instance);
-    [DllImport("WebView")]
-    private static extern IntPtr GetRenderEventFunc();
+    private static extern void _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
     [DllImport("WebView")]
@@ -1023,15 +1020,16 @@ public class WebViewObject : MonoBehaviour
                     texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true);
                     texture.filterMode = FilterMode.Bilinear;
                     texture.wrapMode = TextureWrapMode.Clamp;
+                    textureDataBuffer = new byte[w * h * 4];
                 }
             }
             _CWebViewPlugin_SetTextureId(webView, texture.GetNativeTexturePtr());
             _CWebViewPlugin_SetCurrentInstance(webView);
-#if UNITY_4_6 || UNITY_5_0 || UNITY_5_1
-            GL.IssuePluginEvent(-1);
-#else
-            GL.IssuePluginEvent(GetRenderEventFunc(), -1);
-#endif
+            var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
+            _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
+            gch.Free();
+            texture.LoadRawTextureData(textureDataBuffer);
+            texture.Apply();
         }
     }
 

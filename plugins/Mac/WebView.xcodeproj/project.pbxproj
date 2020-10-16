@@ -12,7 +12,6 @@
 		81B8C53815108B89000C56DC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81B8C53715108B89000C56DC /* Carbon.framework */; };
 		81E2C20C14C5684A004CE5C2 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81E2C20B14C5684A004CE5C2 /* Cocoa.framework */; };
 		81F4B4D914C6888B001B4465 /* WebView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 81F4B4D814C6888B001B4465 /* WebView.mm */; };
-		81F81AED14D76D2400845D4C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81F81AEC14D76D2400845D4C /* OpenGL.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,7 +36,6 @@
 			files = (
 				81B8C53815108B89000C56DC /* Carbon.framework in Frameworks */,
 				81B8C535151078DB000C56DC /* WebKit.framework in Frameworks */,
-				81F81AED14D76D2400845D4C /* OpenGL.framework in Frameworks */,
 				81E2C20C14C5684A004CE5C2 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
