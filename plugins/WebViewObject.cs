@@ -458,6 +458,13 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
 #endif
+        if (mMarginLeft == left
+            && mMarginTop == top
+            && mMarginRight == right
+            && mMarginBottom == bottom)
+        {
+            return;
+        }
         mMarginLeft = left;
         mMarginTop = top;
         mMarginRight = right;
@@ -1023,11 +1030,13 @@ public class WebViewObject : MonoBehaviour
                     textureDataBuffer = new byte[w * h * 4];
                 }
             }
-            var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
-            _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
-            gch.Free();
-            texture.LoadRawTextureData(textureDataBuffer);
-            texture.Apply();
+            if (textureDataBuffer.Length > 0) {
+                var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
+                _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
+                gch.Free();
+                texture.LoadRawTextureData(textureDataBuffer);
+                texture.Apply();
+            }
         }
     }
 
