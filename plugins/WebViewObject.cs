@@ -295,18 +295,18 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
 #elif UNITY_WEBGL
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_init(string name);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_setMargins(string name, int left, int top, int right, int bottom);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_setVisibility(string name, bool visible);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_loadURL(string name, string url);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_evaluateJS(string name, string js);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_destroy(string name);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_init(string name);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_setMargins(string name, int left, int top, int right, int bottom);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_setVisibility(string name, bool visible);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_loadURL(string name, string url);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_evaluateJS(string name, string js);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_destroy(string name);
 #endif
 
     public static bool IsWebViewAvailable()
