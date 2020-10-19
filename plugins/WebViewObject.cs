@@ -56,8 +56,8 @@ public class WebViewObject : MonoBehaviour
     Callback onLoaded;
     Callback onHooked;
     bool visibility;
-    bool alertDialogEnabled = true;
-    bool scrollBounceEnabled = true;
+    bool alertDialogEnabled;
+    bool scrollBounceEnabled;
     int mMarginLeft;
     int mMarginTop;
     int mMarginRight;
@@ -91,6 +91,12 @@ public class WebViewObject : MonoBehaviour
             mResumedTimestamp = Time.realtimeSinceStartup;
         }
         webView.Call("OnApplicationPause", paused);
+    }
+
+    void Awake()
+    {
+        alertDialogEnabled = true;
+        scrollBounceEnabled = true;
     }
 
     void Update()
