@@ -56,8 +56,8 @@ public class WebViewObject : MonoBehaviour
     Callback onLoaded;
     Callback onHooked;
     bool visibility;
-    bool alertDialogEnabled = true;
-    bool scrollBounceEnabled = true;
+    bool alertDialogEnabled;
+    bool scrollBounceEnabled;
     int mMarginLeft;
     int mMarginTop;
     int mMarginRight;
@@ -91,6 +91,12 @@ public class WebViewObject : MonoBehaviour
             mResumedTimestamp = Time.realtimeSinceStartup;
         }
         webView.Call("OnApplicationPause", paused);
+    }
+
+    void Awake()
+    {
+        alertDialogEnabled = true;
+        scrollBounceEnabled = true;
     }
 
     void Update()
@@ -289,18 +295,18 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
 #elif UNITY_WEBGL
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_init(string name);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_setMargins(string name, int left, int top, int right, int bottom);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_setVisibility(string name, bool visible);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_loadURL(string name, string url);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_evaluateJS(string name, string js);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_destroy(string name);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_init(string name);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_setMargins(string name, int left, int top, int right, int bottom);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_setVisibility(string name, bool visible);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_loadURL(string name, string url);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_evaluateJS(string name, string js);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_destroy(string name);
 #endif
 
     public static bool IsWebViewAvailable()
@@ -458,6 +464,13 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
 #endif
+        if (mMarginLeft == left
+            && mMarginTop == top
+            && mMarginRight == right
+            && mMarginBottom == bottom)
+        {
+            return;
+        }
         mMarginLeft = left;
         mMarginTop = top;
         mMarginRight = right;
@@ -1023,11 +1036,13 @@ public class WebViewObject : MonoBehaviour
                     textureDataBuffer = new byte[w * h * 4];
                 }
             }
-            var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
-            _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
-            gch.Free();
-            texture.LoadRawTextureData(textureDataBuffer);
-            texture.Apply();
+            if (textureDataBuffer.Length > 0) {
+                var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
+                _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
+                gch.Free();
+                texture.LoadRawTextureData(textureDataBuffer);
+                texture.Apply();
+            }
         }
     }
 
