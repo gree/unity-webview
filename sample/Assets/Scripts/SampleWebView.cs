@@ -57,6 +57,9 @@ public class SampleWebView : MonoBehaviour
             },
             ld: (msg) =>
             {
+#if UNITY_IPHONE
+                PlayerPrefs.SetString("sessionCookie", webViewObject.GetSessionCookieFromServer());
+#endif
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
 #if UNITY_EDITOR_OSX || (!UNITY_ANDROID && !UNITY_WEBPLAYER && !UNITY_WEBGL)
                 // NOTE: depending on the situation, you might prefer
@@ -114,6 +117,12 @@ public class SampleWebView : MonoBehaviour
             separated: false,
 #endif
             enableWKWebView: true);
+#if UNITY_IPHONE
+        if (!string.IsNullOrEmpty(PlayerPrefs.GetString("sessionCookie", ""))) {
+            webViewObject.SetSessionCookieFromClient(PlayerPrefs.GetString("sessionCookie", ""));
+        }
+#endif
+
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
 #endif

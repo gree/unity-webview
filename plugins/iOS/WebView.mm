@@ -89,6 +89,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
 @end
 
+// cf. https://stackoverflow.com/questions/26573137/can-i-set-the-cookies-to-be-used-by-a-wkwebview/26577303#26577303
+
 @interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
 {
     UIView <WebViewProtocol> *webView;
@@ -100,6 +102,8 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     NSRegularExpression *hookRegex;
     NSString *basicAuthUserName;
     NSString *basicAuthPassword;
+    NSHTTPCookie *sessionCookieFromServer;
+    NSHTTPCookie *sessionCookieFromClient;
 }
 @end
 
@@ -120,6 +124,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     hookRegex = nil;
     basicAuthUserName = nil;
     basicAuthPassword = nil;
+    sessionCookieFromServer = nil;
+    sessionCookieFromClient = nil;
     if (ua != NULL && strcmp(ua, "") != 0) {
         [[NSUserDefaults standardUserDefaults]
             registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
@@ -300,11 +306,18 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
     if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0
         && [webView URL] != nil) {
-        UnitySendMessage(
-                         [gameObjectName UTF8String],
-                         "CallOnLoaded",
-                         [[[webView URL] absoluteString] UTF8String]);
-
+        WKWebView *wkWebView = (WKWebView *)webView;
+        [wkWebView.configuration.websiteDataStore.httpCookieStore getAllCookies:^(NSArray<NSHTTPCookie *> * cookies) {
+            for (NSHTTPCookie *cookie in cookies) {
+                if (cookie.sessionOnly) {
+                    sessionCookieFromServer = cookie;
+                }
+            }
+            UnitySendMessage(
+                [gameObjectName UTF8String],
+                "CallOnLoaded",
+                [[[webView URL] absoluteString] UTF8String]);
+        }];
     }
 }
 
@@ -703,6 +716,80 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     basicAuthUserName = [NSString stringWithUTF8String:userName];
     basicAuthPassword = [NSString stringWithUTF8String:password];
 }
+
+- (const char *)getSessionCookieFromServer
+{
+    if (sessionCookieFromServer == nil) {
+        return NULL;
+    }
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+    [formatter setDateFormat:@"EEE, dd MMM yyyy HH:mm:ss zzz"];
+    NSHTTPCookie *cookie = sessionCookieFromServer;
+    NSMutableString *result = [NSMutableString string];
+    [result appendString:[NSString stringWithFormat:@"%@=%@", cookie.name, cookie.value]];
+    if ([cookie.domain length] > 0) {
+        [result appendString:[NSString stringWithFormat:@"; "]];
+        [result appendString:[NSString stringWithFormat:@"Domain=%@", cookie.domain]];
+    }
+    if ([cookie.path length] > 0) {
+        [result appendString:[NSString stringWithFormat:@"; "]];
+        [result appendString:[NSString stringWithFormat:@"Path=%@", cookie.path]];
+    }
+    if (cookie.expiresDate != nil) {
+        [result appendString:[NSString stringWithFormat:@"; "]];
+        [result appendString:[NSString stringWithFormat:@"Expires=%@", [formatter stringFromDate:cookie.expiresDate]]];
+    }
+    [result appendString:[NSString stringWithFormat:@"; "]];
+    [result appendString:[NSString stringWithFormat:@"Version=%zd", cookie.version]];
+    const char *s = [result UTF8String];
+    char *r = (char *)malloc(strlen(s) + 1);
+    strcpy(r, s);
+    return r;
+}
+
+- (void)setSessionCookieFromClient:(const char *)cookie
+{
+    sessionCookieFromClient = nil;
+    if (cookie == nil || strlen(cookie) == 0) {
+        return;
+    }
+    NSError *err = nil;
+    NSRegularExpression *re = [NSRegularExpression regularExpressionWithPattern:@"([^=; ]+)=([^=;]+)" options:0 error:&err];
+    if (err != nil) {
+        return;
+    }
+    NSMutableDictionary *props = [[NSMutableDictionary alloc] init];
+    NSString *str = [NSString stringWithUTF8String:cookie];
+    NSArray *matches = [re matchesInString:str options:0 range:NSMakeRange(0, strlen(cookie))];
+    [matches enumerateObjectsUsingBlock:^(NSTextCheckingResult *result, NSUInteger idx, BOOL *stop) {
+       NSString *k = [str substringWithRange:[result rangeAtIndex:1]];
+       NSString *v = [str substringWithRange:[result rangeAtIndex:2]];
+       if (idx == 0) {
+           [props setValue:k forKey:NSHTTPCookieName];
+           [props setValue:v forKey:NSHTTPCookieValue];
+       } else if ([k isEqualToString:@"Domain"]) {
+           [props setValue:v forKey:NSHTTPCookieDomain];
+       } else if ([k isEqualToString:@"Path"]) {
+           [props setValue:v forKey:NSHTTPCookiePath];
+       } else if ([k isEqualToString:@"Version"]) {
+           [props setValue:v forKey:NSHTTPCookieVersion];
+       } else if ([k isEqualToString:@"Expires"]) {
+           NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+           formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+           [formatter setDateFormat:@"EEE, dd MMM yyyy HH:mm:ss zzz"];
+           NSDate *d = [formatter dateFromString:v];
+           [props setValue:d forKey:k];
+       }
+    }];
+    if (props.count == 0) {
+        return;
+    }
+    sessionCookieFromClient = [[NSHTTPCookie alloc] initWithProperties: props];
+    WKWebView *wkWebView = (WKWebView *)webView;
+    WKHTTPCookieStore *cookieStore = wkWebView.configuration.websiteDataStore.httpCookieStore;
+    [cookieStore setCookie:sessionCookieFromClient completionHandler:^{}];
+}
 @end
 
 extern "C" {
@@ -731,6 +818,8 @@ extern "C" {
     const char *_CWebViewPlugin_GetCookies(const char *url);
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
     void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
+    const char *_CWebViewPlugin_GetSessionCookieFromServer(void *instance);
+    void _CWebViewPlugin_SetSessionCookieFromClient(void *instance, const char *cookie);
 }
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
@@ -918,6 +1007,22 @@ void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, cons
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setBasicAuthInfo:userName password:password];
+}
+
+const char *_CWebViewPlugin_GetSessionCookieFromServer(void *instance)
+{
+    if (instance == NULL)
+        return NULL;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    return [webViewPlugin getSessionCookieFromServer];
+}
+
+void _CWebViewPlugin_SetSessionCookieFromClient(void *instance, const char *cookie)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setSessionCookieFromClient:cookie];
 }
 
 #endif // !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)

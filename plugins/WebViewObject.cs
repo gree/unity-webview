@@ -294,6 +294,10 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetCookies(string url);
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
+    [DllImport("__Internal")]
+    private static extern string _CWebViewPlugin_GetSessionCookieFromServer(IntPtr instance);
+    [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetSessionCookieFromClient(IntPtr instance, string cookie);
 #elif UNITY_WEBGL
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_init(string name);
@@ -985,6 +989,43 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public string GetSessionCookieFromServer()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+        return "";
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+        return "";
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        //TODO: UNSUPPORTED
+        return "";
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return "";
+        return _CWebViewPlugin_GetSessionCookieFromServer(webView);
+#elif UNITY_ANDROID
+        //TODO: UNSUPPORTED
+        return "";
+#endif
+    }
+
+    public void SetSessionCookieFromClient(string cookie)
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetSessionCookieFromClient(webView, cookie);
+#elif UNITY_ANDROID
+        //TODO: UNSUPPORTED
+#endif
+    }
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     void OnApplicationFocus(bool focus)
