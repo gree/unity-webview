@@ -152,7 +152,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 static WKProcessPool *_sharedProcessPool;
 static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode
 {
     self = [super init];
 
@@ -189,6 +189,9 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         }
         configuration.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
         configuration.processPool = _sharedProcessPool;
+        if (@available(iOS 13.0, *)) {
+            configuration.defaultWebpagePreferences.preferredContentMode = contentMode;
+        }
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
@@ -808,7 +811,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 @end
 
 extern "C" {
-    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView);
+    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView, int contentMode);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
@@ -835,9 +838,21 @@ extern "C" {
     void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
 }
 
-void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
+void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView, int contentMode)
 {
-    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
+    WKContentMode wkContentMode = WKContentModeRecommended;
+    switch (contentMode) {
+    case 1:
+        wkContentMode = WKContentModeMobile;
+        break;
+    case 2:
+        wkContentMode = WKContentModeDesktop;
+        break;
+    default:
+        wkContentMode = WKContentModeRecommended;
+        break;
+    }
+    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView contentMode:wkContentMode];
     [_instances addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
 }
