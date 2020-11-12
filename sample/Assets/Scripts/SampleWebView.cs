@@ -113,7 +113,8 @@ public class SampleWebView : MonoBehaviour
 #if UNITY_EDITOR
             separated: false,
 #endif
-            enableWKWebView: true);
+            enableWKWebView: true,
+            wkContentMode: 0);  // 0: recommended, 1: mobile, 2: desktop
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
 #endif
