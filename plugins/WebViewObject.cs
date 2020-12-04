@@ -455,6 +455,7 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_WEBPLAYER || UNITY_WEBGL
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
+        return;
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
             return;
@@ -465,6 +466,7 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
 #endif
+#if UNITY_EDITOR || UNITY_STANDALONE
         if (mMarginLeft == left
             && mMarginTop == top
             && mMarginRight == right
@@ -472,6 +474,7 @@ public class WebViewObject : MonoBehaviour
         {
             return;
         }
+#endif
         mMarginLeft = left;
         mMarginTop = top;
         mMarginRight = right;
