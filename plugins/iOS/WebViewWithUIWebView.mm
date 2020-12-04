@@ -164,10 +164,6 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     hookRegex = nil;
     basicAuthUserName = nil;
     basicAuthPassword = nil;
-    if (ua != NULL && strcmp(ua, "") != 0) {
-        [[NSUserDefaults standardUserDefaults]
-            registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
-    }
     UIView *view = UnityGetGLViewController().view;
     if (enableWKWebView && [WKWebView class]) {
         if (_sharedProcessPool == NULL) {
@@ -195,7 +191,14 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
+        if (ua != NULL && strcmp(ua, "") != 0) {
+            ((WKWebView *)webView).customUserAgent = [[NSString alloc] initWithUTF8String:ua];
+        }
     } else {
+        if (ua != NULL && strcmp(ua, "") != 0) {
+            [[NSUserDefaults standardUserDefaults]
+                registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
+        }
         UIWebView *uiwebview = [[UIWebView alloc] initWithFrame:view.frame];
         uiwebview.allowsInlineMediaPlayback = YES;
         uiwebview.mediaPlaybackRequiresUserAction = NO;
