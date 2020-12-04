@@ -77,7 +77,6 @@ public class WebViewObject : MonoBehaviour
     AndroidJavaObject webView;
     
     bool mVisibility;
-    bool mIsKeyboardVisible0;
     bool mIsKeyboardVisible;
     float mResumedTimestamp;
     
@@ -85,7 +84,7 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == null)
             return;
-        if (!paused)
+        if (!paused && mIsKeyboardVisible)
         {
             webView.Call("SetVisibility", false);
             mResumedTimestamp = Time.realtimeSinceStartup;
@@ -113,12 +112,10 @@ public class WebViewObject : MonoBehaviour
     /// Called from Java native plugin to set when the keyboard is opened
     public void SetKeyboardVisible(string pIsVisible)
     {
+        bool isKeyboardVisible0 = mIsKeyboardVisible;
         mIsKeyboardVisible = (pIsVisible == "true");
-        if (mIsKeyboardVisible != mIsKeyboardVisible0)
+        if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
         {
-            mIsKeyboardVisible0 = mIsKeyboardVisible;
-            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
-        } else if (mIsKeyboardVisible) {
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
         }
     }
@@ -455,6 +452,7 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_WEBPLAYER || UNITY_WEBGL
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
+        return;
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
             return;
@@ -465,6 +463,7 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
 #endif
+#if UNITY_EDITOR || UNITY_STANDALONE
         if (mMarginLeft == left
             && mMarginTop == top
             && mMarginRight == right
@@ -472,6 +471,7 @@ public class WebViewObject : MonoBehaviour
         {
             return;
         }
+#endif
         mMarginLeft = left;
         mMarginTop = top;
         mMarginRight = right;
