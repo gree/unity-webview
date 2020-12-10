@@ -385,6 +385,7 @@ public class CWebViewPlugin {
             webSettings.setDomStorageEnabled(true);
             String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
             webSettings.setDatabasePath(databasePath);
+            webSettings.setAllowFileAccess(true);  // cf. https://github.com/gree/unity-webview/issues/625
 
             if (transparent) {
                 webView.setBackgroundColor(0x00000000);
