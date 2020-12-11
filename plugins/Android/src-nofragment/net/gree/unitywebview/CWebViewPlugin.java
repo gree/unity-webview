@@ -31,6 +31,7 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -308,11 +309,26 @@ public class CWebViewPlugin {
                         // cf. http://d.hatena.ne.jp/faw/20070903/1188796959 (in Japanese)
                         urlCon.setRequestProperty("User-Agent", mWebViewUA);
 
+                        if (mBasicAuthUserName != null && mBasicAuthPassword != null) {
+                            String authorization = mBasicAuthUserName + ":" + mBasicAuthPassword;
+                            urlCon.setRequestProperty("Authorization", "Basic " + Base64.encodeToString(authorization.getBytes(), Base64.NO_WRAP));
+                        }
+
+                        String cookies = GetCookies(url);
+                        if (cookies != null && !cookies.isEmpty()) {
+                            urlCon.addRequestProperty("Cookie", cookies);
+                        }
+
                         for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
                             urlCon.setRequestProperty(entry.getKey(), entry.getValue());
                         }
 
                         urlCon.connect();
+
+                        List<String> setCookieHeaders = urlCon.getHeaderFields().get("Set-Cookie");
+                        if (setCookieHeaders != null) {
+                            SetCookies(url, setCookieHeaders);
+                        }
 
                         return new WebResourceResponse(
                             urlCon.getContentType().split(";", 2)[0],
@@ -679,6 +695,30 @@ public class CWebViewPlugin {
     {
         CookieManager cookieManager = CookieManager.getInstance();
         return cookieManager.getCookie(url);
+    }
+
+    public void SetCookies(String url, List<String> setCookieHeaders)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) 
+        {
+           CookieManager cookieManager = CookieManager.getInstance();
+           for (String header : setCookieHeaders)
+           {
+              cookieManager.setCookie(url, header);
+           }
+           cookieManager.flush();
+        } else {
+           final Activity a = UnityPlayer.currentActivity;
+           CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(a);
+           cookieSyncManager.startSync();
+           CookieManager cookieManager = CookieManager.getInstance();
+           for (String header : setCookieHeaders)
+           {
+              cookieManager.setCookie(url, header);
+           }
+           cookieSyncManager.stopSync();
+           cookieSyncManager.sync();
+        }
     }
 
     public void SetBasicAuthInfo(final String userName, final String password)
