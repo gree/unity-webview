@@ -78,6 +78,7 @@ public class WebViewObject : MonoBehaviour
     
     bool mVisibility;
     bool mIsKeyboardVisible;
+    int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
     
     void OnApplicationPause(bool paused)
@@ -135,7 +136,7 @@ public class WebViewObject : MonoBehaviour
                 using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
                 {
                     View.Call("getWindowVisibleDisplayFrame", Rct);
-                    keyboardHeight = View.Call<int>("getHeight") - Rct.Call<int>("height");
+                    keyboardHeight = mWindowVisibleDisplayFrameHeight - Rct.Call<int>("height");
                 }
             }
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
@@ -396,6 +397,16 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
         webView.Call("Init", name, transparent, ua);
+
+        using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        {
+            AndroidJavaObject View = UnityClass.GetStatic<AndroidJavaObject>("currentActivity").Get<AndroidJavaObject>("mUnityPlayer").Call<AndroidJavaObject>("getView");
+            using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
+            {
+                View.Call("getWindowVisibleDisplayFrame", Rct);
+                mWindowVisibleDisplayFrameHeight = Rct.Call<int>("height");
+            }
+        }
 #else
         Debug.LogError("Webview is not supported on this platform.");
 #endif
