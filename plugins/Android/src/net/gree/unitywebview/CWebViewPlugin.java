@@ -488,9 +488,12 @@ public class CWebViewPlugin extends Fragment {
                             urlCon.setRequestProperty("Authorization", "Basic " + Base64.encodeToString(authorization.getBytes(), Base64.NO_WRAP));
                         }
 
-                        String cookies = GetCookies(url);
-                        if (cookies != null && !cookies.isEmpty()) {
-                            urlCon.addRequestProperty("Cookie", cookies);
+                        if (Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT_WATCH) {
+                            // cf. https://issuetracker.google.com/issues/36989494
+                            String cookies = GetCookies(url);
+                            if (cookies != null && !cookies.isEmpty()) {
+                                urlCon.addRequestProperty("Cookie", cookies);
+                            }
                         }
 
                         for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
