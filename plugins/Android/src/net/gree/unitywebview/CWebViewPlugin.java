@@ -472,7 +472,7 @@ public class CWebViewPlugin extends Fragment {
                 }
 
                 @Override
-                public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                public WebResourceResponse shouldInterceptRequest(WebView view, final String url) {
                     if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
                         return super.shouldInterceptRequest(view, url);
                     }
@@ -502,9 +502,18 @@ public class CWebViewPlugin extends Fragment {
 
                         urlCon.connect();
 
-                        List<String> setCookieHeaders = urlCon.getHeaderFields().get("Set-Cookie");
+                        final List<String> setCookieHeaders = urlCon.getHeaderFields().get("Set-Cookie");
                         if (setCookieHeaders != null) {
-                            SetCookies(url, setCookieHeaders);
+                            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT || Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT_WATCH) {
+                                // In addition to getCookie, setCookie cause deadlock on Android 4.4.4 cf. https://issuetracker.google.com/issues/36989494
+                                UnityPlayer.currentActivity.runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        SetCookies(url, setCookieHeaders);
+                                    }
+                                });
+                            } else {
+                                SetCookies(url, setCookieHeaders);
+                            }
                         }
 
                         return new WebResourceResponse(
