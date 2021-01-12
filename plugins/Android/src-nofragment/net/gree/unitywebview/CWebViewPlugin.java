@@ -305,6 +305,7 @@ public class CWebViewPlugin {
 
                     try {
                         HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
+                        urlCon.setInstanceFollowRedirects(false);
                         // The following should make HttpURLConnection have a same user-agent of webView)
                         // cf. http://d.hatena.ne.jp/faw/20070903/1188796959 (in Japanese)
                         urlCon.setRequestProperty("User-Agent", mWebViewUA);
@@ -327,6 +328,13 @@ public class CWebViewPlugin {
                         }
 
                         urlCon.connect();
+
+                        int responseCode = urlCon.getResponseCode();
+                        if (responseCode >= 300 && responseCode < 400) {
+                            // To avoid a problem due to a mismatch between requested URL and returned content,
+                            // make WebView request again in the case that redirection response was returned.
+                            return null;
+                        }
 
                         final List<String> setCookieHeaders = urlCon.getHeaderFields().get("Set-Cookie");
                         if (setCookieHeaders != null) {
