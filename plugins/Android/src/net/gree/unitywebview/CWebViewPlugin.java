@@ -558,7 +558,7 @@ public class CWebViewPlugin extends Fragment {
                     }
                     try {
                         URL u = new URL(url);
-                        if (!u.getPath().tolowerCase().endsWith(".pdf")
+                        if (!u.getPath().toLowerCase().endsWith(".pdf")
                             && (url.startsWith("http://")
                                 || url.startsWith("https://")
                                 || url.startsWith("file://")
