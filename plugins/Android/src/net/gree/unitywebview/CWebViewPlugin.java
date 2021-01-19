@@ -555,19 +555,29 @@ public class CWebViewPlugin extends Fragment {
                     } else if (mHookRegex != null && mHookRegex.matcher(url).find()) {
                         mWebViewPlugin.call("CallOnHooked", url);
                         return true;
-                    } else if (url.startsWith("http://") || url.startsWith("https://")
-                        || url.startsWith("file://") || url.startsWith("javascript:")) {
-                        mWebViewPlugin.call("CallOnStarted", url);
+                    }
+                    try {
+                        URL u = new URL(url);
+                        if (!u.getPath().tolowerCase().endsWith(".pdf")
+                            && (url.startsWith("http://")
+                                || url.startsWith("https://")
+                                || url.startsWith("file://")
+                                || url.startsWith("javascript:"))) {
+                            mWebViewPlugin.call("CallOnStarted", url);
+                            // Let webview handle the URL
+                            return false;
+                        }
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        PackageManager pm = a.getPackageManager();
+                        List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+                        if (apps.size() > 0) {
+                            view.getContext().startActivity(intent);
+                        }
+                        return true;
+                    } catch (java.net.MalformedURLException err) {
                         // Let webview handle the URL
                         return false;
                     }
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    PackageManager pm = a.getPackageManager();
-                    List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
-                    if (apps.size() > 0) {
-                        view.getContext().startActivity(intent);
-                    }
-                    return true;
                 }
             });
             webView.addJavascriptInterface(mWebViewPlugin , "Unity");
