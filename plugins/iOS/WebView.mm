@@ -320,6 +320,14 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
+- (WKWebView *)webView:(WKWebView *)wkWebView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
+{
+    if (!navigationAction.targetFrame.isMainFrame) {
+        [wkWebView loadRequest:navigationAction.request];
+    }
+    return nil;
+}
+
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
     if (webView == nil) {

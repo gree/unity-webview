@@ -426,6 +426,14 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     }
 }
 
+- (WKWebView *)webView:(WKWebView *)wkWebView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
+{
+    if (!navigationAction.targetFrame.isMainFrame) {
+        [wkWebView loadRequest:navigationAction.request];
+    }
+    return nil;
+}
+
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
     if (webView == nil) {
