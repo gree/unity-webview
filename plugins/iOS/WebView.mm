@@ -321,38 +321,6 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
 }
 
-- (void)webViewDidFinishLoad:(UIWebView *)uiWebView {
-    if (webView == nil)
-        return;
-    // cf. http://stackoverflow.com/questions/10996028/uiwebview-when-did-a-page-really-finish-loading/15916853#15916853
-    if ([[uiWebView stringByEvaluatingJavaScriptFromString:@"document.readyState"] isEqualToString:@"complete"]
-        && [webView URL] != nil) {
-        UnitySendMessage(
-            [gameObjectName UTF8String],
-            "CallOnLoaded",
-            [[[webView URL] absoluteString] UTF8String]);
-    }
-}
-
-- (BOOL)webView:(UIWebView *)uiWebView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
-{
-    if (webView == nil)
-        return YES;
-
-    NSString *url = [[request URL] absoluteString];
-    if ([url hasPrefix:@"unity:"]) {
-        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[url substringFromIndex:6] UTF8String]);
-        return NO;
-    } else {
-        if (![self isSetupedCustomHeader:request]) {
-            [uiWebView loadRequest:[self constructionCustomHeader:request]];
-            return NO;
-        }
-        UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
-        return YES;
-    }
-}
-
 - (WKWebView *)webView:(WKWebView *)wkWebView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
     if (popWebView) {
         return nil;
