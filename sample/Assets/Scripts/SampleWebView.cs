@@ -113,7 +113,8 @@ public class SampleWebView : MonoBehaviour
 #if UNITY_EDITOR
             separated: false,
 #endif
-            enableWKWebView: true);
+            enableWKWebView: true,
+            wkContentMode: 0);  // 0: recommended, 1: mobile, 2: desktop
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
 #endif
@@ -191,7 +192,11 @@ public class SampleWebView : MonoBehaviour
         }
         GUI.enabled = true;
 
-        GUI.TextField(new Rect(200, 10, 300, 80), "" + webViewObject.Progress());
+        if (GUI.Button(new Rect(200, 10, 80, 80), "r")) {
+            webViewObject.Reload();
+        }
+
+        GUI.TextField(new Rect(300, 10, 200, 80), "" + webViewObject.Progress());
 
         if (GUI.Button(new Rect(600, 10, 80, 80), "*")) {
             var g = GameObject.Find("WebViewObject");

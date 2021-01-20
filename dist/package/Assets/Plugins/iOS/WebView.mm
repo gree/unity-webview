@@ -44,6 +44,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nonatomic, readonly) BOOL canGoForward;
 - (void)goBack;
 - (void)goForward;
+- (void)reload;
 - (void)stopLoading;
 - (void)setScrollBounce:(BOOL)enable;
 @end
@@ -107,7 +108,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 static WKProcessPool *_sharedProcessPool;
 static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode
 {
     self = [super init];
 
@@ -119,10 +120,6 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     hookRegex = nil;
     basicAuthUserName = nil;
     basicAuthPassword = nil;
-    if (ua != NULL && strcmp(ua, "") != 0) {
-        [[NSUserDefaults standardUserDefaults]
-            registerDefaults:@{ @"UserAgent": [[NSString alloc] initWithUTF8String:ua] }];
-    }
     UIView *view = UnityGetGLViewController().view;
     if (enableWKWebView && [WKWebView class]) {
         if (_sharedProcessPool == NULL) {
@@ -144,9 +141,15 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         }
         configuration.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
         configuration.processPool = _sharedProcessPool;
+        if (@available(iOS 13.0, *)) {
+            configuration.defaultWebpagePreferences.preferredContentMode = contentMode;
+        }
         webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
+        if (ua != NULL && strcmp(ua, "") != 0) {
+            ((WKWebView *)webView).customUserAgent = [[NSString alloc] initWithUTF8String:ua];
+        }
     } else {
         webView = nil;
         return self;
@@ -654,6 +657,13 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     [webView goForward];
 }
 
+- (void)reload
+{
+    if (webView == nil)
+        return;
+    [webView reload];
+}
+
 - (void)addCustomRequestHeader:(const char *)headerKey value:(const char *)headerValue
 {
     NSString *keyString = [NSString stringWithUTF8String:headerKey];
@@ -698,7 +708,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 @end
 
 extern "C" {
-    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView);
+    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView, int contentMode);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
@@ -714,6 +724,7 @@ extern "C" {
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
     void _CWebViewPlugin_GoBack(void *instance);
     void _CWebViewPlugin_GoForward(void *instance);
+    void _CWebViewPlugin_Reload(void *instance);
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
@@ -724,11 +735,23 @@ extern "C" {
     void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
 }
 
-void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView)
+void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView, int contentMode)
 {
     if (! (enableWKWebView && [WKWebView class]))
         return nil;
-    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView];
+    WKContentMode wkContentMode = WKContentModeRecommended;
+    switch (contentMode) {
+    case 1:
+        wkContentMode = WKContentModeMobile;
+        break;
+    case 2:
+        wkContentMode = WKContentModeDesktop;
+        break;
+    default:
+        wkContentMode = WKContentModeRecommended;
+        break;
+    }
+    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent ua:ua enableWKWebView:enableWKWebView contentMode:wkContentMode];
     [_instances addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
 }
@@ -846,6 +869,14 @@ void _CWebViewPlugin_GoForward(void *instance)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin goForward];
+}
+
+void _CWebViewPlugin_Reload(void *instance)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin reload];
 }
 
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)

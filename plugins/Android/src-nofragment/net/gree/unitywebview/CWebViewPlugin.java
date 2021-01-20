@@ -31,6 +31,7 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -262,7 +263,7 @@ public class CWebViewPlugin {
                 
                 @Override
                 public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                	canGoBack = webView.canGoBack();
+                    canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnHttpError", Integer.toString(errorResponse.getStatusCode()));
                 }
@@ -297,22 +298,57 @@ public class CWebViewPlugin {
                 }
 
                 @Override
-                public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                public WebResourceResponse shouldInterceptRequest(WebView view, final String url) {
                     if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
                         return super.shouldInterceptRequest(view, url);
                     }
 
                     try {
                         HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
+                        urlCon.setInstanceFollowRedirects(false);
                         // The following should make HttpURLConnection have a same user-agent of webView)
                         // cf. http://d.hatena.ne.jp/faw/20070903/1188796959 (in Japanese)
                         urlCon.setRequestProperty("User-Agent", mWebViewUA);
+
+                        if (mBasicAuthUserName != null && mBasicAuthPassword != null) {
+                            String authorization = mBasicAuthUserName + ":" + mBasicAuthPassword;
+                            urlCon.setRequestProperty("Authorization", "Basic " + Base64.encodeToString(authorization.getBytes(), Base64.NO_WRAP));
+                        }
+
+                        if (Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT_WATCH) {
+                            // cf. https://issuetracker.google.com/issues/36989494
+                            String cookies = GetCookies(url);
+                            if (cookies != null && !cookies.isEmpty()) {
+                                urlCon.addRequestProperty("Cookie", cookies);
+                            }
+                        }
 
                         for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
                             urlCon.setRequestProperty(entry.getKey(), entry.getValue());
                         }
 
                         urlCon.connect();
+
+                        int responseCode = urlCon.getResponseCode();
+                        if (responseCode >= 300 && responseCode < 400) {
+                            // To avoid a problem due to a mismatch between requested URL and returned content,
+                            // make WebView request again in the case that redirection response was returned.
+                            return null;
+                        }
+
+                        final List<String> setCookieHeaders = urlCon.getHeaderFields().get("Set-Cookie");
+                        if (setCookieHeaders != null) {
+                            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT || Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT_WATCH) {
+                                // In addition to getCookie, setCookie cause deadlock on Android 4.4.4 cf. https://issuetracker.google.com/issues/36989494
+                                UnityPlayer.currentActivity.runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        SetCookies(url, setCookieHeaders);
+                                    }
+                                });
+                            } else {
+                                SetCookies(url, setCookieHeaders);
+                            }
+                        }
 
                         return new WebResourceResponse(
                             urlCon.getContentType().split(";", 2)[0],
@@ -345,19 +381,29 @@ public class CWebViewPlugin {
                     } else if (mHookRegex != null && mHookRegex.matcher(url).find()) {
                         mWebViewPlugin.call("CallOnHooked", url);
                         return true;
-                    } else if (url.startsWith("http://") || url.startsWith("https://")
-                        || url.startsWith("file://") || url.startsWith("javascript:")) {
-                        mWebViewPlugin.call("CallOnStarted", url);
+                    }
+                    try {
+                        URL u = new URL(url);
+                        if (!u.getPath().toLowerCase().endsWith(".pdf")
+                            && (url.startsWith("http://")
+                                || url.startsWith("https://")
+                                || url.startsWith("file://")
+                                || url.startsWith("javascript:"))) {
+                            mWebViewPlugin.call("CallOnStarted", url);
+                            // Let webview handle the URL
+                            return false;
+                        }
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        PackageManager pm = a.getPackageManager();
+                        List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+                        if (apps.size() > 0) {
+                            view.getContext().startActivity(intent);
+                        }
+                        return true;
+                    } catch (java.net.MalformedURLException err) {
                         // Let webview handle the URL
                         return false;
                     }
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    PackageManager pm = a.getPackageManager();
-                    List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
-                    if (apps.size() > 0) {
-                        view.getContext().startActivity(intent);
-                    }
-                    return true;
                 }
             });
             webView.addJavascriptInterface(mWebViewPlugin , "Unity");
@@ -385,6 +431,7 @@ public class CWebViewPlugin {
             webSettings.setDomStorageEnabled(true);
             String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
             webSettings.setDatabasePath(databasePath);
+            webSettings.setAllowFileAccess(true);  // cf. https://github.com/gree/unity-webview/issues/625
 
             if (transparent) {
                 webView.setBackgroundColor(0x00000000);
@@ -533,6 +580,16 @@ public class CWebViewPlugin {
         }});
     }
 
+    public void Reload() {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.reload();
+        }});
+    }
+
     public void SetMargins(int left, int top, int right, int bottom) {
         final FrameLayout.LayoutParams params
             = new FrameLayout.LayoutParams(
@@ -668,6 +725,30 @@ public class CWebViewPlugin {
     {
         CookieManager cookieManager = CookieManager.getInstance();
         return cookieManager.getCookie(url);
+    }
+
+    public void SetCookies(String url, List<String> setCookieHeaders)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) 
+        {
+           CookieManager cookieManager = CookieManager.getInstance();
+           for (String header : setCookieHeaders)
+           {
+              cookieManager.setCookie(url, header);
+           }
+           cookieManager.flush();
+        } else {
+           final Activity a = UnityPlayer.currentActivity;
+           CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(a);
+           cookieSyncManager.startSync();
+           CookieManager cookieManager = CookieManager.getInstance();
+           for (String header : setCookieHeaders)
+           {
+              cookieManager.setCookie(url, header);
+           }
+           cookieSyncManager.stopSync();
+           cookieSyncManager.sync();
+        }
     }
 
     public void SetBasicAuthInfo(final String userName, final String password)

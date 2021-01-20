@@ -24,8 +24,6 @@
 #import <WebKit/WebKit.h>
 #import <Carbon/Carbon.h>
 #import <CoreGraphics/CGContext.h>
-#import <Metal/Metal.h>
-#import <OpenGL/gl.h>
 #import <unistd.h>
 #include <unordered_map>
 
@@ -39,7 +37,6 @@ static BOOL s_useMetal;
     WKWebView *webView;
     NSString *gameObject;
     NSBitmapImageRep *bitmap;
-    void *textureId;
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
     NSMutableArray *messages;
@@ -481,6 +478,13 @@ static std::unordered_map<int, int> _nskey2cgkey{
     [webView goForward];
 }
 
+- (void)reload
+{
+    if (webView == nil)
+        return;
+    [webView reload];
+}
+
 - (void)sendMouseEvent:(int)x y:(int)y deltaY:(float)deltaY mouseState:(int)mouseState
 {
     if (webView == nil)
@@ -607,37 +611,38 @@ static std::unordered_map<int, int> _nskey2cgkey{
                                                              bytesPerRow:(4 * rect.size.width)
                                                             bitsPerPixel:32];
                 // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
+                needsDisplay = true;
             }
             inRendering = YES;
             if (window != nil) {
                 memset([bitmap bitmapData], 128, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
+                needsDisplay = true;
                 inRendering = NO;
             } else {
-                NSBitmapImageRep *bmpRep = bitmap;
-                // memset([bitmap bitmapData], 0, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
-                // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
-                WKWebView *wkv = webView;
-                WKSnapshotConfiguration *cfg = [WKSnapshotConfiguration new];
-                //cfg.snapshotWidth = [NSNumber numberWithLong:[bitmap pixelsWide]];
-                //cfg.rect = webView.frame;
-                [wkv takeSnapshotWithConfiguration:cfg
+                [webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
                                  completionHandler:^(NSImage *nsImg, NSError *err) {
-                    if (err == nil) {
-                        NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bmpRep];
-                        [NSGraphicsContext saveGraphicsState];
-                        [NSGraphicsContext setCurrentContext:ctx];
-                        [nsImg drawAtPoint:CGPointZero
-                                  fromRect:CGRectMake(0, 0, [bmpRep pixelsWide], [bmpRep pixelsHigh])
-                                 operation:NSCompositingOperationCopy
-                                  fraction:1.0];
-                        [[NSGraphicsContext currentContext] flushGraphics];
-                        [NSGraphicsContext restoreGraphicsState];
-                    }
-                    self->inRendering = NO;
+                    dispatch_async(
+                        dispatch_get_main_queue(),
+                        ^{
+                            @synchronized(self) {
+                                if (err == nil && self->bitmap != nil) {
+                                    NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:self->bitmap];
+                                    [NSGraphicsContext saveGraphicsState];
+                                    [NSGraphicsContext setCurrentContext:ctx];
+                                    [nsImg drawAtPoint:CGPointZero
+                                              fromRect:CGRectMake(0, 0, [self->bitmap pixelsWide], [self->bitmap pixelsHigh])
+                                             operation:NSCompositingOperationCopy
+                                              fraction:1.0];
+                                    [[NSGraphicsContext currentContext] flushGraphics];
+                                    [NSGraphicsContext restoreGraphicsState];
+                                }
+                                self->needsDisplay = true;
+                                self->inRendering = NO;
+                            }
+                        });
                 }];
             }
         }
-        needsDisplay = refreshBitmap;
     }
 }
 
@@ -655,14 +660,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
     }
 }
 
-- (void)setTextureId:(void *)tId
-{
-    @synchronized(self) {
-        textureId = tId;
-    }
-}
-
-- (void)render
+- (void)render:(void *)textureBuffer
 {
     @synchronized(self) {
         if (webView == nil)
@@ -671,26 +669,37 @@ static std::unordered_map<int, int> _nskey2cgkey{
             return;
         if (bitmap == nil)
             return;
-
-        NSInteger w = [bitmap pixelsWide];
-        NSInteger h = [bitmap pixelsHigh];
-        NSInteger r = w * [bitmap samplesPerPixel];
-        void *d = [bitmap bitmapData];
-        if (s_useMetal) {
-            id<MTLTexture> tex = (__bridge id<MTLTexture>)textureId;
-            [tex replaceRegion:MTLRegionMake3D(0, 0, 0, w, h, 1) mipmapLevel:0 withBytes:d bytesPerRow:r];
-        } else {
-            int rowLength = 0;
-            int unpackAlign = 0;
-            glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
-            glGetIntegerv(GL_UNPACK_ALIGNMENT, &unpackAlign);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)w);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glBindTexture(GL_TEXTURE_2D, (GLuint)(long)textureId);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLsizei)w, (GLsizei)h, GL_RGBA, GL_UNSIGNED_BYTE, d);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
-            glPixelStorei(GL_UNPACK_ALIGNMENT, unpackAlign);
+        int w = (int)[bitmap pixelsWide];
+        int h = (int)[bitmap pixelsHigh];
+        int p = (int)[bitmap samplesPerPixel];
+        int r = (int)[bitmap bytesPerRow];
+        uint8_t *s0 = (uint8_t *)[bitmap bitmapData];
+        uint32_t *d0 = (uint32_t *)textureBuffer;
+        if (p == 3) {
+            for (int y = 0; y < h; y++) {
+                uint8_t *s = s0 + y * r;
+                uint32_t *d = d0 + y * w;
+                for (int x = 0; x < w; x++) {
+                    uint32_t r = *s++;
+                    uint32_t g = *s++;
+                    uint32_t b = *s++;
+                    *d++ = (0xff << 24) | (b << 16) | (g << 8) | r;
+                }
+            }
+        } else if (p == 4) {
+            for (int y = 0; y < h; y++) {
+                uint8_t *s = s0 + y * r;
+                uint32_t *d = d0 + y * w;
+                for (int x = 0; x < w; x++) {
+                    uint32_t r = *s++;
+                    uint32_t g = *s++;
+                    uint32_t b = *s++;
+                    uint32_t a = *s++;
+                    *d++ = (a << 24) | (b << 16) | (g << 8) | r;
+                }
+            }
         }
+        needsDisplay = false;
     }
 }
 
@@ -752,15 +761,13 @@ extern "C" {
     BOOL _CWebViewPlugin_CanGoForward(void *instance);
     void _CWebViewPlugin_GoBack(void *instance);
     void _CWebViewPlugin_GoForward(void *instance);
+    void _CWebViewPlugin_Reload(void *instance);
     void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState);
     void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, unsigned short keyCode, int keyState);
     void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap);
     int _CWebViewPlugin_BitmapWidth(void *instance);
     int _CWebViewPlugin_BitmapHeight(void *instance);
-    void _CWebViewPlugin_SetTextureId(void *instance, void *textureId);
-    void _CWebViewPlugin_SetCurrentInstance(void *instance);
-    void UnityRenderEvent(int eventId);
-    UnityRenderEventFunc GetRenderEventFunc(void);
+    void _CWebViewPlugin_Render(void *instance, void *textureBuffer);
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
@@ -799,7 +806,6 @@ void *_CWebViewPlugin_Init(
 
 void _CWebViewPlugin_Destroy(void *instance)
 {
-    _CWebViewPlugin_SetCurrentInstance(NULL);
     CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
     [pool removeObject:webViewPlugin];
     [webViewPlugin dispose];
@@ -872,6 +878,12 @@ void _CWebViewPlugin_GoForward(void *instance)
     [webViewPlugin goForward];
 }
 
+void _CWebViewPlugin_Reload(void *instance)
+{
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin reload];
+}
+
 void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
@@ -902,34 +914,10 @@ int _CWebViewPlugin_BitmapHeight(void *instance)
     return [webViewPlugin bitmapHigh];
 }
 
-void _CWebViewPlugin_SetTextureId(void *instance, void *textureId)
+void _CWebViewPlugin_Render(void *instance, void *textureBuffer)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin setTextureId:textureId];
-}
-
-static void *_instance;
-
-void _CWebViewPlugin_SetCurrentInstance(void *instance)
-{
-    _instance = instance;
-}
-
-void UnityRenderEvent(int eventId)
-{
-    if (_instance == nil) {
-        return;
-    }
-    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)_instance;
-    _instance = nil;
-    if ([pool containsObject:webViewPlugin]) {
-        [webViewPlugin render];
-    }
-}
-
-UnityRenderEventFunc GetRenderEventFunc(void)
-{
-    return UnityRenderEvent;
+    [webViewPlugin render:textureBuffer];
 }
 
 void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue)

@@ -56,8 +56,8 @@ public class WebViewObject : MonoBehaviour
     Callback onLoaded;
     Callback onHooked;
     bool visibility;
-    bool alertDialogEnabled = true;
-    bool scrollBounceEnabled = true;
+    bool alertDialogEnabled;
+    bool scrollBounceEnabled;
     int mMarginLeft;
     int mMarginTop;
     int mMarginRight;
@@ -66,6 +66,7 @@ public class WebViewObject : MonoBehaviour
     IntPtr webView;
     Rect rect;
     Texture2D texture;
+    byte[] textureDataBuffer;
     string inputString = "";
     // string keyChars0 = "";
     // ushort keyCode0 = 0;
@@ -76,20 +77,26 @@ public class WebViewObject : MonoBehaviour
     AndroidJavaObject webView;
     
     bool mVisibility;
-    bool mIsKeyboardVisible0;
     bool mIsKeyboardVisible;
+    int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
     
     void OnApplicationPause(bool paused)
     {
         if (webView == null)
             return;
-        if (!paused)
+        if (!paused && mIsKeyboardVisible)
         {
             webView.Call("SetVisibility", false);
             mResumedTimestamp = Time.realtimeSinceStartup;
         }
         webView.Call("OnApplicationPause", paused);
+    }
+
+    void Awake()
+    {
+        alertDialogEnabled = true;
+        scrollBounceEnabled = true;
     }
 
     void Update()
@@ -106,12 +113,10 @@ public class WebViewObject : MonoBehaviour
     /// Called from Java native plugin to set when the keyboard is opened
     public void SetKeyboardVisible(string pIsVisible)
     {
+        bool isKeyboardVisible0 = mIsKeyboardVisible;
         mIsKeyboardVisible = (pIsVisible == "true");
-        if (mIsKeyboardVisible != mIsKeyboardVisible0)
+        if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
         {
-            mIsKeyboardVisible0 = mIsKeyboardVisible;
-            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
-        } else if (mIsKeyboardVisible) {
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
         }
     }
@@ -131,7 +136,7 @@ public class WebViewObject : MonoBehaviour
                 using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
                 {
                     View.Call("getWindowVisibleDisplayFrame", Rct);
-                    keyboardHeight = View.Call<int>("getHeight") - Rct.Call<int>("height");
+                    keyboardHeight = mWindowVisibleDisplayFrameHeight - Rct.Call<int>("height");
                 }
             }
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
@@ -200,6 +205,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_GoForward(
         IntPtr instance);
     [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_Reload(
+        IntPtr instance);
+    [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SendMouseEvent(IntPtr instance, int x, int y, float deltaY, int mouseState);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SendKeyEvent(IntPtr instance, int x, int y, string keyChars, ushort keyCode, int keyState);
@@ -210,11 +218,7 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
     [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SetTextureId(IntPtr instance, IntPtr textureId);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SetCurrentInstance(IntPtr instance);
-    [DllImport("WebView")]
-    private static extern IntPtr GetRenderEventFunc();
+    private static extern void _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
     [DllImport("WebView")]
@@ -227,7 +231,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, string ua, bool enableWKWebView);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, string ua, bool enableWKWebView, int wkContentMode);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -270,6 +274,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_GoForward(
         IntPtr instance);
     [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_Reload(
+        IntPtr instance);
+    [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
     [DllImport("__Internal")]
     private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
@@ -286,18 +293,18 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
 #elif UNITY_WEBGL
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_init(string name);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_setMargins(string name, int left, int top, int right, int bottom);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_setVisibility(string name, bool visible);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_loadURL(string name, string url);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_evaluateJS(string name, string js);
-	[DllImport("__Internal")]
-	private static extern void _gree_unity_webview_destroy(string name);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_init(string name);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_setMargins(string name, int left, int top, int right, int bottom);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_setVisibility(string name, bool visible);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_loadURL(string name, string url);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_evaluateJS(string name, string js);
+    [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_destroy(string name);
 #endif
 
     public static bool IsWebViewAvailable()
@@ -317,6 +324,7 @@ public class WebViewObject : MonoBehaviour
         Callback httpErr = null,
         Callback ld = null,
         bool enableWKWebView = false,
+        int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
         Callback started = null,
         Callback hooked = null
 #if UNITY_EDITOR
@@ -385,10 +393,20 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, ua, enableWKWebView);
+        webView = _CWebViewPlugin_Init(name, transparent, ua, enableWKWebView, wkContentMode);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
         webView.Call("Init", name, transparent, ua);
+
+        using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        {
+            AndroidJavaObject View = UnityClass.GetStatic<AndroidJavaObject>("currentActivity").Get<AndroidJavaObject>("mUnityPlayer").Call<AndroidJavaObject>("getView");
+            using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
+            {
+                View.Call("getWindowVisibleDisplayFrame", Rct);
+                mWindowVisibleDisplayFrameHeight = Rct.Call<int>("height");
+            }
+        }
 #else
         Debug.LogError("Webview is not supported on this platform.");
 #endif
@@ -445,6 +463,7 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_WEBPLAYER || UNITY_WEBGL
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
+        return;
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
             return;
@@ -454,6 +473,15 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
         if (webView == null)
             return;
+#endif
+#if UNITY_EDITOR || UNITY_STANDALONE
+        if (mMarginLeft == left
+            && mMarginTop == top
+            && mMarginRight == right
+            && mMarginBottom == bottom)
+        {
+            return;
+        }
 #endif
         mMarginLeft = left;
         mMarginTop = top;
@@ -744,6 +772,23 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public void Reload()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_Reload(webView);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("Reload");
+#endif
+    }
+
     public void CallOnError(string error)
     {
         if (onError != null)
@@ -988,58 +1033,8 @@ public class WebViewObject : MonoBehaviour
                 break;
             }
         }
-    }
-
-    public int bitmapRefreshCycle = 1;
-
-    void OnGUI()
-    {
         if (webView == IntPtr.Zero || !visibility)
             return;
-
-        Vector3 p;
-        p.x = Input.mousePosition.x - rect.x;
-        p.y = Input.mousePosition.y - rect.y;
-        {
-            int mouseState = 0;
-            if (Input.GetButtonDown("Fire1")) {
-                mouseState = 1;
-            } else if (Input.GetButtonUp("Fire1")) {
-                mouseState = 3;
-            } else if (Input.GetButton("Fire1")) {
-                mouseState = 2;
-            }
-            _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
-        }
-        {
-            string keyChars = "";
-            ushort keyCode = 0;
-            if (!string.IsNullOrEmpty(inputString)) {
-                keyChars = inputString.Substring(0, 1);
-                keyCode = (ushort)inputString[0];
-                inputString = inputString.Substring(1);
-            }
-            if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
-                _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
-            }
-            // if (keyChars != keyChars0) {
-            //     if (!string.IsNullOrEmpty(keyChars0)) {
-            //         Debug.Log("XX1 " + (short)keyChars0[0]);
-            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars0, keyCode0, 3);
-            //     }
-            //     if (!string.IsNullOrEmpty(keyChars)) {
-            //         Debug.Log("XX2 " + (short)keyChars[0]);
-            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
-            //     }
-            // } else {
-            //     if (!string.IsNullOrEmpty(keyChars)) {
-            //         Debug.Log("XX3");
-            //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 2);
-            //     }
-            // }
-            // keyChars0 = keyChars;
-            // keyCode0 = keyCode;
-        }
         bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
         _CWebViewPlugin_Update(webView, refreshBitmap);
         if (refreshBitmap) {
@@ -1050,25 +1045,96 @@ public class WebViewObject : MonoBehaviour
                     texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true);
                     texture.filterMode = FilterMode.Bilinear;
                     texture.wrapMode = TextureWrapMode.Clamp;
+                    textureDataBuffer = new byte[w * h * 4];
                 }
             }
-            _CWebViewPlugin_SetTextureId(webView, texture.GetNativeTexturePtr());
-            _CWebViewPlugin_SetCurrentInstance(webView);
-#if UNITY_4_6 || UNITY_5_0 || UNITY_5_1
-            GL.IssuePluginEvent(-1);
-#else
-            GL.IssuePluginEvent(GetRenderEventFunc(), -1);
-#endif
+            if (textureDataBuffer.Length > 0) {
+                var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
+                _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
+                gch.Free();
+                texture.LoadRawTextureData(textureDataBuffer);
+                texture.Apply();
+            }
         }
-        if (texture != null) {
-            Matrix4x4 m = GUI.matrix;
-            GUI.matrix
-                = Matrix4x4.TRS(
-                    new Vector3(0, Screen.height, 0),
-                    Quaternion.identity,
-                    new Vector3(1, -1, 1));
-            GUI.DrawTexture(rect, texture);
-            GUI.matrix = m;
+    }
+
+    public int bitmapRefreshCycle = 1;
+
+    void OnGUI()
+    {
+        if (webView == IntPtr.Zero || !visibility)
+            return;
+
+        switch (Event.current.type) {
+        case EventType.MouseDown:
+        case EventType.MouseUp:
+        case EventType.MouseMove:
+        case EventType.MouseDrag:
+        case EventType.ScrollWheel:
+            {
+                Vector3 p;
+                p.x = Input.mousePosition.x - rect.x;
+                p.y = Input.mousePosition.y - rect.y;
+                {
+                    int mouseState = 0;
+                    if (Input.GetButtonDown("Fire1")) {
+                        mouseState = 1;
+                    } else if (Input.GetButtonUp("Fire1")) {
+                        mouseState = 3;
+                    } else if (Input.GetButton("Fire1")) {
+                        mouseState = 2;
+                    }
+                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
+                }
+            }
+            break;
+        case EventType.KeyDown:
+        case EventType.KeyUp:
+            {
+                string keyChars = "";
+                ushort keyCode = 0;
+                if (!string.IsNullOrEmpty(inputString)) {
+                    keyChars = inputString.Substring(0, 1);
+                    keyCode = (ushort)inputString[0];
+                        inputString = inputString.Substring(1);
+                }
+                if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
+                    Vector3 p;
+                    p.x = Input.mousePosition.x - rect.x;
+                    p.y = Input.mousePosition.y - rect.y;
+                    _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                }
+                // if (keyChars != keyChars0) {
+                //     if (!string.IsNullOrEmpty(keyChars0)) {
+                //         Debug.Log("XX1 " + (short)keyChars0[0]);
+                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars0, keyCode0, 3);
+                //     }
+                //     if (!string.IsNullOrEmpty(keyChars)) {
+                //         Debug.Log("XX2 " + (short)keyChars[0]);
+                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                //     }
+                // } else {
+                //     if (!string.IsNullOrEmpty(keyChars)) {
+                //         Debug.Log("XX3");
+                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 2);
+                //     }
+                // }
+                // keyChars0 = keyChars;
+                // keyCode0 = keyCode;
+            }
+            break;
+        case EventType.Repaint:
+            if (texture != null) {
+                Matrix4x4 m = GUI.matrix;
+                GUI.matrix
+                    = Matrix4x4.TRS(
+                        new Vector3(0, Screen.height, 0),
+                        Quaternion.identity,
+                        new Vector3(1, -1, 1));
+                GUI.DrawTexture(rect, texture);
+                GUI.matrix = m;
+            }
+            break;
         }
     }
 #endif

@@ -54,7 +54,7 @@ task :build do
     SRCS[i].each do |src|
       dstdir = "#{DSTDIR[i]}/#{File.dirname(src)}"
       FileUtils.mkdir_p dstdir
-      FileUtils.cp_r "#{SRCDIR[i]}/#{src}", dstdir, {:preserve => true}
+      FileUtils.cp_r "#{SRCDIR[i]}/#{src}", dstdir, preserve:true
     end
   end
   ["Android"].each do |t|

@@ -34,6 +34,8 @@ the following entry in your `Packages/manifest.json`:
 }
 ```
 
+*NOTE: Importing with Package Manager currently doesn't work well for WebGL. Please check the instruction for `dist/unity-webview.unitypackage`.*
+
 ## Common Notes
 
 ### UnityWebViewPostprocessBuild.cs
@@ -274,7 +276,7 @@ $ ./install.sh
 
 ### WebGL
 
-After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy `WebGLTemplates/Default/TemplateData` from your Unity installation to `Assets/WebGLTemplates/unity-webivew`. If you utilize Unity 2019.4.13f1 for example,
+After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy `WebGLTemplates/Default/TemplateData` from your Unity installation to `Assets/WebGLTemplates/unity-webivew`. If you utilize Unity 2018.4.13f1 for example,
 
 ```bash
 $ cp -a /Applications/Unity/Hub/Editor/2018.4.13f1/PlaybackEngines/WebGLSupport/BuildTools/WebGLTemplates/Default/TemplateData Assets/WebGLTemplates/unity-webview
