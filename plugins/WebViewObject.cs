@@ -63,6 +63,11 @@ public class WebViewObject : MonoBehaviour
     int mMarginRight;
     int mMarginBottom;
     bool mMarginRelative;
+    float mMarginLeftComputed;
+    float mMarginTopComputed;
+    float mMarginRightComputed;
+    float mMarginBottomComputed;
+    bool mMarginRelativeComputed;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     IntPtr webView;
     Rect rect;
@@ -98,6 +103,10 @@ public class WebViewObject : MonoBehaviour
     {
         alertDialogEnabled = true;
         scrollBounceEnabled = true;
+        mMarginLeftComputed = -9999;
+        mMarginTopComputed = -9999;
+        mMarginRightComputed = -9999;
+        mMarginBottomComputed = -9999;
     }
 
     void Update()
@@ -461,11 +470,10 @@ public class WebViewObject : MonoBehaviour
 
     public void SetMargins(int left, int top, int right, int bottom, bool relative = false)
     {
-#if UNITY_WEBPLAYER
-#elif UNITY_WEBGL
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
         return;
+#elif UNITY_WEBPLAYER || UNITY_WEBGL
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (webView == IntPtr.Zero)
             return;
@@ -476,50 +484,93 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
 #endif
-#if UNITY_EDITOR || UNITY_STANDALONE
-        if (mMarginLeft == left
-            && mMarginTop == top
-            && mMarginRight == right
-            && mMarginBottom == bottom
-            && mMarginRelative == relative)
-            return;
-#endif
+
         mMarginLeft = left;
         mMarginTop = top;
         mMarginRight = right;
         mMarginBottom = bottom;
         mMarginRelative = relative;
-#if UNITY_WEBGL
-#if !UNITY_EDITOR
-        _gree_unity_webview_setMargins(name, left, top, right, bottom);
-#endif
-#elif UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.setMargins", name, left, top, right, bottom);
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        float ml, mt, mr, mb;
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
+#elif UNITY_WEBPLAYER || UNITY_WEBGL
+        ml = left;
+        mt = top;
+        mr = right;
+        mb = bottom;
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        int width = Screen.width - (left + right);
-        int height = Screen.height - (bottom + top);
-        _CWebViewPlugin_SetRect(webView, width, height);
-        rect = new Rect(left, bottom, width, height);
+        ml = left;
+        mt = top;
+        mr = right;
+        mb = bottom;
 #elif UNITY_IPHONE
-        if (relative) {
+        if (relative)
+        {
             float w = (float)Screen.width;
             float h = (float)Screen.height;
-            _CWebViewPlugin_SetMargins(webView, left / w, top / h, right / w, bottom / h, true);
-        } else {
-            _CWebViewPlugin_SetMargins(webView, (float)left, (float)top, (float)right, (float)bottom, false);
+            ml = left / w;
+            mt = top / h;
+            mr = right / w;
+            mb = bottom / h;
+        }
+        else
+        {
+            ml = left;
+            mt = top;
+            mr = right;
+            mb = bottom;
         }
 #elif UNITY_ANDROID
-        if (relative) {
+        if (relative)
+        {
             float w = (float)Screen.width;
             float h = (float)Screen.height;
             int iw = Screen.currentResolution.width;
             int ih = Screen.currentResolution.height;
-            webView.Call("SetMargins", (int)(left / w * iw), (int)(top / h * ih), (int)(right / w * iw), AdjustBottomMargin((int)(bottom / h * ih)));
-        } else {
-            webView.Call("SetMargins", left, top, right, AdjustBottomMargin(bottom));
+            ml = left / w * iw;
+            mt = top / h * ih;
+            mr = right / w * iw;
+            mb = AdjustBottomMargin((int)(bottom / h * ih));
         }
+        else
+        {
+            ml = left;
+            mt = top;
+            mr = right;
+            mb = AdjustBottomMargin(bottom);
+        }
+#endif
+        bool r = relative;
+
+        if (ml == mMarginLeftComputed
+            && mt == mMarginTopComputed
+            && mr == mMarginRightComputed
+            && mb == mMarginBottomComputed
+            && r == mMarginRelativeComputed)
+        {
+            return;
+        }
+        mMarginLeftComputed = ml;
+        mMarginTopComputed = mt;
+        mMarginRightComputed = mr;
+        mMarginBottomComputed = mb;
+        mMarginRelativeComputed = r;
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_WEBPLAYER
+        Application.ExternalCall("unityWebView.setMargins", name, (int)ml, (int)mt, (int)mr, (int)mb);
+#elif UNITY_WEBGL && !UNITY_EDITOR
+        _gree_unity_webview_setMargins(name, (int)ml, (int)mt, (int)mr, (int)mb);
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        int width = (int)(Screen.width - (ml + mr));
+        int height = (int)(Screen.height - (mb + mt));
+        _CWebViewPlugin_SetRect(webView, width, height);
+        rect = new Rect(left, bottom, width, height);
+#elif UNITY_IPHONE
+        _CWebViewPlugin_SetMargins(webView, ml, mt, mr, mb, r);
+#elif UNITY_ANDROID
+        webView.Call("SetMargins", (int)ml, (int)mt, (int)mr, (int)mb);
 #endif
     }
 
