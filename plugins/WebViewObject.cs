@@ -62,6 +62,7 @@ public class WebViewObject : MonoBehaviour
     int mMarginTop;
     int mMarginRight;
     int mMarginBottom;
+    bool mMarginRelative;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     IntPtr webView;
     Rect rect;
@@ -117,7 +118,7 @@ public class WebViewObject : MonoBehaviour
         mIsKeyboardVisible = (pIsVisible == "true");
         if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
         {
-            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom);
+            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
         }
     }
     
@@ -460,7 +461,8 @@ public class WebViewObject : MonoBehaviour
 
     public void SetMargins(int left, int top, int right, int bottom, bool relative = false)
     {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
+#if UNITY_WEBPLAYER
+#elif UNITY_WEBGL
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
         return;
@@ -478,15 +480,15 @@ public class WebViewObject : MonoBehaviour
         if (mMarginLeft == left
             && mMarginTop == top
             && mMarginRight == right
-            && mMarginBottom == bottom)
-        {
+            && mMarginBottom == bottom
+            && mMarginRelative == relative)
             return;
-        }
 #endif
         mMarginLeft = left;
         mMarginTop = top;
         mMarginRight = right;
         mMarginBottom = bottom;
+        mMarginRelative = relative;
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_setMargins(name, left, top, right, bottom);
