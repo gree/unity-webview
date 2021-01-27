@@ -322,6 +322,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
 - (WKWebView *)webView:(WKWebView *)wkWebView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
 {
+    // cf. for target="_blank", cf. http://qiita.com/ShingoFukuyama/items/b3a1441025a36ab7659c
     if (!navigationAction.targetFrame.isMainFrame) {
         [wkWebView loadRequest:navigationAction.request];
     }
