@@ -194,6 +194,13 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         if (ua != NULL && strcmp(ua, "") != 0) {
             ((WKWebView *)webView).customUserAgent = [[NSString alloc] initWithUTF8String:ua];
         }
+        // cf. https://rick38yip.medium.com/wkwebview-weird-spacing-issue-in-ios-13-54a4fc686f72
+        // cf. https://stackoverflow.com/questions/44390971/automaticallyadjustsscrollviewinsets-was-deprecated-in-ios-11-0
+        if (@available(iOS 11.0, *)) {
+            ((WKWebView *)webView).scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+        } else {
+            //UnityGetGLViewController().automaticallyAdjustsScrollViewInsets = false;
+        }
     } else {
         if (ua != NULL && strcmp(ua, "") != 0) {
             [[NSUserDefaults standardUserDefaults]
