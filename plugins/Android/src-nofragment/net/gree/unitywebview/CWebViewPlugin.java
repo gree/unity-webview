@@ -756,4 +756,15 @@ public class CWebViewPlugin {
         mBasicAuthUserName = userName;
         mBasicAuthPassword = password;
     }
+
+    public void ClearCache(final boolean includeDiskFiles)
+    {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.clearCache(includeDiskFiles);
+        }});
+    }
 }

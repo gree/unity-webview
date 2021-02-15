@@ -855,6 +855,7 @@ extern "C" {
     const char *_CWebViewPlugin_GetCookies(const char *url);
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
     void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
+    void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles);
 }
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView, int contentMode)
@@ -1052,6 +1053,11 @@ void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, cons
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setBasicAuthInfo:userName password:password];
+}
+
+void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles)
+{
+    // no op
 }
 
 #endif // __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0
