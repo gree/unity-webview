@@ -302,6 +302,8 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetCookies(string url);
     [DllImport("__Internal")]
     private static extern void   _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
+    [DllImport("__Internal")]
+    private static extern void   _CWebViewPlugin_ClearCache(IntPtr instance, bool includeDiskFiles);
 #elif UNITY_WEBGL
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_init(string name);
@@ -1047,6 +1049,23 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("SetBasicAuthInfo", userName, password);
+#endif
+    }
+
+    public void ClearCache(bool includeDiskFiles)
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE && !UNITY_EDITOR
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_ClearCache(webView, includeDiskFiles);
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("ClearCache", includeDiskFiles);
 #endif
     }
 

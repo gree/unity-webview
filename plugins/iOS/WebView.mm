@@ -721,6 +721,18 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     basicAuthUserName = [NSString stringWithUTF8String:userName];
     basicAuthPassword = [NSString stringWithUTF8String:password];
 }
+
+- (void)clearCache:(BOOL)includeDiskFiles
+{
+    if (webView == nil)
+        return;
+    NSMutableSet *types = [NSMutableSet setWithArray:@[WKWebsiteDataTypeMemoryCache]];
+    if (includeDiskFiles) {
+        [types addObject:WKWebsiteDataTypeDiskCache];
+    }
+    NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
+    [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:types modifiedSince:date completionHandler:^{}];
+}
 @end
 
 extern "C" {
@@ -749,6 +761,7 @@ extern "C" {
     const char *_CWebViewPlugin_GetCookies(const char *url);
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
     void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
+    void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles);
 }
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, const char *ua, BOOL enableWKWebView, int contentMode)
@@ -948,6 +961,14 @@ void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, cons
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setBasicAuthInfo:userName password:password];
+}
+
+void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin clearCache:includeDiskFiles];
 }
 
 #endif // !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
