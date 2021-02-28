@@ -92,6 +92,7 @@ class CWebViewPluginInterface {
 public class CWebViewPlugin {
     private static FrameLayout layout = null;
     private WebView mWebView;
+    private View mVideoView;
     private OnGlobalLayoutListener mGlobalLayoutListener;
     private CWebViewPluginInterface mWebViewPlugin;
     private int progress;
@@ -169,8 +170,6 @@ public class CWebViewPlugin {
             //     }
             // });
             webView.setWebChromeClient(new WebChromeClient() {
-                View videoView;
-
                 // cf. https://stackoverflow.com/questions/40659198/how-to-access-the-camera-from-within-a-webview/47525818#47525818
                 // cf. https://github.com/googlesamples/android-PermissionRequest/blob/eff1d21f0b9c91d67c7f2a2303b591447e61e942/Application/src/main/java/com/example/android/permissionrequest/PermissionRequestFragment.java#L148-L161
                 @Override
@@ -202,9 +201,9 @@ public class CWebViewPlugin {
                 public void onShowCustomView(View view, CustomViewCallback callback) {
                     super.onShowCustomView(view, callback);
                     if (layout != null) {
-                        videoView = view;
+                        mVideoView = view;
                         layout.setBackgroundColor(0xff000000);
-                        layout.addView(videoView);
+                        layout.addView(mVideoView);
                     }
                 }
 
@@ -212,9 +211,9 @@ public class CWebViewPlugin {
                 public void onHideCustomView() {
                     super.onHideCustomView();
                     if (layout != null) {
-                        layout.removeView(videoView);
+                        layout.removeView(mVideoView);
                         layout.setBackgroundColor(0x00000000);
-                        videoView = null;
+                        mVideoView = null;
                     }
                 }
 
@@ -490,6 +489,11 @@ public class CWebViewPlugin {
                 mGlobalLayoutListener = null;
             }
             mWebView.stopLoading();
+            if (mVideoView != null) {
+                layout.removeView(mVideoView);
+                layout.setBackgroundColor(0x00000000);
+                mVideoView = null;
+            }
             layout.removeView(mWebView);
             mWebView.destroy();
             mWebView = null;
