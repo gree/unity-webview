@@ -1,15 +1,15 @@
 /*
  * Copyright (C) 2011 Keijiro Takahashi
  * Copyright (C) 2012 GREE, Inc.
- * 
+ *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
  * arising from the use of this software.
- * 
+ *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
  * freely, subject to the following restrictions:
- * 
+ *
  * 1. The origin of this software must not be misrepresented; you must not
  *    claim that you wrote the original software. If you use this software
  *    in a product, an acknowledgment in the product documentation would be
@@ -21,6 +21,7 @@
 
 package net.gree.unitywebview;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
@@ -102,6 +103,15 @@ class CWebViewPluginInterface {
 }
 
 public class CWebViewPlugin extends Fragment {
+
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.CAMERA
+    };
+
+    private static final int REQUEST_CODE = 100001;
+
     private static FrameLayout layout = null;
     private WebView mWebView;
     private OnGlobalLayoutListener mGlobalLayoutListener;
@@ -130,6 +140,19 @@ public class CWebViewPlugin extends Fragment {
     private String mBasicAuthPassword;
 
     public CWebViewPlugin() {
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE:
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    ProcessChooser(mFilePathCallback);
+                }
+                break;
+            default:
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @Override
@@ -204,6 +227,24 @@ public class CWebViewPlugin extends Fragment {
         }
     }
 
+    public boolean verifyStoragePermissions(final Activity activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PackageManager pm = activity.getPackageManager();
+            int hasPerm1 = pm.checkPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE, activity.getPackageName());
+            int hasPerm2 = pm.checkPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE, activity.getPackageName());
+            int hasPerm3 = pm.checkPermission(android.Manifest.permission.CAMERA, activity.getPackageName());
+            if (hasPerm1 != PackageManager.PERMISSION_GRANTED || hasPerm2 != PackageManager.PERMISSION_GRANTED || hasPerm3 != PackageManager.PERMISSION_GRANTED) {
+                activity.runOnUiThread(new Runnable() {public void run() {
+                    requestPermissions(PERMISSIONS_STORAGE, REQUEST_CODE);
+                }});
+                return false;
+            }
+            return true;
+        } else {
+            return true;
+        }
+    }
+
     public boolean IsInitialized() {
         return mWebView != null;
     }
@@ -234,7 +275,7 @@ public class CWebViewPlugin extends Fragment {
 
             mAlertDialogEnabled = true;
             mCustomHeaders = new Hashtable<String, String>();
-            
+
             final WebView webView = new WebView(a);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
@@ -363,66 +404,19 @@ public class CWebViewPlugin extends Fragment {
                 @Override
                 public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                     // cf. https://github.com/googlearchive/chromium-webview-samples/blob/master/input-file-example/app/src/main/java/inputfilesample/android/chrome/google/com/inputfilesample/MainFragment.java
+
                     if (mFilePathCallback != null) {
                         mFilePathCallback.onReceiveValue(null);
                     }
                     mFilePathCallback = filePathCallback;
 
-                    mCameraPhotoPath = null;
-                    Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
-                        // Create the File where the photo should go
-                        File photoFile = null;
-                        try {
-                            photoFile = createImageFile();
-                            takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
-                        } catch (IOException ex) {
-                            // Error occurred while creating the File
-                            Log.e("CWebViewPlugin", "Unable to create Image File", ex);
-                        }
-                        // Continue only if the File was successfully created
-                        if (photoFile != null) {
-                            mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
-                            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                                                       Uri.fromFile(photoFile));
-                        } else {
-                            takePictureIntent = null;
-                        }
-                    }
+                    if (!verifyStoragePermissions(a)) return true;
 
-
-                    Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                    contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                    contentSelectionIntent.setType("*/*");
-
-                    Intent[] intentArray;
-                    if(takePictureIntent != null) {
-                        intentArray = new Intent[]{takePictureIntent};
-                    } else {
-                        intentArray = new Intent[0];
-                    }
-
-                    Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-                    chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-                    // chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
-                    chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
-
-                    startActivityForResult(chooserIntent, INPUT_FILE_REQUEST_CODE);
+                    ProcessChooser(mFilePathCallback);
 
                     return true;
                 }
 
-                private File createImageFile() throws IOException {
-                    // Create an image file name
-                    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                    String imageFileName = "JPEG_" + timeStamp + "_";
-                    File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                    File imageFile = File.createTempFile(imageFileName,  /* prefix */
-                                                         ".jpg",         /* suffix */
-                                                         storageDir      /* directory */
-                                                         );
-                    return imageFile;
-                }
             });
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
@@ -434,7 +428,7 @@ public class CWebViewPlugin extends Fragment {
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
                 }
-                
+
                 @Override
                 public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
                     canGoBack = webView.canGoBack();
@@ -594,6 +588,7 @@ public class CWebViewPlugin extends Fragment {
             webSettings.setUseWideViewPort(true);
             webSettings.setJavaScriptEnabled(true);
             webSettings.setGeolocationEnabled(true);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
@@ -657,6 +652,61 @@ public class CWebViewPlugin extends Fragment {
             }
         };
         activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(mGlobalLayoutListener);
+    }
+
+    private void ProcessChooser(ValueCallback<Uri[]> filePath) {
+        mCameraPhotoPath = null;
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = null;
+            try {
+                photoFile = createImageFile();
+            } catch (IOException ex) {
+                // Error occurred while creating the File
+                Log.e("CWebViewPlugin", "Unable to create Image File", ex);
+            }
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+                mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
+                takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                takePictureIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, "720000");
+            } else {
+                takePictureIntent = null;
+            }
+        }
+
+        Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+        contentSelectionIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        contentSelectionIntent.setType("image/*");
+
+        Intent[] intentArray;
+        if(takePictureIntent != null) {
+            intentArray = new Intent[]{takePictureIntent};
+        } else {
+            intentArray = new Intent[0];
+        }
+
+        Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+        chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+        // chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
+        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+
+        startActivityForResult(Intent.createChooser(chooserIntent, "Select images"), INPUT_FILE_REQUEST_CODE);
+    }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File imageFile = File.createTempFile(imageFileName,  /* prefix */
+                                             ".jpg",         /* suffix */
+                                             storageDir      /* directory */
+                                             );
+        return imageFile;
     }
 
     public void Destroy() {
@@ -905,7 +955,7 @@ public class CWebViewPlugin extends Fragment {
 
     public void ClearCookies()
     {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
            CookieManager.getInstance().removeAllCookies(null);
            CookieManager.getInstance().flush();
@@ -943,7 +993,7 @@ public class CWebViewPlugin extends Fragment {
 
     public void SetCookies(String url, List<String> setCookieHeaders)
     {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
            CookieManager cookieManager = CookieManager.getInstance();
            for (String header : setCookieHeaders)
