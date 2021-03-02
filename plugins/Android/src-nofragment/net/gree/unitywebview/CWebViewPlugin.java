@@ -1,15 +1,15 @@
 /*
  * Copyright (C) 2011 Keijiro Takahashi
  * Copyright (C) 2012 GREE, Inc.
- * 
+ *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
  * arising from the use of this software.
- * 
+ *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
  * freely, subject to the following restrictions:
- * 
+ *
  * 1. The origin of this software must not be misrepresented; you must not
  *    claim that you wrote the original software. If you use this software
  *    in a product, an acknowledgment in the product documentation would be
@@ -148,7 +148,7 @@ public class CWebViewPlugin {
             }
             mAlertDialogEnabled = true;
             mCustomHeaders = new Hashtable<String, String>();
-            
+
             final WebView webView = new WebView(a);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
@@ -259,7 +259,7 @@ public class CWebViewPlugin {
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnError", errorCode + "\t" + description + "\t" + failingUrl);
                 }
-                
+
                 @Override
                 public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
                     canGoBack = webView.canGoBack();
@@ -412,6 +412,7 @@ public class CWebViewPlugin {
             webSettings.setUseWideViewPort(true);
             webSettings.setJavaScriptEnabled(true);
             webSettings.setGeolocationEnabled(true);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);
                 webSettings.setAllowUniversalAccessFromFileURLs(true);
@@ -688,7 +689,7 @@ public class CWebViewPlugin {
 
     public void ClearCookies()
     {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
            CookieManager.getInstance().removeAllCookies(null);
            CookieManager.getInstance().flush();
@@ -726,7 +727,7 @@ public class CWebViewPlugin {
 
     public void SetCookies(String url, List<String> setCookieHeaders)
     {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
         {
            CookieManager cookieManager = CookieManager.getInstance();
            for (String header : setCookieHeaders)
