@@ -125,7 +125,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
     { NSModeSwitchFunctionKey,         0 },
 };
 
-- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent width:(int)width height:(int)height ua:(const char *)ua separated:(BOOL)separated
+- (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent zoom:(BOOL)zoom width:(int)width height:(int)height ua:(const char *)ua separated:(BOOL)separated
 {
     self = [super init];
     @synchronized(self) {
@@ -144,6 +144,25 @@ static std::unordered_map<int, int> _nskey2cgkey{
     preferences.javaScriptEnabled = true;
     preferences.plugInsEnabled = true;
     [controller addScriptMessageHandler:self name:@"unityControl"];
+    if (!zoom) {
+        WKUserScript *script
+            = [[WKUserScript alloc]
+                      initWithSource:@"\
+(function() { \
+    var meta = document.querySelector('meta[name=viewport]'); \
+    if (meta == null) { \
+        meta = document.createElement('meta'); \
+        meta.name = 'viewport'; \
+    } \
+    meta.content += ((meta.content.length > 0) ? ',' : '') + 'user-scalable=no'; \
+    var head = document.getElementsByTagName('head')[0]; \
+    head.appendChild(meta); \
+})(); \
+"
+                       injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
+                    forMainFrameOnly:YES];
+        [controller addUserScript:script];
+    }
     configuration.userContentController = controller;
     configuration.processPool = _sharedProcessPool;
     // configuration.preferences = preferences;
@@ -748,7 +767,7 @@ extern "C" {
     const char *_CWebViewPlugin_GetAppPath(void);
     void _CWebViewPlugin_InitStatic(BOOL inEditor, BOOL useMetal);
     void *_CWebViewPlugin_Init(
-        const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated);
+        const char *gameObject, BOOL transparent, BOOL zoom, int width, int height, const char *ua, BOOL separated);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetRect(void *instance, int width, int height);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -794,12 +813,12 @@ void _CWebViewPlugin_InitStatic(BOOL inEditor, BOOL useMetal)
 }
 
 void *_CWebViewPlugin_Init(
-    const char *gameObject, BOOL transparent, int width, int height, const char *ua, BOOL separated)
+    const char *gameObject, BOOL transparent, BOOL zoom, int width, int height, const char *ua, BOOL separated)
 {
     if (pool == 0)
         pool = [[NSMutableSet alloc] init];
 
-    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent width:width height:height ua:ua separated:separated];
+    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent zoom:zoom width:width height:height ua:ua separated:separated];
     [pool addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
 }
