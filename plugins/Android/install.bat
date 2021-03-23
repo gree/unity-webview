@@ -14,6 +14,9 @@ copy /b "\Program Files\Unity5.6.1f1\Editor\Data\PlaybackEngines\AndroidPlayer\V
 xcopy /s /e src gradle_build\src\main\java >nul
 copy /b AndroidManifest.xml gradle_build\src\main >nul
 
+call gradlew.bat clean
 call gradlew.bat assembleRelease
+copy /b gradle_build/build/outputs/aar/*.aar bin\WebViewPlugins.aar >nul
 
-jar cf bin\WebViewPlugin.jar -C gradle_build\build\intermediates\classes\release net
+mkdir -p ${DEST_DIR}
+copy /b bin\WebViewPlugins.aar ..\..\build\Packager\Assets\Plugins\Android\WebViewPlugin.aar
