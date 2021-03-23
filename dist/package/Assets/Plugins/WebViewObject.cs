@@ -178,7 +178,7 @@ public class WebViewObject : MonoBehaviour
         bool inEditor, bool useMetal);
     [DllImport("WebView")]
     private static extern IntPtr _CWebViewPlugin_Init(
-        string gameObject, bool transparent, int width, int height, string ua, bool separated);
+        string gameObject, bool transparent, bool zoom, int width, int height, string ua, bool separated);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("WebView")]
@@ -241,7 +241,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, string ua, bool enableWKWebView, int wkContentMode);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -331,6 +331,7 @@ public class WebViewObject : MonoBehaviour
     public void Init(
         Callback cb = null,
         bool transparent = false,
+        bool zoom = true,
         string ua = "",
         Callback err = null,
         Callback httpErr = null,
@@ -381,6 +382,7 @@ public class WebViewObject : MonoBehaviour
         webView = _CWebViewPlugin_Init(
             name,
             transparent,
+            zoom,
             Screen.width,
             Screen.height,
             ua
@@ -405,10 +407,10 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, ua, enableWKWebView, wkContentMode);
+        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
-        webView.Call("Init", name, transparent, ua);
+        webView.Call("Init", name, transparent, zoom, ua);
 
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
         {
