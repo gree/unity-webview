@@ -109,6 +109,8 @@ public class SampleWebView : MonoBehaviour
 #endif
                 webViewObject.EvaluateJS(@"Unity.call('ua=' + navigator.userAgent)");
             },
+            //transparent: false,
+            //zoom: true,
             //ua: "custom user agent string",
 #if UNITY_EDITOR
             separated: false,

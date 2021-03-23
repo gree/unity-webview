@@ -250,7 +250,7 @@ public class CWebViewPlugin extends Fragment {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject, final boolean transparent, final String ua) {
+    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final String ua) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         instanceCount++;
@@ -573,8 +573,13 @@ public class CWebViewPlugin extends Fragment {
                 webSettings.setUserAgentString(ua);
             }
             mWebViewUA = webSettings.getUserAgentString();
-            webSettings.setSupportZoom(true);
-            webSettings.setBuiltInZoomControls(true);
+            if (zoom) {
+                webSettings.setSupportZoom(true);
+                webSettings.setBuiltInZoomControls(true);
+            } else {
+                webSettings.setSupportZoom(false);
+                webSettings.setBuiltInZoomControls(false);
+            }
             webSettings.setDisplayZoomControls(false);
             webSettings.setLoadWithOverviewMode(true);
             webSettings.setUseWideViewPort(true);
