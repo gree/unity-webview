@@ -27,6 +27,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
@@ -430,6 +431,19 @@ public class CWebViewPlugin {
             String databasePath = webView.getContext().getDir("databases", Context.MODE_PRIVATE).getPath();
             webSettings.setDatabasePath(databasePath);
             webSettings.setAllowFileAccess(true);  // cf. https://github.com/gree/unity-webview/issues/625
+
+            // cf. https://forum.unity.com/threads/unity-ios-dark-mode.805344/#post-6476051
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Configuration configuration = UnityPlayer.currentActivity.getResources().getConfiguration();
+                switch (configuration.uiMode & Configuration.UI_MODE_NIGHT_MASK) {
+                case Configuration.UI_MODE_NIGHT_NO:
+                    webSettings.setForceDark(WebSettings.FORCE_DARK_OFF);
+                    break;
+                case Configuration.UI_MODE_NIGHT_YES:
+                    webSettings.setForceDark(WebSettings.FORCE_DARK_ON);
+                    break;
+                }
+            }
 
             if (transparent) {
                 webView.setBackgroundColor(0x00000000);
