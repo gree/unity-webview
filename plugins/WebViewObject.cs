@@ -336,6 +336,7 @@ public class WebViewObject : MonoBehaviour
         Callback err = null,
         Callback httpErr = null,
         Callback ld = null,
+        int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
         bool enableWKWebView = false,
         int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
         Callback started = null,
@@ -410,7 +411,7 @@ public class WebViewObject : MonoBehaviour
         webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
-        webView.Call("Init", name, transparent, zoom, ua);
+        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua);
 
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
         {
