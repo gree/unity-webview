@@ -140,7 +140,7 @@ public class CWebViewPlugin {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final String ua) {
+    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
@@ -434,12 +434,24 @@ public class CWebViewPlugin {
 
             // cf. https://forum.unity.com/threads/unity-ios-dark-mode.805344/#post-6476051
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                Configuration configuration = UnityPlayer.currentActivity.getResources().getConfiguration();
-                switch (configuration.uiMode & Configuration.UI_MODE_NIGHT_MASK) {
-                case Configuration.UI_MODE_NIGHT_NO:
+                switch (androidForceDarkMode) {
+                case 0:
+                    {
+                        Configuration configuration = UnityPlayer.currentActivity.getResources().getConfiguration();
+                        switch (configuration.uiMode & Configuration.UI_MODE_NIGHT_MASK) {
+                        case Configuration.UI_MODE_NIGHT_NO:
+                            webSettings.setForceDark(WebSettings.FORCE_DARK_OFF);
+                            break;
+                        case Configuration.UI_MODE_NIGHT_YES:
+                            webSettings.setForceDark(WebSettings.FORCE_DARK_ON);
+                            break;
+                        }
+                    }
+                    break;
+                case 1:
                     webSettings.setForceDark(WebSettings.FORCE_DARK_OFF);
                     break;
-                case Configuration.UI_MODE_NIGHT_YES:
+                case 2:
                     webSettings.setForceDark(WebSettings.FORCE_DARK_ON);
                     break;
                 }

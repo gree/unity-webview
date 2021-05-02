@@ -115,6 +115,7 @@ public class SampleWebView : MonoBehaviour
 #if UNITY_EDITOR
             separated: false,
 #endif
+            //androidForceDarkMode: 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
             enableWKWebView: true,
             wkContentMode: 0);  // 0: recommended, 1: mobile, 2: desktop
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
