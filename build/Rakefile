@@ -49,6 +49,11 @@ desc "build"
 task :build do
   DSTDIR.each do |dir|
     sh "git clean -dxf ."
+    # for keeping meta files
+    if Dir.exists?('../dist/package')
+      sh "cd ../dist; git clean -dxf .; git checkout ."
+      sh "cp -a ../dist/package/* Packager"
+    end
   end
   CNT.times do |i|
     SRCS[i].each do |src|
