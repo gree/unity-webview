@@ -183,25 +183,31 @@ public class SampleWebView : MonoBehaviour
 
     void OnGUI()
     {
+        var x = 10;
+
         GUI.enabled = webViewObject.CanGoBack();
-        if (GUI.Button(new Rect(10, 10, 80, 80), "<")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "<")) {
             webViewObject.GoBack();
         }
         GUI.enabled = true;
+        x += 90;
 
         GUI.enabled = webViewObject.CanGoForward();
-        if (GUI.Button(new Rect(100, 10, 80, 80), ">")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), ">")) {
             webViewObject.GoForward();
         }
         GUI.enabled = true;
+        x += 90;
 
-        if (GUI.Button(new Rect(200, 10, 80, 80), "r")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "r")) {
             webViewObject.Reload();
         }
+        x += 90;
 
-        GUI.TextField(new Rect(300, 10, 200, 80), "" + webViewObject.Progress());
+        GUI.TextField(new Rect(x, 10, 180, 80), "" + webViewObject.Progress());
+        x += 190;
 
-        if (GUI.Button(new Rect(600, 10, 80, 80), "*")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "*")) {
             var g = GameObject.Find("WebViewObject");
             if (g != null) {
                 Destroy(g);
@@ -209,11 +215,16 @@ public class SampleWebView : MonoBehaviour
                 StartCoroutine(Start());
             }
         }
-        GUI.enabled = true;
+        x += 90;
 
-        if (GUI.Button(new Rect(700, 10, 80, 80), "c")) {
+        if (GUI.Button(new Rect(x, 10, 80, 80), "c")) {
             Debug.Log(webViewObject.GetCookies(Url));
         }
-        GUI.enabled = true;
+        x += 90;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "x")) {
+            webViewObject.ClearCookies();
+        }
+        x += 90;
     }
 }

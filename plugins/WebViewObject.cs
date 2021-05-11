@@ -238,6 +238,12 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
     [DllImport("WebView")]
+    private static extern void   _CWebViewPlugin_ClearCookies();
+    [DllImport("WebView")]
+    private static extern void   _CWebViewPlugin_SaveCookies();
+    [DllImport("WebView")]
+    private static extern string _CWebViewPlugin_GetCookies(string url);
+    [DllImport("WebView")]
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
@@ -984,7 +990,7 @@ public class WebViewObject : MonoBehaviour
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
-#elif UNITY_IPHONE && !UNITY_EDITOR
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
         _CWebViewPlugin_ClearCookies();
@@ -1002,7 +1008,7 @@ public class WebViewObject : MonoBehaviour
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
-#elif UNITY_IPHONE && !UNITY_EDITOR
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
         _CWebViewPlugin_SaveCookies();
@@ -1022,7 +1028,7 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
         return "";
-#elif UNITY_IPHONE && !UNITY_EDITOR
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return "";
         return _CWebViewPlugin_GetCookies(url);
