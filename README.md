@@ -36,6 +36,18 @@ the following entry in your `Packages/manifest.json`:
 }
 ```
 
+or the following for selecting the variant without Fragment:
+
+```json
+{
+  "dependencies": {
+    ...
+    "net.gree.unity-webview": "https://github.com/gree/unity-webview.git?path=/dist/package-nofragment",
+    ...
+  }
+}
+```
+
 *NOTE: Importing with Package Manager currently doesn't work well for WebGL. Please check the instruction for `dist/unity-webview.unitypackage`.*
 
 ## Common Notes
