@@ -10,13 +10,23 @@ mkdir gradle_build\src
 mkdir gradle_build\src\main
 mkdir gradle_build\src\main\java
 
-copy /b "\Program Files\Unity5.6.1f1\Editor\Data\PlaybackEngines\AndroidPlayer\Variations\mono\Release\Classes\classes.jar" gradle_build\libs >nul
-xcopy /s /e src gradle_build\src\main\java >nul
-copy /b AndroidManifest.xml gradle_build\src\main >nul
+copy /b "classes.jar" gradle_build\libs
+xcopy /s /e src gradle_build\src\main\java
+
+
+copy /b AndroidManifest.xml gradle_build\src\main
+
+rem call gradlew.bat clean
+rem call gradlew.bat assembleDebug
+
+rem cd gradle_build/build/outputs/aar
+rem copy /B "gradle_build-debug.aar" "../../../../bin/WebViewPlugin.aar"
 
 call gradlew.bat clean
 call gradlew.bat assembleRelease
-copy /b gradle_build/build/outputs/aar/*.aar bin\WebViewPlugins.aar >nul
 
-mkdir -p ${DEST_DIR}
-copy /b bin\WebViewPlugins.aar ..\..\build\Packager\Assets\Plugins\Android\WebViewPlugin.aar
+cd gradle_build/build/outputs/aar
+copy /B "gradle_build-release.aar" "../../../../bin/WebViewPlugin.aar"
+
+cd ../../../../
+
