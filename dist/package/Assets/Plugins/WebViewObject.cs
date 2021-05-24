@@ -86,13 +86,6 @@ public class WebViewObject : MonoBehaviour
     bool mIsKeyboardVisible;
     int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
-    
-	//MATIFIC SPECIFIC
-	public void Android_RequestUnityPause()
-    {
-        webView.Call("RequestPauseUnity");
-    }
-	//END MATIFIC SPECIFIC
 	
     void OnApplicationPause(bool paused)
     {
@@ -162,7 +155,16 @@ public class WebViewObject : MonoBehaviour
 #else
     IntPtr webView;
 #endif
-
+    
+	//MATIFIC SPECIFIC
+	public void Android_RequestUnityPause()
+    {
+		#if UNITY_ANDROID
+        webView.Call("RequestPauseUnity");
+		#endif 
+    }
+	//END MATIFIC SPECIFIC
+	
     public bool IsKeyboardVisible
     {
         get
