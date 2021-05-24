@@ -159,7 +159,7 @@ public class WebViewObject : MonoBehaviour
 	//MATIFIC SPECIFIC
 	public void Android_RequestUnityPause()
     {
-		#if UNITY_ANDROID
+		#if UNITY_ANDROID && !UNITY_EDITOR
         webView.Call("RequestPauseUnity");
 		#endif 
     }
