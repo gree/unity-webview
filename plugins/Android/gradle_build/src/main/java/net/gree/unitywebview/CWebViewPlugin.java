@@ -97,7 +97,6 @@ class CWebViewPluginInterface {
     @JavascriptInterface
     public void android_unityPause() {
         //Log.w("ALON", "CALL unityPause");
-
         mPlugin.PauseUnityInternal();
     }
 
@@ -118,6 +117,7 @@ class CWebViewPluginInterface {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
             if (mPlugin.IsInitialized()) {
+                CUnityPlayerActivity.GlobalUnityActivity.ResumeUnityPlayer();
                 UnityPlayer.UnitySendMessage(mGameObject, method, message);
             }
         }});
@@ -953,6 +953,9 @@ public class CWebViewPlugin extends Fragment {
     public void OnApplicationPause(boolean paused) {
         mPaused = paused;		
 //MATIFIC SPECIFIC
+
+        //NOTE (ALON): When we call PauseUnity from webview it will trigger an onApplicationPause (true). We want to ignore it so webview continues
+        //to work while unity is paused
         if(mIsPauseDueToUnityPauseCall) {
             //Log.w("ALON", "WebView OnPaused: OVERRIDE: false");
             mPaused = false;
