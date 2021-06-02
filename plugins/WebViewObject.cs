@@ -99,16 +99,6 @@ public class WebViewObject : MonoBehaviour
         webView.Call("OnApplicationPause", paused);
     }
 
-    void Awake()
-    {
-        alertDialogEnabled = true;
-        scrollBounceEnabled = true;
-        mMarginLeftComputed = -9999;
-        mMarginTopComputed = -9999;
-        mMarginRightComputed = -9999;
-        mMarginBottomComputed = -9999;
-    }
-
     void Update()
     {
         if (webView == null)
@@ -155,6 +145,16 @@ public class WebViewObject : MonoBehaviour
 #else
     IntPtr webView;
 #endif
+    
+    void Awake()
+    {
+        alertDialogEnabled = true;
+        scrollBounceEnabled = true;
+        mMarginLeftComputed = -9999;
+        mMarginTopComputed = -9999;
+        mMarginRightComputed = -9999;
+        mMarginBottomComputed = -9999;
+    }
 
     public bool IsKeyboardVisible
     {
