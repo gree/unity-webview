@@ -1079,6 +1079,21 @@ public class WebViewObject : MonoBehaviour
     }
 
 
+    public void SetTextZoom(int textZoom)
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE && !UNITY_EDITOR
+        //TODO: UNSUPPORTED
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("SetTextZoom", textZoom);
+#endif
+    }
+
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     void OnApplicationFocus(bool focus)
     {
