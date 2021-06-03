@@ -1059,4 +1059,15 @@ public class CWebViewPlugin extends Fragment {
             mWebView.clearCache(includeDiskFiles);
         }});
     }
+
+    public void SetTextZoom(final int textZoom)
+    {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.getSettings().setTextZoom(textZoom);
+        }});
+    }
 }
