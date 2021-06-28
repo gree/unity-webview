@@ -156,7 +156,17 @@ which new one (Assets/Plugins/iOS/WebView.mm) utilizes only WKWebView if iOS dep
 
 ### Android
 
-*NOTE: The current implementation for Android utilizes Android Fragment for enabling the file input field after https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278 and may cause new issues that were not found before. If you don't need the file input field, you can install `dist/unity-webview-nofragment.unitypackage` or `dist/unity-webview-nofragment.zip` for selecting the variant without Fragment.*
+#### File Input Field
+
+The current implementation for Android utilizes Android Fragment for enabling the file input field `<input type="file">` since https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278 and may cause new issues that were not found before. If you don't need the file input field, you can install `dist/unity-webview-nofragment.unitypackage` or `dist/unity-webview-nofragment.zip` for selecting the variant without Fragment.
+
+If you utilize the default one and want to enable the file input field, you also have to set one of the following permissions since https://github.com/gree/unity-webview/pull/655 .
+
+* `android.permission.READ_EXTERNAL_STORAGE`
+* `android.permission.WRITE_EXTERNAL_STORAGE`
+* `android.permission.CAMERA`
+
+You can set `android.permission.WRITE_EXTERNAL_STORAGE` by setting `Player Settings/Other Settings/Write Permission` to `External (SDCard)`. You can set `android.permission.CAMERA` by defining `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` (cf. [Camera/Audio Permission/Feature](#cameraaudio-permissionfeature)).
 
 #### hardwareAccelerated
 
