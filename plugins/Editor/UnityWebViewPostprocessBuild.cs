@@ -207,6 +207,13 @@ internal class AndroidManifest : AndroidXmlDocument {
             ManifestElement.AppendChild(elem);
             changed = true;
         }
+        // cf. https://developer.android.com/training/data-storage/shared/media#media-location-permission
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.ACCESS_MEDIA_LOCATION']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.ACCESS_MEDIA_LOCATION"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
         return changed;
     }
 
