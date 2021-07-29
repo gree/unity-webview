@@ -100,14 +100,40 @@ public class UnityWebViewPostprocessBuild
                 Debug.LogError("unitywebview: failed to get PBXProject. please install iOS build support.");
                 return;
             }
-            dynamic proj = type.GetConstructor(Type.EmptyTypes).Invoke(null);
-            proj.ReadFromString(File.ReadAllText(projPath));
+            var src = File.ReadAllText(projPath);
+            //dynamic proj = type.GetConstructor(Type.EmptyTypes).Invoke(null);
+            var proj = type.GetConstructor(Type.EmptyTypes).Invoke(null);
+            //proj.ReadFromString(src);
+            {
+                var method = type.GetMethod("ReadFromString");
+                method.Invoke(proj, new object[]{src});
+            }
+            var target = "";
 #if UNITY_2019_3_OR_NEWER
-            proj.AddFrameworkToProject(proj.GetUnityFrameworkTargetGuid(), "WebKit.framework", false);
+            //target = proj.GetUnityFrameworkTargetGuid();
+            {
+                var method = type.GetMethod("GetUnityFrameworkTargetGuid");
+                target = (string)method.Invoke(proj, null);
+            }
 #else
-            proj.AddFrameworkToProject(proj.TargetGuidByName("Unity-iPhone"), "WebKit.framework", false);
+            //target = proj.TargetGuidByName("Unity-iPhone");
+            {
+                var method = type.GetMethod("TargetGuidByName");
+                target = (string)method.Invoke(proj, new object[]{"Unity-iPhone"});
+            }
 #endif
-            File.WriteAllText(projPath, proj.WriteToString());
+            //proj.AddFrameworkToProject(target, "WebKit.framework", false);
+            {
+                var method = type.GetMethod("AddFrameworkToProject");
+                method.Invoke(proj, new object[]{target, "WebKit.framework", false});
+            }
+            var dst = "";
+            //dst = proj.WriteToString();
+            {
+                var method = type.GetMethod("WriteToString");
+                dst = (string)method.Invoke(proj, null);
+            }
+            File.WriteAllText(projPath, dst);
         }
     }
 }
