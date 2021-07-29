@@ -336,6 +336,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     }
 }
 
+- (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView
+{
+    UnitySendMessage([gameObjectName UTF8String], "CallOnError", "webViewWebContentProcessDidTerminate");
+}
+
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     UnitySendMessage([gameObjectName UTF8String], "CallOnError", [[error description] UTF8String]);
