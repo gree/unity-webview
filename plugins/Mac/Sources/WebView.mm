@@ -313,6 +313,11 @@ static std::unordered_map<int, int> _nskey2cgkey{
     return r;
 }
 
+- (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView
+{
+    [self addMessage:[NSString stringWithFormat:@"E%@",@"webViewWebContentProcessDidTerminate"]];
+}
+
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
     [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
