@@ -382,10 +382,11 @@ public class CWebViewPlugin {
                         mWebViewPlugin.call("CallOnHooked", url);
                         return true;
                     } else if (!url.toLowerCase().endsWith(".pdf")
-                        && (url.startsWith("http://")
-                            || url.startsWith("https://")
-                            || url.startsWith("file://")
-                            || url.startsWith("javascript:"))) {
+                               && !url.startsWith("https://maps.app.goo.gl")
+                               && (url.startsWith("http://")
+                                   || url.startsWith("https://")
+                                   || url.startsWith("file://")
+                                   || url.startsWith("javascript:"))) {
                         mWebViewPlugin.call("CallOnStarted", url);
                         // Let webview handle the URL
                         return false;
