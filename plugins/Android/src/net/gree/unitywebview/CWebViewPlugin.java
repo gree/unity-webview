@@ -690,9 +690,18 @@ public class CWebViewPlugin extends Fragment {
                 } catch (java.lang.NoSuchMethodError err) {
                     h = display.getHeight();
                 }
-                int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
-                //System.out.print(String.format("[NativeWebview] %d, %d\n", h, heightDiff));
-                if (heightDiff > h / 3) { // assume that this means that the keyboard is on
+
+                View rootView = activityRootView.getRootView();
+                int bottomPadding = 0;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                    Point realSize = new Point();
+                    display.getRealSize(realSize); // this method was added at JELLY_BEAN_MR1
+                    int[] location = new int[2];
+                    rootView.getLocationOnScreen(location);
+                    bottomPadding = realSize.y - (location[1] + rootView.getHeight());
+                }
+                int heightDiff = rootView.getHeight() - (r.bottom - r.top);
+                if (heightDiff > 0 && (heightDiff + bottomPadding) > (h + bottomPadding) / 3) { // assume that this means that the keyboard is on
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "true");
                 } else {
                     UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", "false");
