@@ -661,6 +661,34 @@ public class WebViewObject : MonoBehaviour
         return scrollBounceEnabled;
     }
 
+    public void SetCameraAccess(bool allowed)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        // TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        // TODO: UNSUPPORTED
+        webView.Call("SetCameraAccess", allowed);
+#else
+        // TODO: UNSUPPORTED
+#endif
+    }
+
+    public void SetMicrophoneAccess(bool allowed)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        // TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        // TODO: UNSUPPORTED
+        webView.Call("SetMicrophoneAccess", allowed);
+#else
+        // TODO: UNSUPPORTED
+#endif
+    }
+
     public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern)
     {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
