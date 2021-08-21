@@ -100,6 +100,8 @@ public class CWebViewPlugin {
     private boolean canGoBack;
     private boolean canGoForward;
     private boolean mAlertDialogEnabled;
+    private boolean mAllowVideoCapture;
+    private boolean mAllowAudioCapture;
     private Hashtable<String, String> mCustomHeaders;
     private String mWebViewUA;
     private Pattern mAllowRegex;
@@ -148,6 +150,8 @@ public class CWebViewPlugin {
                 return;
             }
             mAlertDialogEnabled = true;
+            mAllowVideoCapture = false;
+            mAllowAudioCapture = false;
             mCustomHeaders = new Hashtable<String, String>();
 
             final WebView webView = new WebView(a);
@@ -177,7 +181,8 @@ public class CWebViewPlugin {
                 public void onPermissionRequest(final PermissionRequest request) {
                     final String[] requestedResources = request.getResources();
                     for (String r : requestedResources) {
-                        if (r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) || r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+                        if ((r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) && mAllowVideoCapture)
+                            || (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) && mAllowAudioCapture)) {
                             request.grant(requestedResources);
                             // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             //     a.runOnUiThread(new Runnable() {public void run() {
@@ -665,6 +670,20 @@ public class CWebViewPlugin {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
             mAlertDialogEnabled = enabled;
+        }});
+    }
+
+    public void SetCameraAccess(final boolean allowed) {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            mAllowVideoCapture = allowed;
+        }});
+    }
+
+    public void SetMicrophoneAccess(final boolean allowed) {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            mAllowAudioCapture = allowed;
         }});
     }
 
