@@ -115,6 +115,10 @@ public class WebViewObject : MonoBehaviour
     {
         bool isKeyboardVisible0 = mIsKeyboardVisible;
         mIsKeyboardVisible = (pIsVisible == "true");
+        if (!Screen.fullScreen)
+        {
+            return;
+        }
         if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
         {
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
@@ -123,7 +127,7 @@ public class WebViewObject : MonoBehaviour
     
     public int AdjustBottomMargin(int bottom)
     {
-        if (!mIsKeyboardVisible)
+        if (!mIsKeyboardVisible || !Screen.fullScreen)
         {
             return bottom;
         }
