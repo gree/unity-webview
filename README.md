@@ -226,6 +226,8 @@ For allowing microphone access (`navigator.mediaDevices.getUserMedia({ audio:tru
 ```xml
   <uses-permission android:name="android.permission.MICROPHONE" />
   <uses-feature android:name="android.hardware.microphone" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
 ```
 
 and call the following on runtime.
