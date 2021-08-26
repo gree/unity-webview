@@ -257,6 +257,22 @@ internal class AndroidManifest : AndroidXmlDocument {
             ManifestElement.AppendChild(elem);
             changed = true;
         }
+        // cf. https://github.com/gree/unity-webview/issues/679
+        // cf. https://github.com/fluttercommunity/flutter_webview_plugin/issues/138#issuecomment-559307558
+        // cf. https://stackoverflow.com/questions/38917751/webview-webrtc-not-working/68024032#68024032
+        // cf. https://stackoverflow.com/questions/40236925/allowing-microphone-accesspermission-in-webview-android-studio-java/47410311#47410311
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.MODIFY_AUDIO_SETTINGS']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.MODIFY_AUDIO_SETTINGS"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.RECORD_AUDIO']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.RECORD_AUDIO"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
         return changed;
     }
 }
