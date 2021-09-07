@@ -108,16 +108,19 @@ public class SampleWebView : MonoBehaviour
                     "};");
 #endif
                 webViewObject.EvaluateJS(@"Unity.call('ua=' + navigator.userAgent)");
-            },
+            }
             //transparent: false,
             //zoom: true,
             //ua: "custom user agent string",
-#if UNITY_EDITOR
-            separated: false,
-#endif
+            //// android
             //androidForceDarkMode: 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
-            enableWKWebView: true,
-            wkContentMode: 0);  // 0: recommended, 1: mobile, 2: desktop
+            //// ios
+            //enableWKWebView: true,
+            //wkContentMode: 0,  // 0: recommended, 1: mobile, 2: desktop
+            //wkAllowsLinkPreview: true,
+            //// editor
+            //separated: false
+            );
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
 #endif
