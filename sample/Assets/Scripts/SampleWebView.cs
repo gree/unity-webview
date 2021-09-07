@@ -47,6 +47,12 @@ public class SampleWebView : MonoBehaviour
                 status.text = msg;
                 status.GetComponent<Animation>().Play();
             },
+            httpErr: (msg) =>
+            {
+                Debug.Log(string.Format("CallOnHttpError[{0}]", msg));
+                status.text = msg;
+                status.GetComponent<Animation>().Play();
+            },
             started: (msg) =>
             {
                 Debug.Log(string.Format("CallOnStarted[{0}]", msg));
