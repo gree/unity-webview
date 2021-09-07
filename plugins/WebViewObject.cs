@@ -251,7 +251,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -340,21 +340,22 @@ public class WebViewObject : MonoBehaviour
 
     public void Init(
         Callback cb = null,
-        bool transparent = false,
-        bool zoom = true,
-        string ua = "",
         Callback err = null,
         Callback httpErr = null,
         Callback ld = null,
-        int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
-        bool enableWKWebView = false,
-        int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
         Callback started = null,
-        Callback hooked = null
-#if UNITY_EDITOR
-        , bool separated = false
-#endif
-        )
+        Callback hooked = null,
+        bool transparent = false,
+        bool zoom = true,
+        string ua = "",
+        // android
+        int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
+        // ios
+        bool enableWKWebView = true,
+        int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
+        bool wkAllowsLinkPreview = true,
+        // editor
+        bool separated = false)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
@@ -418,7 +419,7 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode);
+        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
         webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua);
