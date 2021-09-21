@@ -23,7 +23,7 @@ below:
 
 ## Package Manager
 
-If you use Unity 2019.1 or later, the plugin can also be imported with Package Manager, by adding
+If you use Unity 2019.4 or later, the plugin can also be imported with Package Manager, by adding
 the following entry in your `Packages/manifest.json`:
 
 ```json
@@ -49,16 +49,6 @@ or the following for selecting the variant without Fragment:
 ```
 
 *NOTE: Importing with Package Manager currently doesn't work well for WebGL. Please check the instruction for `dist/unity-webview.unitypackage`.*
-
-## Common Notes
-
-### UnityWebViewPostprocessBuild.cs
-
-`Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` contains code for Android/iOS build, which
-may cause errors if you haven't installed components for these platforms. As discussed in
-https://github.com/gree/unity-webview/pull/397#issuecomment-464631894, I intentionally don't utilize
-`UNITY_IOS` and/or `UNITY_ANDROID`. If you haven't installed Android/iOS components, please comment
-out adequate parts in the script.
 
 ## Platform Specific Notes
 
