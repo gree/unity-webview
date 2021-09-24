@@ -1130,7 +1130,10 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     void OnApplicationFocus(bool focus)
     {
-        hasFocus = focus;
+        if (!focus)
+        {
+            hasFocus = false;
+        }
     }
 
     void Update()
@@ -1194,6 +1197,10 @@ public class WebViewObject : MonoBehaviour
         if (webView == IntPtr.Zero || !visibility)
             return;
 
+        if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2))
+        {
+            hasFocus = rect.Contains(Input.mousePosition);
+        }
         switch (Event.current.type) {
         case EventType.MouseDown:
         case EventType.MouseUp:
@@ -1201,19 +1208,22 @@ public class WebViewObject : MonoBehaviour
         case EventType.MouseDrag:
         case EventType.ScrollWheel:
             {
-                Vector3 p;
-                p.x = Input.mousePosition.x - rect.x;
-                p.y = Input.mousePosition.y - rect.y;
+                if (hasFocus)
                 {
-                    int mouseState = 0;
-                    if (Input.GetButtonDown("Fire1")) {
-                        mouseState = 1;
-                    } else if (Input.GetButtonUp("Fire1")) {
-                        mouseState = 3;
-                    } else if (Input.GetButton("Fire1")) {
-                        mouseState = 2;
+                    Vector3 p;
+                    p.x = Input.mousePosition.x - rect.x;
+                    p.y = Input.mousePosition.y - rect.y;
+                    {
+                        int mouseState = 0;
+                        if (Input.GetButtonDown("Fire1")) {
+                            mouseState = 1;
+                        } else if (Input.GetButtonUp("Fire1")) {
+                            mouseState = 3;
+                        } else if (Input.GetButton("Fire1")) {
+                            mouseState = 2;
+                        }
+                        _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
                     }
-                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
                 }
             }
             break;
@@ -1228,10 +1238,13 @@ public class WebViewObject : MonoBehaviour
                         inputString = inputString.Substring(1);
                 }
                 if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
-                    Vector3 p;
-                    p.x = Input.mousePosition.x - rect.x;
-                    p.y = Input.mousePosition.y - rect.y;
-                    _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                    if (hasFocus)
+                    {
+                        Vector3 p;
+                        p.x = Input.mousePosition.x - rect.x;
+                        p.y = Input.mousePosition.y - rect.y;
+                        _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                    }
                 }
                 // if (keyChars != keyChars0) {
                 //     if (!string.IsNullOrEmpty(keyChars0)) {
