@@ -11,22 +11,22 @@ LIBS_DIR="${BUILD_DIR}/libs"
 MODE="Release"
 SCRIPTING_BACKEND="il2cpp"
 UNITY="/Applications/Unity5.6.1f1"
-for OPT in $*; do
-  case $OPT in
+for OPT in $*
+do
+    case $OPT in
     '--release' )
-      MODE="Release";;
+        MODE="Release";;
     '--develop' )
-      MODE="Develop";;
+        MODE="Develop";;
     '--il2cpp' )
-      SCRIPTING_BACKEND="il2cpp";;
+        SCRIPTING_BACKEND="il2cpp";;
     '--mono' )
-      SCRIPTING_BACKEND="mono";;
+        SCRIPTING_BACKEND="mono";;
     '--unity' )
-      UNITY=$2
-      shift 2
-      ;;
-  esac
-  shift
+        shift
+        UNITY=$1
+        ;;
+    esac
 done
 UNITY_JAVA_LIB="${UNITY}/PlaybackEngines/AndroidPlayer/Variations/${SCRIPTING_BACKEND}/${MODE}/Classes/classes.jar"
 
