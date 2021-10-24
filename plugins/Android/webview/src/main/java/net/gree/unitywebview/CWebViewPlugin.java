@@ -59,6 +59,7 @@ import android.webkit.CookieSyncManager;
 import android.widget.FrameLayout;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
+import androidx.core.content.FileProvider;
 // import android.support.v4.app.ActivityCompat;
 
 import java.io.File;
@@ -127,7 +128,7 @@ public class CWebViewPlugin extends Fragment {
     private static final int INPUT_FILE_REQUEST_CODE = 1;
     private ValueCallback<Uri> mUploadMessage;
     private ValueCallback<Uri[]> mFilePathCallback;
-    private String mCameraPhotoPath;
+    private Uri mCameraPhotoUri;
 
     private static long instanceCount;
     private long mInstanceId;
@@ -168,15 +169,15 @@ public class CWebViewPlugin extends Fragment {
             // Check that the response is a good one
             if (resultCode == Activity.RESULT_OK) {
                 if (data == null) {
-                    if (mCameraPhotoPath != null) {
-                        results = new Uri[] { Uri.parse(mCameraPhotoPath) };
+                    if (mCameraPhotoUri != null) {
+                        results = new Uri[] { mCameraPhotoUri };
                     }
                 } else {
                     String dataString = data.getDataString();
                     // cf. https://www.petitmonte.com/java/android_webview_camera.html
                     if (dataString == null) {
-                        if (mCameraPhotoPath != null) {
-                            results = new Uri[] { Uri.parse(mCameraPhotoPath) };
+                        if (mCameraPhotoUri != null) {
+                            results = new Uri[] { mCameraPhotoUri };
                         }
                     } else {
                         results = new Uri[] { Uri.parse(dataString) };
@@ -717,7 +718,7 @@ public class CWebViewPlugin extends Fragment {
     }
 
     private void ProcessChooser(ValueCallback<Uri[]> filePath) {
-        mCameraPhotoPath = null;
+        mCameraPhotoUri = null;
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             // Create the File where the photo should go
@@ -730,10 +731,14 @@ public class CWebViewPlugin extends Fragment {
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
-                mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
-                takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
-                takePictureIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, "720000");
+                takePictureIntent.putExtra("PhotoPath", photoFile);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    mCameraPhotoUri = FileProvider.getUriForFile(getActivity(), getActivity().getPackageName() + ".unitywebview.fileprovider", photoFile);
+                } else {
+                    mCameraPhotoUri = Uri.parse("file:" + photoFile.getAbsolutePath());
+                }
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraPhotoUri);
+                //takePictureIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, "720000");
             } else {
                 takePictureIntent = null;
             }
@@ -763,7 +768,15 @@ public class CWebViewPlugin extends Fragment {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File storageDir;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            storageDir = new File(getActivity().getFilesDir(), "unitywebview_file_provider_images");
+        } else {
+            storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        }
+        if (!storageDir.exists()) {
+            storageDir.mkdirs();
+        }
         File imageFile = File.createTempFile(imageFileName,  /* prefix */
                                              ".jpg",         /* suffix */
                                              storageDir      /* directory */
