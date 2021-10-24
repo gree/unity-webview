@@ -89,6 +89,7 @@ task :buildnofragment do
       sh "git clean -dxf .; ./install-nofragment.sh --unity /Applications/Unity5.6.1f1"
     end
   end
+  sh "sed -i '' -e 's/private static bool nofragment = false/private static bool nofragment = true/' Packager/Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs"
 end
 
 desc "packnofragment"
