@@ -1,9 +1,5 @@
 apply plugin: 'com.android.library'
 
-dependencies {
-    compileOnly files('./libs/classes.jar')
-}
-
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
@@ -23,3 +19,6 @@ android {
     }
 }
 
+dependencies {
+    compileOnly files('./libs/classes.jar')
+}
