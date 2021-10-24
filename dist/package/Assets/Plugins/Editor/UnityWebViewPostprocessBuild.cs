@@ -16,6 +16,8 @@ public class UnityWebViewPostprocessBuild : IPostGenerateGradleAndroidProject
 public class UnityWebViewPostprocessBuild
 #endif
 {
+    private static bool nofragment = false;
+
     //// for android/unity 2018.1 or newer
     //// cf. https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/
     //// cf. https://github.com/Over17/UnityAndroidManifestCallback
@@ -24,6 +26,9 @@ public class UnityWebViewPostprocessBuild
     public void OnPostGenerateGradleAndroidProject(string basePath) {
         var changed = false;
         var androidManifest = new AndroidManifest(GetManifestPath(basePath));
+        if (!nofragment) {
+            changed = (androidManifest.AddFileProvider(basePath) || changed);
+        }
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
         changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
@@ -73,6 +78,9 @@ public class UnityWebViewPostprocessBuild
             }
             var changed = false;
             var androidManifest = new AndroidManifest(manifest);
+            if (!nofragment) {
+                changed = (androidManifest.AddFileProvider("Assets/Plugins/Android") || changed);
+            }
             changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
             changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
@@ -217,6 +225,44 @@ internal class AndroidManifest : AndroidXmlDocument {
             changed = true;
         }
         return changed;
+    }
+
+    internal bool AddFileProvider(string basePath) {
+        bool changed = false;
+        var authorities = PlayerSettings.applicationIdentifier + ".unitywebview.fileprovider";
+        if (SelectNodes("/manifest/application/provider[@android:authorities='" + authorities + "']", nsMgr).Count == 0) {
+            var elem = CreateElement("provider");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "androidx.core.content.FileProvider"));
+            elem.Attributes.Append(CreateAndroidAttribute("authorities", authorities));
+            elem.Attributes.Append(CreateAndroidAttribute("exported", "false"));
+            elem.Attributes.Append(CreateAndroidAttribute("grantUriPermissions", "true"));
+            var meta = CreateElement("meta-data");
+            meta.Attributes.Append(CreateAndroidAttribute("name", "android.support.FILE_PROVIDER_PATHS"));
+            meta.Attributes.Append(CreateAndroidAttribute("resource", "@xml/unitywebview_file_provider_paths"));
+            elem.AppendChild(meta);
+            ApplicationElement.AppendChild(elem);
+            changed = true;
+            var xml = GetFileProviderSettingPath(basePath);
+            if (!File.Exists(xml)) {
+                Directory.CreateDirectory(Path.GetDirectoryName(xml));
+                File.WriteAllText(
+                    xml,
+                    "<paths xmlns:android=\"http://schemas.android.com/apk/res/android\">\n" +
+                    "  <files-path name=\"unitywebview_file_provider_images\" path=\"unitywebview_file_provider_images/\"/>\n" +
+                    "</paths>\n");
+            }
+        }
+        return changed;
+    }
+
+    private string GetFileProviderSettingPath(string basePath) {
+        var pathBuilder = new StringBuilder(basePath);
+        pathBuilder.Append(Path.DirectorySeparatorChar).Append("src");
+        pathBuilder.Append(Path.DirectorySeparatorChar).Append("main");
+        pathBuilder.Append(Path.DirectorySeparatorChar).Append("res");
+        pathBuilder.Append(Path.DirectorySeparatorChar).Append("xml");
+        pathBuilder.Append(Path.DirectorySeparatorChar).Append("unitywebview_file_provider_paths.xml");
+        return pathBuilder.ToString();
     }
 
     internal bool AddCamera() {
