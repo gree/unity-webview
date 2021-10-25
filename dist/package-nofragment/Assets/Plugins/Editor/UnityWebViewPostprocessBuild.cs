@@ -1,7 +1,9 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.Collections;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Text;
 using System.Xml;
 using System;
@@ -28,6 +30,48 @@ public class UnityWebViewPostprocessBuild
         var androidManifest = new AndroidManifest(GetManifestPath(basePath));
         if (!nofragment) {
             changed = (androidManifest.AddFileProvider(basePath) || changed);
+            {
+                var path = GetBuildGradlePath(basePath);
+                var lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n").Split(new[]{'\n'});
+                {
+                    var lines = new List<string>();
+                    var independencies = false;
+                    foreach (var line in lines0) {
+                        if (line == "dependencies {") {
+                            independencies = true;
+                        } else if (independencies && line == "}") {
+                            independencies = false;
+                            lines.Add("    implementation 'androidx.core:core:1.6.0'");
+                        } else if (independencies) {
+                            if (line.Contains("implementation(name: 'core") || line.Contains("implementation 'androidx.core:core)")) {
+                                break;
+                            }
+                        }
+                        lines.Add(line);
+                    }
+                    if (lines.Count > lines0.Length) {
+                        File.WriteAllText(path, string.Join("\n", lines) + "\n");
+                    }
+                }
+            }
+            {
+                var path = GetGradlePropertiesPath(basePath);
+                var lines0 = "";
+                var lines = "";
+                if (File.Exists(path)) {
+                    lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n") + "\n";
+                    lines = lines0;
+                }
+                if (!lines.Contains("android.useAndroidX=true")) {
+                    lines += "android.useAndroidX=true\n";
+                }
+                if (!lines.Contains("android.enableJetifier=true")) {
+                    lines += "android.enableJetifier=true\n";
+                }
+                if (lines != lines0) {
+                    File.WriteAllText(path, lines);
+                }
+            }
         }
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
@@ -60,6 +104,21 @@ public class UnityWebViewPostprocessBuild
         return pathBuilder.ToString();
     }
 
+    private string GetBuildGradlePath(string basePath) {
+        var pathBuilder = new StringBuilder(basePath);
+        pathBuilder.Append(Path.DirectorySeparatorChar).Append("build.gradle");
+        return pathBuilder.ToString();
+    }
+
+    private string GetGradlePropertiesPath(string basePath) {
+        var pathBuilder = new StringBuilder(basePath);
+        if (basePath.EndsWith("unityLibrary")) {
+            pathBuilder.Append(Path.DirectorySeparatorChar).Append("..");
+        }
+        pathBuilder.Append(Path.DirectorySeparatorChar).Append("gradle.properties");
+        return pathBuilder.ToString();
+    }
+
     //// for others
 
     [PostProcessBuild(100)]
@@ -80,6 +139,24 @@ public class UnityWebViewPostprocessBuild
             var androidManifest = new AndroidManifest(manifest);
             if (!nofragment) {
                 changed = (androidManifest.AddFileProvider("Assets/Plugins/Android") || changed);
+                var files = Directory.GetFiles("Assets/Plugins/Android/");
+                var found = false;
+                foreach (var file in files) {
+                    if (Regex.IsMatch(file, @"^Assets/Plugins/Android/core.*.aar$")) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    foreach (var file in files) {
+                        var match = Regex.Match(file, @"^Assets/Plugins/Android/(core.*.aar).tmpl$");
+                        if (match.Success) {
+                            var name = match.Groups[1].Value;
+                            File.Copy(file, "Assets/Plugins/Android/" + name);
+                            break;
+                        }
+                    }
+                }
             }
             changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
