@@ -227,30 +227,7 @@ public class CWebViewPlugin extends Fragment {
     }
 
     public boolean verifyStoragePermissions(final Activity activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            PackageManager pm = activity.getPackageManager();
-            int hasPerm1 = pm.checkPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE, activity.getPackageName());
-            int hasPerm2 = pm.checkPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE, activity.getPackageName());
-            int hasPerm3 = pm.checkPermission(android.Manifest.permission.CAMERA, activity.getPackageName());
-            // cf. https://developer.android.com/training/data-storage/shared/media#media-location-permission
-            int hasPerm4 = pm.checkPermission(android.Manifest.permission.ACCESS_MEDIA_LOCATION, activity.getPackageName());
-            if (hasPerm1 != PackageManager.PERMISSION_GRANTED
-                || hasPerm2 != PackageManager.PERMISSION_GRANTED
-                || hasPerm3 != PackageManager.PERMISSION_GRANTED
-                || hasPerm4 != PackageManager.PERMISSION_GRANTED) {
-                activity.runOnUiThread(new Runnable() {public void run() {
-                    String[] PERMISSIONS = {
-                        Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.CAMERA,
-                        Manifest.permission.ACCESS_MEDIA_LOCATION
-                    };
-                    requestPermissions(PERMISSIONS, REQUEST_CODE);
-                }});
-                return false;
-            }
-            return true;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PackageManager pm = activity.getPackageManager();
             int hasPerm1 = pm.checkPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE, activity.getPackageName());
             int hasPerm2 = pm.checkPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE, activity.getPackageName());
@@ -768,12 +745,7 @@ public class CWebViewPlugin extends Fragment {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            storageDir = new File(getActivity().getFilesDir(), "unitywebview_file_provider_images");
-        } else {
-            storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        }
+        File storageDir = getActivity().getExternalFilesDir(Environment.DIRECTORY_DCIM);
         if (!storageDir.exists()) {
             storageDir.mkdirs();
         }
