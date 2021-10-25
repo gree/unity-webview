@@ -45,6 +45,7 @@ cp ${UNITY_JAVA_LIB} ${LIBS_DIR}
 DEST_DIR='../../build/Packager/Assets/Plugins/Android'
 mkdir -p ${DEST_DIR}
 cp ${BUILD_DIR}/build/outputs/aar/*.aar ${DEST_DIR}/WebViewPlugin.aar
-cp ${BUILD_DIR}/libs/core*.aar ${DEST_DIR}
+core_aar=`basename ${BUILD_DIR}/libs-ext/core*.aar`
+cp ${BUILD_DIR}/libs-ext/$core_aar ${DEST_DIR}/$core_aar.tmpl
 
 popd

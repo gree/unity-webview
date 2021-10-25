@@ -20,6 +20,6 @@ android {
 }
 
 dependencies {
-    compileOnly files('./libs/classes.jar')
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.core:core:1.6.0'
 }
