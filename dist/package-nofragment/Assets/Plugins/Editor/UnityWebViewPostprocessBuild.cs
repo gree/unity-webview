@@ -325,7 +325,7 @@ internal class AndroidManifest : AndroidXmlDocument {
                 File.WriteAllText(
                     xml,
                     "<paths xmlns:android=\"http://schemas.android.com/apk/res/android\">\n" +
-                    "  <files-path name=\"unitywebview_file_provider_images\" path=\"unitywebview_file_provider_images/\"/>\n" +
+                    "  <external-path name=\"unitywebview_file_provider_images\" path=\".\"/>\n" +
                     "</paths>\n");
             }
         }
