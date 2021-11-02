@@ -43,7 +43,9 @@ public class UnityWebViewPostprocessBuild
                             independencies = false;
                             lines.Add("    implementation 'androidx.core:core:1.6.0'");
                         } else if (independencies) {
-                            if (line.Contains("implementation(name: 'core") || line.Contains("implementation 'androidx.core:core)")) {
+                            if (line.Contains("implementation(name: 'core")
+                                || line.Contains("implementation(name: 'androidx.core.core")
+                                || line.Contains("implementation 'androidx.core:core")) {
                                 break;
                             }
                         }
@@ -142,7 +144,8 @@ public class UnityWebViewPostprocessBuild
                 var files = Directory.GetFiles("Assets/Plugins/Android/");
                 var found = false;
                 foreach (var file in files) {
-                    if (Regex.IsMatch(file, @"^Assets/Plugins/Android/core.*.aar$")) {
+                    if (Regex.IsMatch(file, @"^Assets/Plugins/Android/(androidx\.core\.)?core-.*.aar$")) {
+                        Debug.LogError("XXX");
                         found = true;
                         break;
                     }
