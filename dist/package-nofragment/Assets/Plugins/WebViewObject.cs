@@ -261,6 +261,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_SetVisibility(
         IntPtr instance, bool visibility);
     [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetScrollbarsVisibility(
+        IntPtr instance, bool visibility);
+    [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetAlertDialogEnabled(
         IntPtr instance, bool enabled);
     [DllImport("__Internal")]
@@ -620,6 +623,23 @@ public class WebViewObject : MonoBehaviour
     public bool GetVisibility()
     {
         return visibility;
+    }
+
+    public void SetScrollbarsVisibility(bool v)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetScrollbarsVisibility(webView, v);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetScrollbarsVisibility", v);
+#else
+        // TODO: UNSUPPORTED
+#endif
     }
 
     public void SetAlertDialogEnabled(bool e)
