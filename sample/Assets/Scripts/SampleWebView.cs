@@ -146,6 +146,8 @@ public class SampleWebView : MonoBehaviour
         // Add BASIC authentication feature (Android and iOS with WKWebView only) by takeh1k0 · Pull Request #570 · gree/unity-webview
         //webViewObject.SetBasicAuthInfo("id", "password");
 
+        //webViewObject.SetScrollbarsVisibility(true);
+
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);

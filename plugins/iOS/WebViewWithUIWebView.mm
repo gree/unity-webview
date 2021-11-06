@@ -34,6 +34,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
 @property (nonatomic, getter=isHidden) BOOL hidden;
 @property (nonatomic) CGRect frame;
+@property (nonatomic, readonly, strong) UIScrollView *scrollView;
 @property (nullable, nonatomic, assign) id <UIWebViewDelegate> delegate;
 @property (nullable, nonatomic, weak) id <WKNavigationDelegate> navigationDelegate;
 @property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
@@ -47,6 +48,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 - (void)goForward;
 - (void)reload;
 - (void)stopLoading;
+- (void)setScrollbarsVisibility:(BOOL)visibility;
 - (void)setScrollBounce:(BOOL)enable;
 @end
 
@@ -82,6 +84,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 {
     WKWebView *webView = (WKWebView *)self;
     [webView loadHTMLString:html baseURL:baseUrl];
+}
+
+- (void)setScrollbarsVisibility:(BOOL)visibility
+{
+    WKWebView *webView = (WKWebView *)self;
+    webView.scrollView.showsHorizontalScrollIndicator = visibility;
+    webView.scrollView.showsVerticalScrollIndicator = visibility;
 }
 
 - (void)setScrollBounce:(BOOL)enable
@@ -123,6 +132,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     if (completionHandler) {
         completionHandler(result, nil);
     }
+}
+
+- (void)setScrollbarsVisibility:(BOOL)visibility
+{
+    UIWebView *webView = (UIWebView *)self;
+    webView.scrollView.showsHorizontalScrollIndicator = visibility;
+    webView.scrollView.showsVerticalScrollIndicator = visibility;
 }
 
 - (void)setScrollBounce:(BOOL)enable
@@ -685,8 +701,17 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     alertDialogEnabled = enabled;
 }
 
+- (void)setScrollbarsVisibility:(BOOL)visibility
+{
+    if (webView == nil)
+        return;
+    [webView setScrollbarsVisibility:visibility];
+}
+
 - (void)setScrollBounceEnabled:(BOOL)enabled
 {
+    if (webView == nil)
+        return;
     [webView setScrollBounce:enabled];
 }
 
@@ -862,6 +887,7 @@ extern "C" {
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetScrollbarsVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
     BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern, const char *hookPattern);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
@@ -936,6 +962,14 @@ void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setAlertDialogEnabled:enabled];
+}
+
+void _CWebViewPlugin_SetScrollbarsVisibility(void *instance, BOOL visibility)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setScrollbarsVisibility:visibility];
 }
 
 void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)

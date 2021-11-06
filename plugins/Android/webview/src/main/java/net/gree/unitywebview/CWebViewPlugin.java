@@ -913,6 +913,17 @@ public class CWebViewPlugin extends Fragment {
         }});
     }
 
+    public void SetScrollbarsVisibility(final boolean visibility) {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.setHorizontalScrollBarEnabled(visibility);
+            mWebView.setVerticalScrollBarEnabled(visibility);
+        }});
+    }
+
     public void SetAlertDialogEnabled(final boolean enabled) {
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
