@@ -143,13 +143,14 @@ public class CWebViewPlugin extends Fragment {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_CODE:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    ProcessChooser(mFilePathCallback);
-                }
-                break;
-            default:
+        final Activity a = UnityPlayer.currentActivity;
+        if (requestCode == REQUEST_CODE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                ProcessChooser();
+            } else {
+                mFilePathCallback.onReceiveValue(null);
+                mFilePathCallback = null;
+            }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
@@ -412,14 +413,11 @@ public class CWebViewPlugin extends Fragment {
                 public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                     // cf. https://github.com/googlearchive/chromium-webview-samples/blob/master/input-file-example/app/src/main/java/inputfilesample/android/chrome/google/com/inputfilesample/MainFragment.java
 
-                    if (mFilePathCallback != null) {
-                        mFilePathCallback.onReceiveValue(null);
-                    }
                     mFilePathCallback = filePathCallback;
 
                     if (!verifyStoragePermissions(a)) return true;
 
-                    ProcessChooser(mFilePathCallback);
+                    ProcessChooser();
 
                     return true;
                 }
@@ -694,7 +692,7 @@ public class CWebViewPlugin extends Fragment {
         activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(mGlobalLayoutListener);
     }
 
-    private void ProcessChooser(ValueCallback<Uri[]> filePath) {
+    private void ProcessChooser() {
         mCameraPhotoUri = null;
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
