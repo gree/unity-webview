@@ -96,6 +96,9 @@ class CWebViewPluginInterface {
 
     public void call(final String method, final String message) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mPlugin.IsInitialized()) {
                 UnityPlayer.UnitySendMessage(mGameObject, method, message);
@@ -138,12 +141,24 @@ public class CWebViewPlugin extends Fragment {
     private String mBasicAuthUserName;
     private String mBasicAuthPassword;
 
+    // cf. https://github.com/gree/unity-webview/issues/753
+    // cf. https://github.com/mixpanel/mixpanel-android/issues/400
+    // cf. https://github.com/mixpanel/mixpanel-android/commit/98bb530f9263f3bac0737971acc00dfef7ea4c35
+    public static boolean isDestroyed(final Activity a) {
+        if (a == null) {
+            return true;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            return a.isDestroyed();
+        } else {
+            return false;
+        }
+    }
+
     public CWebViewPlugin() {
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        final Activity a = UnityPlayer.currentActivity;
         if (requestCode == REQUEST_CODE) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 ProcessChooser();
@@ -219,6 +234,9 @@ public class CWebViewPlugin extends Fragment {
                 return isAvailable;
             }
         });
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return false;
+        }
         a.runOnUiThread(t);
         try {
             return t.get();
@@ -236,6 +254,9 @@ public class CWebViewPlugin extends Fragment {
             if (hasPerm1 != PackageManager.PERMISSION_GRANTED
                 || hasPerm2 != PackageManager.PERMISSION_GRANTED
                 || hasPerm3 != PackageManager.PERMISSION_GRANTED) {
+                if (CWebViewPlugin.isDestroyed(activity)) {
+                    return false;
+                }
                 activity.runOnUiThread(new Runnable() {public void run() {
                     String[] PERMISSIONS = {
                         Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -261,6 +282,9 @@ public class CWebViewPlugin extends Fragment {
         final Activity a = UnityPlayer.currentActivity;
         instanceCount++;
         mInstanceId = instanceCount;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView != null) {
                 return;
@@ -513,11 +537,14 @@ public class CWebViewPlugin extends Fragment {
                         if (setCookieHeaders != null) {
                             if (Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT || Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT_WATCH) {
                                 // In addition to getCookie, setCookie cause deadlock on Android 4.4.4 cf. https://issuetracker.google.com/issues/36989494
-                                UnityPlayer.currentActivity.runOnUiThread(new Runnable() {
-                                    public void run() {
-                                        SetCookies(url, setCookieHeaders);
-                                    }
-                                });
+                                final Activity a = UnityPlayer.currentActivity;
+                                if (!CWebViewPlugin.isDestroyed(a)) {
+                                    a.runOnUiThread(new Runnable() {
+                                        public void run() {
+                                            SetCookies(url, setCookieHeaders);
+                                        }
+                                    });
+                                }
                             } else {
                                 SetCookies(url, setCookieHeaders);
                             }
@@ -757,6 +784,9 @@ public class CWebViewPlugin extends Fragment {
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
         final CWebViewPlugin self = this;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -799,6 +829,9 @@ public class CWebViewPlugin extends Fragment {
             final Pattern deny = (denyPattern == null || denyPattern.length() == 0) ? null : Pattern.compile(denyPattern);
             final Pattern hook = (hookPattern == null || hookPattern.length() == 0) ? null : Pattern.compile(hookPattern);
             final Activity a = UnityPlayer.currentActivity;
+            if (CWebViewPlugin.isDestroyed(a)) {
+                return false;
+            }
             a.runOnUiThread(new Runnable() {public void run() {
                 mAllowRegex = allow;
                 mDenyRegex = deny;
@@ -812,6 +845,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void LoadURL(final String url) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -827,6 +863,9 @@ public class CWebViewPlugin extends Fragment {
     public void LoadHTML(final String html, final String baseURL)
     {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -837,6 +876,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void EvaluateJS(final String js) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -851,6 +893,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void GoBack() {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -861,6 +906,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void GoForward() {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -871,6 +919,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void Reload() {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -887,6 +938,9 @@ public class CWebViewPlugin extends Fragment {
                 Gravity.NO_GRAVITY);
         params.setMargins(left, top, right, bottom);
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -897,6 +951,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void SetVisibility(final boolean visibility) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -913,6 +970,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void SetScrollbarsVisibility(final boolean visibility) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -924,6 +984,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void SetAlertDialogEnabled(final boolean enabled) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             mAlertDialogEnabled = enabled;
         }});
@@ -931,6 +994,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void SetCameraAccess(final boolean allowed) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             mAllowVideoCapture = allowed;
         }});
@@ -938,6 +1004,9 @@ public class CWebViewPlugin extends Fragment {
 
     public void SetMicrophoneAccess(final boolean allowed) {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             mAllowAudioCapture = allowed;
         }});
@@ -947,6 +1016,9 @@ public class CWebViewPlugin extends Fragment {
     public void OnApplicationPause(boolean paused) {
         mPaused = paused;
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (!mPaused) {
                 if (mTransactions != null) {
@@ -1036,6 +1108,9 @@ public class CWebViewPlugin extends Fragment {
            CookieManager.getInstance().flush();
         } else {
            final Activity a = UnityPlayer.currentActivity;
+           if (CWebViewPlugin.isDestroyed(a)) {
+               return;
+           }
            CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(a);
            cookieSyncManager.startSync();
            CookieManager cookieManager = CookieManager.getInstance();
@@ -1099,6 +1174,9 @@ public class CWebViewPlugin extends Fragment {
     public void ClearCache(final boolean includeDiskFiles)
     {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
@@ -1110,6 +1188,9 @@ public class CWebViewPlugin extends Fragment {
     public void SetTextZoom(final int textZoom)
     {
         final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mWebView == null) {
                 return;
