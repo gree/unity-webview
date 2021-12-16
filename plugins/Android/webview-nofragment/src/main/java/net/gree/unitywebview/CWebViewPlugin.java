@@ -765,6 +765,36 @@ public class CWebViewPlugin {
         }});
     }
 
+    // as the following explicitly pause/resume, pauseTimers()/resumeTimers() are always
+    // called. this differs from OnApplicationPause().
+    public void Pause() {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.onPause();
+            mWebView.pauseTimers();
+        }});
+    }
+
+    public void Resume() {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.onResume();
+            mWebView.resumeTimers();
+        }});
+    }
+
     // cf. https://stackoverflow.com/questions/31788748/webview-youtube-videos-playing-in-background-on-rotation-and-minimise/31789193#31789193
     public void OnApplicationPause(final boolean paused) {
         final Activity a = UnityPlayer.currentActivity;

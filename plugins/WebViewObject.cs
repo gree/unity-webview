@@ -470,6 +470,40 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public void Pause()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        //TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("Pause");
+#endif
+    }
+
+    public void Resume()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        //TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("Resume");
+#endif
+    }
+
     // Use this function instead of SetMargins to easily set up a centered window
     // NOTE: for historical reasons, `center` means the lower left corner and positive y values extend up.
     public void SetCenterPositionWithScale(Vector2 center, Vector2 scale)
