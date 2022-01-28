@@ -554,16 +554,16 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     CGRect frame = webView.frame;
     CGRect screen = view.bounds;
     if (relative) {
-        frame.size.width = screen.size.width * (1.0f - left - right);
-        frame.size.height = screen.size.height * (1.0f - top - bottom);
-        frame.origin.x = screen.size.width * left;
-        frame.origin.y = screen.size.height * top;
+        frame.size.width = floor(screen.size.width * (1.0f - left - right));
+        frame.size.height = floor(screen.size.height * (1.0f - top - bottom));
+        frame.origin.x = floor(screen.size.width * left);
+        frame.origin.y = floor(screen.size.height * top);
     } else {
         CGFloat scale = 1.0f / [self getScale:view];
-        frame.size.width = screen.size.width - scale * (left + right) ;
-        frame.size.height = screen.size.height - scale * (top + bottom) ;
-        frame.origin.x = scale * left ;
-        frame.origin.y = scale * top ;
+        frame.size.width = floor(screen.size.width - scale * (left + right));
+        frame.size.height = floor(screen.size.height - scale * (top + bottom));
+        frame.origin.x = floor(scale * left);
+        frame.origin.y = floor(scale * top);
     }
     webView.frame = frame;
 }
