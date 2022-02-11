@@ -301,7 +301,7 @@ public class CWebViewPlugin extends Fragment {
                     .getFragmentManager()
                     .beginTransaction()
                     .add(0, self, "CWebViewPlugin" + mInstanceId)
-                    .commit();
+                    .commitAllowingStateLoss();
             }
 
             mAlertDialogEnabled = true;
@@ -816,7 +816,7 @@ public class CWebViewPlugin extends Fragment {
                     .getFragmentManager()
                     .beginTransaction()
                     .remove(self)
-                    .commit();
+                    .commitAllowingStateLoss();
             }
 
         }});
@@ -1060,14 +1060,14 @@ public class CWebViewPlugin extends Fragment {
                                 .getFragmentManager()
                                 .beginTransaction()
                                 .add(0, self, "CWebViewPlugin" + mInstanceId)
-                                .commit();
+                                .commitAllowingStateLoss();
                             break;
                         case "remove":
                             a
                                 .getFragmentManager()
                                 .beginTransaction()
                                 .remove(self)
-                                .commit();
+                                .commitAllowingStateLoss();
                             break;
                         }
                     }
