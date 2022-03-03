@@ -551,11 +551,13 @@ public class CWebViewPlugin {
 
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
+        final WebView webView = mWebView;
+        mWebView = null;
         if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
         a.runOnUiThread(new Runnable() {public void run() {
-            if (mWebView == null) {
+            if (webView == null) {
                 return;
             }
             if (mGlobalLayoutListener != null) {
@@ -563,15 +565,14 @@ public class CWebViewPlugin {
                 activityRootView.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
                 mGlobalLayoutListener = null;
             }
-            mWebView.stopLoading();
+            webView.stopLoading();
             if (mVideoView != null) {
                 layout.removeView(mVideoView);
                 layout.setBackgroundColor(0x00000000);
                 mVideoView = null;
             }
-            layout.removeView(mWebView);
-            mWebView.destroy();
-            mWebView = null;
+            layout.removeView(webView);
+            webView.destroy();
         }});
     }
 
