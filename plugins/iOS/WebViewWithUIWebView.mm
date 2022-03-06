@@ -223,6 +223,19 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         if (@available(iOS 13.0, *)) {
             configuration.defaultWebpagePreferences.preferredContentMode = contentMode;
         }
+#if UNITYWEBVIEW_IOS_ALLOW_FILE_URLS
+        // cf. https://stackoverflow.com/questions/35554814/wkwebview-xmlhttprequest-with-file-url/44365081#44365081
+        try {
+            [configuration.preferences setValue:@TRUE forKey:@"allowFileAccessFromFileURLs"];
+        }
+        catch (NSException *ex) {
+        }
+        try {
+            [configuration setValue:@TRUE forKey:@"allowUniversalAccessFromFileURLs"];
+        }
+        catch (NSException *ex) {
+        }
+#endif
         WKWebView *wkwebView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
         wkwebView.allowsLinkPreview = allowsLinkPreview;
         webView = wkwebView;
