@@ -144,6 +144,13 @@ which new one (Assets/Plugins/iOS/WebView.mm) utilizes only WKWebView if iOS dep
 *NOTE: WKWebView is available since iOS8 but was largely changed in iOS9, so we use `___IPHONE_9_0` instead of `__IPHONE_8_0`*
 *NOTE: Several versions of Unity themselves also have the ITMS-90809 issue (cf. https://issuetracker.unity3d.com/issues/ios-apple-throws-deprecated-api-usage-warning-for-using-uiwebview-when-submitting-builds-to-the-app-store-connect ).*/
 
+#### XMLHttpRequest for file URLs
+
+WKWebView doesn't allow to access file URLs with XMLHttpRequest. This limitation can be relaxed by `allowFileAccessFromFileURLs`/`allowUniversalAccessFromFileURLs` settings. Those are however private APIs so currently disabled by default. For enabling them, please define `UNITYWEBVIEW_IOS_ALLOW_FILE_URLS`.
+
+cf. https://github.com/gree/unity-webview/issues/785
+cf. https://github.com/gree/unity-webview/issues/224#issuecomment-640642516
+
 ### Android
 
 #### File Input Field

@@ -215,6 +215,13 @@ public class UnityWebViewPostprocessBuild
                 var method = type.GetMethod("AddFrameworkToProject");
                 method.Invoke(proj, new object[]{target, "WebKit.framework", false});
             }
+#if UNITYWEBVIEW_IOS_ALLOW_FILE_URLS
+            // proj.AddBuildProperty(target, "OTHER_LDFLAGS", "-DUNITYWEBVIEW_IOS_ALLOW_FILE_URLS");
+            {
+                var method = type.GetMethod("AddBuildProperty", new Type[]{typeof(string), typeof(string), typeof(string)});
+                method.Invoke(proj, new object[]{target, "OTHER_CFLAGS", "-DUNITYWEBVIEW_IOS_ALLOW_FILE_URLS"});
+            }
+#endif
             var dst = "";
             //dst = proj.WriteToString();
             {
