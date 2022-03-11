@@ -749,7 +749,7 @@ public class CWebViewPlugin extends Fragment {
         Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
         contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
         contentSelectionIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        contentSelectionIntent.setType("image/*");
+        contentSelectionIntent.setType("*/*");
 
         Intent[] intentArray;
         if(takePictureIntent != null) {
