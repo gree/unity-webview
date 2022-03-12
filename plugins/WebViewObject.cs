@@ -108,6 +108,39 @@ public class WebViewObject : MonoBehaviour
             mResumedTimestamp = 0.0f;
             webView.Call("SetVisibility", mVisibility);
         }
+        for (;;) {
+            if (webView == null)
+                break;
+            var s = webView.Call<String>("GetMessage");
+            if (s == null)
+                break;
+            var i = s.IndexOf(':', 0);
+            if (i == -1)
+                continue;
+            switch (s.Substring(0, i)) {
+            case "CallFromJS":
+                CallFromJS(s.Substring(i + 1));
+                break;
+            case "CallOnError":
+                CallOnError(s.Substring(i + 1));
+                break;
+            case "CallOnHttpError":
+                CallOnHttpError(s.Substring(i + 1));
+                break;
+            case "CallOnLoaded":
+                CallOnLoaded(s.Substring(i + 1));
+                break;
+            case "CallOnStarted":
+                CallOnStarted(s.Substring(i + 1));
+                break;
+            case "CallOnHooked":
+                CallOnHooked(s.Substring(i + 1));
+                break;
+            case "SetKeyboardVisible":
+                SetKeyboardVisible(s.Substring(i + 1));
+                break;
+            }
+        }
     }
 
     /// Called from Java native plugin to set when the keyboard is opened

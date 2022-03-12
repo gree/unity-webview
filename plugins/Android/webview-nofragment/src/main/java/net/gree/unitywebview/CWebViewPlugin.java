@@ -56,9 +56,11 @@ import android.webkit.PermissionRequest;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.regex.Matcher;
@@ -87,7 +89,7 @@ class CWebViewPluginInterface {
         }
         a.runOnUiThread(new Runnable() {public void run() {
             if (mPlugin.IsInitialized()) {
-                UnityPlayer.UnitySendMessage(mGameObject, method, message);
+                mPlugin.MyUnitySendMessage(mGameObject, method, message);
             }
         }});
     }
@@ -95,6 +97,7 @@ class CWebViewPluginInterface {
 
 public class CWebViewPlugin {
     private static FrameLayout layout = null;
+    private Queue<String> mMessages = new ArrayDeque<String>();
     private WebView mWebView;
     private View mVideoView;
     private OnGlobalLayoutListener mGlobalLayoutListener;
@@ -154,6 +157,18 @@ public class CWebViewPlugin {
             return t.get();
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    public String GetMessage() {
+        synchronized(mMessages) {
+            return (mMessages.size() > 0) ? mMessages.poll() : null;
+        }
+    }
+
+    public void MyUnitySendMessage(String gameObject, String method, String message) {
+        synchronized(mMessages) {
+            mMessages.add(method + ":" + message);
         }
     }
 
@@ -546,7 +561,7 @@ public class CWebViewPlugin {
                     param = "false";
                 }
                 if (IsInitialized()) {
-                    UnityPlayer.UnitySendMessage(gameObject, "SetKeyboardVisible", param);
+                    MyUnitySendMessage(gameObject, "SetKeyboardVisible", param);
                 }
             }
         };
