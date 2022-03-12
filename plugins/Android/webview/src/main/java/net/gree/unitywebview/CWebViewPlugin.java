@@ -709,7 +709,7 @@ public class CWebViewPlugin extends Fragment {
                     bottomPadding = realSize.y - (location[1] + rootView.getHeight());
                 }
                 int heightDiff = rootView.getHeight() - (r.bottom - r.top);
-                string param = "" ;
+                String param = "" ;
                 if (heightDiff > 0 && (heightDiff + bottomPadding) > (h + bottomPadding) / 3) { // assume that this means that the keyboard is on
                     param = "true";
                 } else {
