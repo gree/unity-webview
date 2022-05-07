@@ -303,6 +303,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_SetScrollBounceEnabled(
         IntPtr instance, bool enabled);
     [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetInteractionEnabled(
+        IntPtr instance, bool enabled);
+    [DllImport("__Internal")]
     private static extern bool _CWebViewPlugin_SetURLPattern(
         IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
     [DllImport("__Internal")]
@@ -709,6 +712,23 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public void SetInteractionEnabled(bool enabled)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetInteractionEnabled(webView, enabled);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetInteractionEnabled", enabled);
+#else
+        // TODO: UNSUPPORTED
+#endif
+    }
+
     public void SetAlertDialogEnabled(bool e)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
@@ -760,7 +780,8 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_IPHONE
         // TODO: UNSUPPORTED
 #elif UNITY_ANDROID
-        // TODO: UNSUPPORTED
+        if (webView == null)
+            return;
         webView.Call("SetCameraAccess", allowed);
 #else
         // TODO: UNSUPPORTED
@@ -774,7 +795,8 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_IPHONE
         // TODO: UNSUPPORTED
 #elif UNITY_ANDROID
-        // TODO: UNSUPPORTED
+        if (webView == null)
+            return;
         webView.Call("SetMicrophoneAccess", allowed);
 #else
         // TODO: UNSUPPORTED
