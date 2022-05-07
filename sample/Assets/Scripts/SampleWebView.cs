@@ -242,5 +242,15 @@ public class SampleWebView : MonoBehaviour
             webViewObject.ClearCookies();
         }
         x += 90;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "D")) {
+            webViewObject.SetInteractionEnabled(false);
+        }
+        x += 90;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "E")) {
+            webViewObject.SetInteractionEnabled(true);
+        }
+        x += 90;
     }
 }
