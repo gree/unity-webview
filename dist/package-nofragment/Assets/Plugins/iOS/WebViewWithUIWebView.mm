@@ -33,6 +33,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nonatomic, getter=isOpaque) BOOL opaque;
 @property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
 @property (nonatomic, getter=isHidden) BOOL hidden;
+@property (nonatomic, getter=isUserInteractionEnabled) BOOL userInteractionEnabled;
 @property (nonatomic) CGRect frame;
 @property (nonatomic, readonly, strong) UIScrollView *scrollView;
 @property (nullable, nonatomic, assign) id <UIWebViewDelegate> delegate;
@@ -709,6 +710,13 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     webView.hidden = visibility ? NO : YES;
 }
 
+- (void)setInteractionEnabled:(BOOL)enabled
+{
+    if (webView == nil)
+        return;
+    webView.userInteractionEnabled = enabled;
+}
+
 - (void)setAlertDialogEnabled:(BOOL)enabled
 {
     alertDialogEnabled = enabled;
@@ -899,6 +907,7 @@ extern "C" {
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollbarsVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
@@ -967,6 +976,14 @@ void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setVisibility:visibility];
+}
+
+void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setInteractionEnabled:enabled];
 }
 
 void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
