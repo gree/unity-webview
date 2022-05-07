@@ -34,6 +34,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.util.Base64;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
@@ -105,6 +106,7 @@ public class CWebViewPlugin {
     private int progress;
     private boolean canGoBack;
     private boolean canGoForward;
+    private boolean mInteractionEnabled = true;
     private boolean mAlertDialogEnabled;
     private boolean mAllowVideoCapture;
     private boolean mAllowAudioCapture;
@@ -507,6 +509,15 @@ public class CWebViewPlugin {
                 webView.setBackgroundColor(0x00000000);
             }
 
+            // cf. https://stackoverflow.com/questions/3853794/disable-webview-touch-events-in-android/3856199#3856199
+            webView.setOnTouchListener(
+                new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View view, MotionEvent event) {
+                        return !mInteractionEnabled;
+                    }
+                });
+
             if (layout == null || layout.getParent() != a.findViewById(android.R.id.content)) {
                 layout = new FrameLayout(a);
                 a.addContentView(
@@ -738,6 +749,16 @@ public class CWebViewPlugin {
             } else {
                 mWebView.setVisibility(View.GONE);
             }
+        }});
+    }
+
+    public void SetInteractionEnabled(final boolean enabled) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            mInteractionEnabled = enabled;
         }});
     }
 
