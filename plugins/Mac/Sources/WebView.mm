@@ -37,6 +37,7 @@ static BOOL s_useMetal;
     WKWebView *webView;
     NSString *gameObject;
     NSBitmapImageRep *bitmap;
+    NSBitmapImageRep *bitmaps[2];
     BOOL needsDisplay;
     NSMutableDictionary *customRequestHeader;
     NSMutableArray *messages;
@@ -217,6 +218,8 @@ static std::unordered_map<int, int> _nskey2cgkey{
             [window close];
         }
         gameObject = nil;
+        bitmaps[1] = nil;
+        bitmaps[0] = nil;
         bitmap = nil;
         window = nil;
         windowController = nil;
@@ -417,8 +420,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
 - (void)addMessage:(NSString*)msg
 {
-    @synchronized(messages)
-    {
+    @synchronized(messages) {
         [messages addObject:msg];
     }
 }
@@ -426,8 +428,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
 - (NSString *)getMessage
 {
     NSString *ret = nil;
-    @synchronized(messages)
-    {
+    @synchronized(messages) {
         if ([messages count] > 0) {
             ret = [messages[0] copy];
             [messages removeObjectAtIndex:0];
@@ -446,9 +447,9 @@ static std::unordered_map<int, int> _nskey2cgkey{
     frame.origin.x = 0;
     frame.origin.y = 0;
     webView.frame = frame;
-    if (bitmap != nil) {
-        bitmap = nil;
-    }
+    bitmaps[1] = nil;
+    bitmaps[0] = nil;
+    bitmap = nil;
     if (window != nil) {
         frame.origin = window.frame.origin;
         [window setFrame:frame display:YES];
@@ -601,9 +602,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
         return;
     NSView *view = webView;
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
-    dispatch_async(
-        dispatch_get_main_queue(),
-        ^{
+    [self runBlock:^{
             NSEvent *event;
             switch (mouseState) {
             case 1:
@@ -636,7 +635,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
                 CFRelease(cgEvent);
                 [view scrollWheel:scrollEvent];
             }
-        });
+        }];
 }
 
 - (void)sendKeyEvent:(int)x y:(int)y keyChars:(char *)keyChars keyCode:(unsigned short)keyCode keyState:(int)keyState
@@ -650,51 +649,58 @@ static std::unordered_map<int, int> _nskey2cgkey{
     if (0xf700 <= keyCode && keyCode <= 0xf8ff
         && _nskey2cgkey.find(keyCode) != _nskey2cgkey.end())
         cgKeyCode = _nskey2cgkey.at(keyCode);
-    dispatch_async(
-        dispatch_get_main_queue(),
-        ^{
+    [self runBlock:^{
             NSEvent *event;
             switch (keyState) {
             case 1:
-                if (cgKeyCode == 0 || CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
-                    event = [NSEvent keyEventWithType:NSEventTypeKeyDown
-                                             location:NSMakePoint(x, y) modifierFlags:0
-                                            timestamp:GetCurrentEventTime() windowNumber:0
-                                              context:context
-                                           characters:characters
-                                     charactersIgnoringModifiers:characters
-                                            isARepeat:NO keyCode:0];
-                    [view keyDown:event];
-                }
+                event = [NSEvent keyEventWithType:NSEventTypeKeyDown
+                                         location:NSMakePoint(x, y) modifierFlags:0
+                                        timestamp:GetCurrentEventTime() windowNumber:0
+                                          context:context
+                                       characters:characters
+                                 charactersIgnoringModifiers:characters
+                                        isARepeat:NO keyCode:keyCode];
+                [view interpretKeyEvents:[NSArray arrayWithObject:event]];
+                // if (CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
+                //     [view keyDown:event];
+                // } else {
+                //     [view interpretKeyEvents:[NSArray arrayWithObject:event]];
+                // }
                 break;
             case 2:
-                if (cgKeyCode == 0 || CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
-                    event = [NSEvent keyEventWithType:NSEventTypeKeyDown
-                                             location:NSMakePoint(x, y) modifierFlags:0
-                                            timestamp:GetCurrentEventTime() windowNumber:0
-                                              context:context
-                                           characters:characters
-                                     charactersIgnoringModifiers:characters
-                                            isARepeat:YES keyCode:0];
-                    [view keyDown:event];
-                }
+                event = [NSEvent keyEventWithType:NSEventTypeKeyDown
+                                         location:NSMakePoint(x, y) modifierFlags:0
+                                        timestamp:GetCurrentEventTime() windowNumber:0
+                                          context:context
+                                       characters:characters
+                                 charactersIgnoringModifiers:characters
+                                        isARepeat:YES keyCode:keyCode];
+                [view interpretKeyEvents:[NSArray arrayWithObject:event]];
+                // if (CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
+                //     [view keyDown:event];
+                // } else {
+                //     [view interpretKeyEvents:[NSArray arrayWithObject:event]];
+                // }
                 break;
             case 3:
-                if (cgKeyCode == 0 || !CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
-                    event = [NSEvent keyEventWithType:NSEventTypeKeyUp
-                                             location:NSMakePoint(x, y) modifierFlags:0
-                                            timestamp:GetCurrentEventTime() windowNumber:0
-                                              context:context
-                                           characters:characters
-                                     charactersIgnoringModifiers:characters
-                                            isARepeat:NO keyCode:0];
-                    [view keyUp:event];
-                }
+                event = [NSEvent keyEventWithType:NSEventTypeKeyUp
+                                         location:NSMakePoint(x, y) modifierFlags:0
+                                        timestamp:GetCurrentEventTime() windowNumber:0
+                                          context:context
+                                       characters:characters
+                                 charactersIgnoringModifiers:characters
+                                        isARepeat:NO keyCode:keyCode];
+                [view interpretKeyEvents:[NSArray arrayWithObject:event]];
+                // if (CGEventSourceKeyState(kCGEventSourceStateCombinedSessionState, cgKeyCode)) {
+                //     [view keyDown:event];
+                // } else {
+                //     [view interpretKeyEvents:[NSArray arrayWithObject:event]];
+                // }
                 break;
             default:
                 break;
             }
-        });
+        }];
 }
 
 - (void)update:(BOOL)refreshBitmap
@@ -704,11 +710,15 @@ static std::unordered_map<int, int> _nskey2cgkey{
     @synchronized(self) {
         if (inRendering)
             return;
-        if (refreshBitmap) {
-            // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
-            NSRect rect = webView.frame;
-            if (bitmap == nil) {
-                bitmap
+        inRendering = YES;
+    }
+    if (refreshBitmap) {
+        // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
+        // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
+        NSRect rect = webView.frame;
+        if (bitmaps[0] == nil || bitmaps[1] == nil) {
+            for (int i = 0; i < 2; i++) {
+                bitmaps[i]
                     = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nil
                                                               pixelsWide:rect.size.width
                                                               pixelsHigh:rect.size.height
@@ -720,40 +730,51 @@ static std::unordered_map<int, int> _nskey2cgkey{
                                                             bitmapFormat:0
                                                              bytesPerRow:(4 * rect.size.width)
                                                             bitsPerPixel:32];
-                // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
-                needsDisplay = true;
             }
-            inRendering = YES;
-            if (window != nil) {
-                memset([bitmap bitmapData], 128, [bitmap bytesPerRow] * [bitmap pixelsHigh]);
-                needsDisplay = true;
+            bitmap = bitmaps[0];
+        }
+        NSBitmapImageRep *bitmap1 = (bitmap == bitmaps[0]) ? bitmaps[1] : bitmaps[0];
+        if (window != nil) {
+            memset([bitmap1 bitmapData], 128, [bitmap1 bytesPerRow] * [bitmap1 pixelsHigh]);
+            @synchronized(self) {
+                bitmap = bitmap1;
+                needsDisplay = YES;
                 inRendering = NO;
-            } else {
-                [webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
-                                 completionHandler:^(NSImage *nsImg, NSError *err) {
-                    dispatch_async(
-                        dispatch_get_main_queue(),
-                        ^{
+            }
+        } else {
+            [self runBlock:^{
+                    [self->webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
+                                               completionHandler:^(NSImage *nsImg, NSError *err) {
+                            if (err == nil) {
+                                NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap1];
+                                [NSGraphicsContext saveGraphicsState];
+                                [NSGraphicsContext setCurrentContext:ctx];
+                                [nsImg drawAtPoint:CGPointZero
+                                          fromRect:CGRectMake(0, 0, [bitmap1 pixelsWide], [bitmap1 pixelsHigh])
+                                         operation:NSCompositingOperationCopy
+                                          fraction:1.0];
+                                [[NSGraphicsContext currentContext] flushGraphics];
+                                [NSGraphicsContext restoreGraphicsState];
+                            }
                             @synchronized(self) {
-                                if (err == nil && self->bitmap != nil) {
-                                    NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:self->bitmap];
-                                    [NSGraphicsContext saveGraphicsState];
-                                    [NSGraphicsContext setCurrentContext:ctx];
-                                    [nsImg drawAtPoint:CGPointZero
-                                              fromRect:CGRectMake(0, 0, [self->bitmap pixelsWide], [self->bitmap pixelsHigh])
-                                             operation:NSCompositingOperationCopy
-                                              fraction:1.0];
-                                    [[NSGraphicsContext currentContext] flushGraphics];
-                                    [NSGraphicsContext restoreGraphicsState];
-                                }
-                                self->needsDisplay = true;
+                                self->bitmap = bitmap1;
+                                self->needsDisplay = YES;
                                 self->inRendering = NO;
                             }
-                        });
+                        }];
                 }];
-            }
         }
     }
+}
+
+- (void)runBlock:(void (^)())block
+{
+    block();
+    // if ([NSThread isMainThread]) {
+    //     block();
+    // } else {
+    //     dispatch_sync(dispatch_get_main_queue(), block);
+    // }
 }
 
 - (int)bitmapWide
@@ -772,44 +793,29 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
 - (void)render:(void *)textureBuffer
 {
+    if (webView == nil)
+        return;
+    NSBitmapImageRep *bitmap0;
     @synchronized(self) {
-        if (webView == nil)
-            return;
         if (!needsDisplay)
             return;
         if (bitmap == nil)
             return;
-        int w = (int)[bitmap pixelsWide];
-        int h = (int)[bitmap pixelsHigh];
-        int p = (int)[bitmap samplesPerPixel];
-        int r = (int)[bitmap bytesPerRow];
-        uint8_t *s0 = (uint8_t *)[bitmap bitmapData];
-        uint32_t *d0 = (uint32_t *)textureBuffer;
-        if (p == 3) {
-            for (int y = 0; y < h; y++) {
-                uint8_t *s = s0 + y * r;
-                uint32_t *d = d0 + y * w;
-                for (int x = 0; x < w; x++) {
-                    uint32_t r = *s++;
-                    uint32_t g = *s++;
-                    uint32_t b = *s++;
-                    *d++ = (0xff << 24) | (b << 16) | (g << 8) | r;
-                }
-            }
-        } else if (p == 4) {
-            for (int y = 0; y < h; y++) {
-                uint8_t *s = s0 + y * r;
-                uint32_t *d = d0 + y * w;
-                for (int x = 0; x < w; x++) {
-                    uint32_t r = *s++;
-                    uint32_t g = *s++;
-                    uint32_t b = *s++;
-                    uint32_t a = *s++;
-                    *d++ = (a << 24) | (b << 16) | (g << 8) | r;
-                }
-            }
+        needsDisplay = NO;
+        bitmap0 = bitmap;
+    }
+    int w = (int)[bitmap0 pixelsWide];
+    int h = (int)[bitmap0 pixelsHigh];
+    //int p = (int)[bitmap0 samplesPerPixel];  // should be 4.
+    int r = (int)[bitmap0 bytesPerRow];
+    uint32_t *s0 = (uint32_t *)[bitmap0 bitmapData];
+    uint32_t *d0 = (uint32_t *)textureBuffer;
+    for (int y = 0; y < h; y++) {
+        uint32_t *s = (uint32_t *)((uint8_t *)s0 + y * r);
+        uint32_t *d = d0 + y * w;
+        for (int x = 0; x < w; x++) {
+            *d++ = *s++;
         }
-        needsDisplay = false;
     }
 }
 
