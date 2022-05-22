@@ -33,7 +33,9 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 @property (nonatomic, getter=isOpaque) BOOL opaque;
 @property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
 @property (nonatomic, getter=isHidden) BOOL hidden;
+@property (nonatomic, getter=isUserInteractionEnabled) BOOL userInteractionEnabled;
 @property (nonatomic) CGRect frame;
+@property (nonatomic, readonly, strong) UIScrollView *scrollView;
 @property (nullable, nonatomic, assign) id <UIWebViewDelegate> delegate;
 @property (nullable, nonatomic, weak) id <WKNavigationDelegate> navigationDelegate;
 @property (nullable, nonatomic, weak) id <WKUIDelegate> UIDelegate;
@@ -47,6 +49,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 - (void)goForward;
 - (void)reload;
 - (void)stopLoading;
+- (void)setScrollbarsVisibility:(BOOL)visibility;
 - (void)setScrollBounce:(BOOL)enable;
 @end
 
@@ -82,6 +85,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 {
     WKWebView *webView = (WKWebView *)self;
     [webView loadHTMLString:html baseURL:baseUrl];
+}
+
+- (void)setScrollbarsVisibility:(BOOL)visibility
+{
+    WKWebView *webView = (WKWebView *)self;
+    webView.scrollView.showsHorizontalScrollIndicator = visibility;
+    webView.scrollView.showsVerticalScrollIndicator = visibility;
 }
 
 - (void)setScrollBounce:(BOOL)enable
@@ -125,6 +135,13 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     }
 }
 
+- (void)setScrollbarsVisibility:(BOOL)visibility
+{
+    UIWebView *webView = (UIWebView *)self;
+    webView.scrollView.showsHorizontalScrollIndicator = visibility;
+    webView.scrollView.showsVerticalScrollIndicator = visibility;
+}
+
 - (void)setScrollBounce:(BOOL)enable
 {
     UIWebView *webView = (UIWebView *)self;
@@ -152,7 +169,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 static WKProcessPool *_sharedProcessPool;
 static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent zoom:(BOOL)zoom ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent zoom:(BOOL)zoom ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode allowsLinkPreview:(BOOL)allowsLinkPreview
 {
     self = [super init];
 
@@ -207,7 +224,22 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         if (@available(iOS 13.0, *)) {
             configuration.defaultWebpagePreferences.preferredContentMode = contentMode;
         }
-        webView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
+#if UNITYWEBVIEW_IOS_ALLOW_FILE_URLS
+        // cf. https://stackoverflow.com/questions/35554814/wkwebview-xmlhttprequest-with-file-url/44365081#44365081
+        try {
+            [configuration.preferences setValue:@TRUE forKey:@"allowFileAccessFromFileURLs"];
+        }
+        catch (NSException *ex) {
+        }
+        try {
+            [configuration setValue:@TRUE forKey:@"allowUniversalAccessFromFileURLs"];
+        }
+        catch (NSException *ex) {
+        }
+#endif
+        WKWebView *wkwebView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
+        wkwebView.allowsLinkPreview = allowsLinkPreview;
+        webView = wkwebView;
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
         if (ua != NULL && strcmp(ua, "") != 0) {
@@ -387,6 +419,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
                          [[[webView URL] absoluteString] UTF8String]);
 
     }
+}
+
+- (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView
+{
+    UnitySendMessage([gameObjectName UTF8String], "CallOnError", "webViewWebContentProcessDidTerminate");
 }
 
 - (void)webView:(UIWebView *)uiWebView didFailLoadWithError:(NSError *)error
@@ -645,16 +682,16 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     CGRect frame = webView.frame;
     CGRect screen = view.bounds;
     if (relative) {
-        frame.size.width = screen.size.width * (1.0f - left - right);
-        frame.size.height = screen.size.height * (1.0f - top - bottom);
-        frame.origin.x = screen.size.width * left;
-        frame.origin.y = screen.size.height * top;
+        frame.size.width = floor(screen.size.width * (1.0f - left - right));
+        frame.size.height = floor(screen.size.height * (1.0f - top - bottom));
+        frame.origin.x = floor(screen.size.width * left);
+        frame.origin.y = floor(screen.size.height * top);
     } else {
         CGFloat scale = 1.0f / [self getScale:view];
-        frame.size.width = screen.size.width - scale * (left + right) ;
-        frame.size.height = screen.size.height - scale * (top + bottom) ;
-        frame.origin.x = scale * left ;
-        frame.origin.y = scale * top ;
+        frame.size.width = floor(screen.size.width - scale * (left + right));
+        frame.size.height = floor(screen.size.height - scale * (top + bottom));
+        frame.origin.x = floor(scale * left);
+        frame.origin.y = floor(scale * top);
     }
     webView.frame = frame;
 }
@@ -673,13 +710,29 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     webView.hidden = visibility ? NO : YES;
 }
 
+- (void)setInteractionEnabled:(BOOL)enabled
+{
+    if (webView == nil)
+        return;
+    webView.userInteractionEnabled = enabled;
+}
+
 - (void)setAlertDialogEnabled:(BOOL)enabled
 {
     alertDialogEnabled = enabled;
 }
 
+- (void)setScrollbarsVisibility:(BOOL)visibility
+{
+    if (webView == nil)
+        return;
+    [webView setScrollbarsVisibility:visibility];
+}
+
 - (void)setScrollBounceEnabled:(BOOL)enabled
 {
+    if (webView == nil)
+        return;
     [webView setScrollBounce:enabled];
 }
 
@@ -849,12 +902,14 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 @end
 
 extern "C" {
-    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode);
+    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
+    void _CWebViewPlugin_SetScrollbarsVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
     BOOL _CWebViewPlugin_SetURLPattern(void *instance, const char *allowPattern, const char *denyPattern, const char *hookPattern);
     void _CWebViewPlugin_LoadURL(void *instance, const char *url);
@@ -877,7 +932,7 @@ extern "C" {
     void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles);
 }
 
-void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode)
+void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview)
 {
     WKContentMode wkContentMode = WKContentModeRecommended;
     switch (contentMode) {
@@ -891,7 +946,7 @@ void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zo
         wkContentMode = WKContentModeRecommended;
         break;
     }
-    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent zoom:zoom ua:ua enableWKWebView:enableWKWebView contentMode:wkContentMode];
+    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent zoom:zoom ua:ua enableWKWebView:enableWKWebView contentMode:wkContentMode allowsLinkPreview:allowsLinkPreview];
     [_instances addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
 }
@@ -923,12 +978,28 @@ void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility)
     [webViewPlugin setVisibility:visibility];
 }
 
+void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setInteractionEnabled:enabled];
+}
+
 void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
 {
     if (instance == NULL)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setAlertDialogEnabled:enabled];
+}
+
+void _CWebViewPlugin_SetScrollbarsVisibility(void *instance, BOOL visibility)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setScrollbarsVisibility:visibility];
 }
 
 void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled)

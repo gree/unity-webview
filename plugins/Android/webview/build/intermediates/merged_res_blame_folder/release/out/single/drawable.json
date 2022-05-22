@@ -1,0 +1,18 @@
+[
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable/notification_bg.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable/notification_bg.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable/notification_tile_bg.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable/notification_tile_bg.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable/notification_icon_background.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable/notification_icon_background.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable/notification_bg_low.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable/notification_bg_low.xml"
+    }
+]

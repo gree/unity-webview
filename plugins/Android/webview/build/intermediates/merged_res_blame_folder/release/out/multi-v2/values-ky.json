@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/values-ky/values-ky.xml",
+            "map": [
+                {
+                    "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/values-ky/values-ky.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/incremental/mergeReleaseResources/merged.dir/values-ky/values-ky.xml",
+            "map": [
+                {
+                    "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/values-ky/values-ky.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    }
+                }
+            ]
+        }
+    ]
+}

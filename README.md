@@ -23,7 +23,7 @@ below:
 
 ## Package Manager
 
-If you use Unity 2019.1 or later, the plugin can also be imported with Package Manager, by adding
+If you use Unity 2019.4 or later, the plugin can also be imported with Package Manager, by adding
 the following entry in your `Packages/manifest.json`:
 
 ```json
@@ -49,16 +49,6 @@ or the following for selecting the variant without Fragment:
 ```
 
 *NOTE: Importing with Package Manager currently doesn't work well for WebGL. Please check the instruction for `dist/unity-webview.unitypackage`.*
-
-## Common Notes
-
-### UnityWebViewPostprocessBuild.cs
-
-`Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` contains code for Android/iOS build, which
-may cause errors if you haven't installed components for these platforms. As discussed in
-https://github.com/gree/unity-webview/pull/397#issuecomment-464631894, I intentionally don't utilize
-`UNITY_IOS` and/or `UNITY_ANDROID`. If you haven't installed Android/iOS components, please comment
-out adequate parts in the script.
 
 ## Platform Specific Notes
 
@@ -154,9 +144,26 @@ which new one (Assets/Plugins/iOS/WebView.mm) utilizes only WKWebView if iOS dep
 *NOTE: WKWebView is available since iOS8 but was largely changed in iOS9, so we use `___IPHONE_9_0` instead of `__IPHONE_8_0`*
 *NOTE: Several versions of Unity themselves also have the ITMS-90809 issue (cf. https://issuetracker.unity3d.com/issues/ios-apple-throws-deprecated-api-usage-warning-for-using-uiwebview-when-submitting-builds-to-the-app-store-connect ).*/
 
+#### XMLHttpRequest for file URLs
+
+WKWebView doesn't allow to access file URLs with XMLHttpRequest. This limitation can be relaxed by `allowFileAccessFromFileURLs`/`allowUniversalAccessFromFileURLs` settings. Those are however private APIs so currently disabled by default. For enabling them, please define `UNITYWEBVIEW_IOS_ALLOW_FILE_URLS`.
+
+cf. https://github.com/gree/unity-webview/issues/785
+cf. https://github.com/gree/unity-webview/issues/224#issuecomment-640642516
+
 ### Android
 
-*NOTE: The current implementation for Android utilizes Android Fragment for enabling the file input field after https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278 and may cause new issues that were not found before. If you don't need the file input field, you can install `dist/unity-webview-nofragment.unitypackage` or `dist/unity-webview-nofragment.zip` for selecting the variant without Fragment.*
+#### File Input Field
+
+The current implementation for Android utilizes Android Fragment for enabling the file input field `<input type="file">` since https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278 and may cause new issues that were not found before. If you don't need the file input field, you can install `dist/unity-webview-nofragment.unitypackage` or `dist/unity-webview-nofragment.zip` for selecting the variant without Fragment.
+
+If you utilize the default one and want to enable the file input field, you also have to set one of the following permissions since https://github.com/gree/unity-webview/pull/655 .
+
+* `android.permission.READ_EXTERNAL_STORAGE`
+* `android.permission.WRITE_EXTERNAL_STORAGE`
+* `android.permission.CAMERA`
+
+You can set `android.permission.WRITE_EXTERNAL_STORAGE` by setting `Player Settings/Other Settings/Write Permission` to `External (SDCard)`. You can set `android.permission.CAMERA` by defining `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` (cf. [Camera/Audio Permission/Feature](#cameraaudio-permissionfeature)).
 
 #### hardwareAccelerated
 
@@ -198,18 +205,32 @@ For allowing http cleartext traffic for Android API level 28 or higher, please d
 
 #### Camera/Audio Permission/Feature
 
-For allowing camera access (`navigator.mediaDevices.getUserMedia({ video:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
+For allowing camera access (`navigator.mediaDevices.getUserMedia({ video:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_CAMERA` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`,
 
 ```xml
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-feature android:name="android.hardware.camera" />
 ```
 
-For allowing microphone access (`navigator.mediaDevices.getUserMedia({ audio:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`.
+and call the following on runtime.
+
+```c#
+        webViewObject.SetCameraAccess(true);
+```
+
+For allowing microphone access (`navigator.mediaDevices.getUserMedia({ audio:true })`), please define `UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE` so that `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` adds the followings to `AndroidManifest.xml`,
 
 ```xml
   <uses-permission android:name="android.permission.MICROPHONE" />
   <uses-feature android:name="android.hardware.microphone" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+```
+
+and call the following on runtime.
+
+```c#
+        webViewObject.SetMicrophoneAccess(true);
 ```
 
 Details for each Unity version are the same as for hardwareAccelerated. Please also note that it is necessary to request permissions at runtime for Android API 23 or later as below:

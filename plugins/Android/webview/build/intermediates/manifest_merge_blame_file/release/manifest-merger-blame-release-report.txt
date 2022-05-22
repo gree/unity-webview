@@ -1,0 +1,13 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="net.gree.unitywebview"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="16"
+8-->/Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+9        android:targetSdkVersion="30" />
+9-->/Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+10
+11</manifest>
