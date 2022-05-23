@@ -100,17 +100,13 @@ class CWebViewPluginInterface {
     //MATIFIC SPECIFIC
     @JavascriptInterface
     public void android_unityPause() {
-        //Log.w("ALON", "CALL unityPause");
         mPlugin.PauseUnityInternal();
     }
 
     @JavascriptInterface
     public void android_unityResume() {
-        //Log.w("ALON", "CALL unityResume");
-
         final Activity a = UnityPlayer.currentActivity;
         a.runOnUiThread(new Runnable() {public void run() {
-            //Log.w("ALON", "JS -> android_unityResume");
             CUnityPlayerActivity.GlobalUnityActivity.ResumeUnityPlayer();
         };
         });
@@ -320,7 +316,6 @@ public class CWebViewPlugin extends Fragment {
 
     //MATIFIC SPECIFIC
     public void PauseUnityInternal() {
-        //Log.w("ALON", "PAUSING UNITY");
         final Activity a = UnityPlayer.currentActivity;
 
         Thread t = new Thread() {
@@ -343,7 +338,6 @@ public class CWebViewPlugin extends Fragment {
         t.start();
     }
     public void RequestPauseUnity() {
-        //Log.w("ALON", "EXTERNAL -> RequestPauseUnity");
         PauseUnityInternal();
     }
 //END MATIFIC SPECIFIC
@@ -1143,10 +1137,9 @@ public class CWebViewPlugin extends Fragment {
         mPaused = paused;
         //MATIFIC SPECIFIC
 
-        //NOTE (ALON): When we call PauseUnity from webview it will trigger an onApplicationPause (true). We want to ignore it so webview continues
+        //NOTE: When we call PauseUnity from webview it will trigger an onApplicationPause (true). We want to ignore it so webview continues
         //to work while unity is paused
         if(mIsPauseDueToUnityPauseCall) {
-            //Log.w("ALON", "WebView OnPaused: OVERRIDE: false");
             mPaused = false;
             mIsPauseDueToUnityPauseCall = false;
             return;

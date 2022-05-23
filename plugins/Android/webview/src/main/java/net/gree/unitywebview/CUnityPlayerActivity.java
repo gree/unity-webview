@@ -13,7 +13,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.os.Process;
 import com.unity3d.player.*;
-//ALON NOTE:
+//Matific NOTE:
 //This is the Activity as exported from Unity as an Android project
 //+ Expose PauseUnityPlayer/ResumeUnityPlayer + some logic
 
@@ -91,7 +91,6 @@ public class CUnityPlayerActivity extends Activity implements IUnityPlayerLifecy
     // Pause Unity
     @Override protected void onPause()
     {
-        //Log.w("ALON", "ON APP PAUSE ACTIVITY (Main)");
         super.onPause();
         mUnityPlayer.pause();
     }
@@ -99,7 +98,6 @@ public class CUnityPlayerActivity extends Activity implements IUnityPlayerLifecy
     // Resume Unity
     @Override protected void onResume()
     {
-        //Log.w("ALON", "ON APP RESUMSE (Main)");
         super.onResume();
         if(!mShouldPlayerPause){
             mUnityPlayer.resume();
