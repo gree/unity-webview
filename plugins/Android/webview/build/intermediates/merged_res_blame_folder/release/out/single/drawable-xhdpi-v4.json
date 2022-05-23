@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable-xhdpi-v4/notification_bg_normal_pressed.9.png",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable-xhdpi-v4/notification_bg_normal_pressed.9.png"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable-xhdpi-v4/notification_bg_low_normal.9.png",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable-xhdpi-v4/notification_bg_low_normal.9.png"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable-xhdpi-v4/notification_bg_normal.9.png",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable-xhdpi-v4/notification_bg_normal.9.png"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/drawable-xhdpi-v4/notification_bg_low_pressed.9.png",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/drawable-xhdpi-v4/notification_bg_low_pressed.9.png"
+    }
+]

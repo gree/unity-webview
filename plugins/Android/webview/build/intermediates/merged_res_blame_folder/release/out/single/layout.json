@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/layout/notification_template_icon_group.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/layout/notification_template_icon_group.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/layout/notification_template_part_chronometer.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/layout/notification_template_part_chronometer.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/layout/custom_dialog.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/layout/custom_dialog.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/layout/notification_action.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/layout/notification_action.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/layout/notification_action_tombstone.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/layout/notification_action_tombstone.xml"
+    },
+    {
+        "merged": "/Users/nir/unity-webview-GREE/plugins/Android/webview/build/intermediates/res/merged/release/layout/notification_template_part_time.xml",
+        "source": "/Users/nir/.gradle/caches/transforms-3/2817dc2db5f4e645bc179c10a09d5c70/transformed/core-1.6.0/res/layout/notification_template_part_time.xml"
+    }
+]

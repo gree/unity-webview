@@ -230,7 +230,6 @@
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 				USE_HEADERMAP = YES;
-				VALID_ARCHS = x86_64;
 			};
 			name = Debug;
 		};
@@ -276,7 +275,6 @@
 				OTHER_LDFLAGS = "";
 				SDKROOT = macosx;
 				USE_HEADERMAP = YES;
-				VALID_ARCHS = x86_64;
 			};
 			name = Release;
 		};
@@ -297,7 +295,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USE_HEADERMAP = YES;
-				VALID_ARCHS = x86_64;
 				WRAPPER_EXTENSION = bundle;
 			};
 			name = Debug;
@@ -319,7 +316,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "net.gree.unitywebview.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USE_HEADERMAP = YES;
-				VALID_ARCHS = x86_64;
 				WRAPPER_EXTENSION = bundle;
 			};
 			name = Release;

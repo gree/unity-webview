@@ -86,7 +86,7 @@ public class WebViewObject : MonoBehaviour
     bool mIsKeyboardVisible;
     int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
-	
+    
     void OnApplicationPause(bool paused)
     {
         if (webView == null)
@@ -108,6 +108,39 @@ public class WebViewObject : MonoBehaviour
             mResumedTimestamp = 0.0f;
             webView.Call("SetVisibility", mVisibility);
         }
+        for (;;) {
+            if (webView == null)
+                break;
+            var s = webView.Call<String>("GetMessage");
+            if (s == null)
+                break;
+            var i = s.IndexOf(':', 0);
+            if (i == -1)
+                continue;
+            switch (s.Substring(0, i)) {
+            case "CallFromJS":
+                CallFromJS(s.Substring(i + 1));
+                break;
+            case "CallOnError":
+                CallOnError(s.Substring(i + 1));
+                break;
+            case "CallOnHttpError":
+                CallOnHttpError(s.Substring(i + 1));
+                break;
+            case "CallOnLoaded":
+                CallOnLoaded(s.Substring(i + 1));
+                break;
+            case "CallOnStarted":
+                CallOnStarted(s.Substring(i + 1));
+                break;
+            case "CallOnHooked":
+                CallOnHooked(s.Substring(i + 1));
+                break;
+            case "SetKeyboardVisible":
+                SetKeyboardVisible(s.Substring(i + 1));
+                break;
+            }
+        }
     }
 
     /// Called from Java native plugin to set when the keyboard is opened
@@ -115,6 +148,10 @@ public class WebViewObject : MonoBehaviour
     {
         bool isKeyboardVisible0 = mIsKeyboardVisible;
         mIsKeyboardVisible = (pIsVisible == "true");
+        if (!Screen.fullScreen)
+        {
+            return;
+        }
         if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
         {
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
@@ -123,7 +160,7 @@ public class WebViewObject : MonoBehaviour
     
     public int AdjustBottomMargin(int bottom)
     {
-        if (!mIsKeyboardVisible)
+        if (!mIsKeyboardVisible || !Screen.fullScreen)
         {
             return bottom;
         }
@@ -145,7 +182,7 @@ public class WebViewObject : MonoBehaviour
 #else
     IntPtr webView;
 #endif
-    
+
     void Awake()
     {
         alertDialogEnabled = true;
@@ -155,16 +192,15 @@ public class WebViewObject : MonoBehaviour
         mMarginRightComputed = -9999;
         mMarginBottomComputed = -9999;
     }
-    
-	//MATIFIC SPECIFIC
-	public void Android_RequestUnityPause()
+
+    //MATIFIC SPECIFIC
+    public void Android_RequestUnityPause()
     {
-		#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
         webView.Call("RequestPauseUnity");
-		#endif 
+#endif 
     }
-	//END MATIFIC SPECIFIC
-	
+    //END MATIFIC SPECIFIC
     public bool IsKeyboardVisible
     {
         get
@@ -256,7 +292,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -266,10 +302,16 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_SetVisibility(
         IntPtr instance, bool visibility);
     [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetScrollbarsVisibility(
+        IntPtr instance, bool visibility);
+    [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetAlertDialogEnabled(
         IntPtr instance, bool enabled);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetScrollBounceEnabled(
+        IntPtr instance, bool enabled);
+    [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetInteractionEnabled(
         IntPtr instance, bool enabled);
     [DllImport("__Internal")]
     private static extern bool _CWebViewPlugin_SetURLPattern(
@@ -345,21 +387,22 @@ public class WebViewObject : MonoBehaviour
 
     public void Init(
         Callback cb = null,
-        bool transparent = false,
-        bool zoom = true,
-        string ua = "",
         Callback err = null,
         Callback httpErr = null,
         Callback ld = null,
-        int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
-        bool enableWKWebView = false,
-        int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
         Callback started = null,
-        Callback hooked = null
-#if UNITY_EDITOR
-        , bool separated = false
-#endif
-        )
+        Callback hooked = null,
+        bool transparent = false,
+        bool zoom = true,
+        string ua = "",
+        // android
+        int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
+        // ios
+        bool enableWKWebView = true,
+        int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
+        bool wkAllowsLinkPreview = true,
+        // editor
+        bool separated = false)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
@@ -423,7 +466,7 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode);
+        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
         webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua);
@@ -468,6 +511,40 @@ public class WebViewObject : MonoBehaviour
             return;
         webView.Call("Destroy");
         webView = null;
+#endif
+    }
+
+    public void Pause()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        //TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("Pause");
+#endif
+    }
+
+    public void Resume()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        //TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("Resume");
 #endif
     }
 
@@ -626,6 +703,40 @@ public class WebViewObject : MonoBehaviour
         return visibility;
     }
 
+    public void SetScrollbarsVisibility(bool v)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetScrollbarsVisibility(webView, v);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetScrollbarsVisibility", v);
+#else
+        // TODO: UNSUPPORTED
+#endif
+    }
+
+    public void SetInteractionEnabled(bool enabled)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetInteractionEnabled(webView, enabled);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetInteractionEnabled", enabled);
+#else
+        // TODO: UNSUPPORTED
+#endif
+    }
+
     public void SetAlertDialogEnabled(bool e)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
@@ -668,6 +779,36 @@ public class WebViewObject : MonoBehaviour
     public bool GetScrollBounceEnabled()
     {
         return scrollBounceEnabled;
+    }
+
+    public void SetCameraAccess(bool allowed)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        // TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetCameraAccess", allowed);
+#else
+        // TODO: UNSUPPORTED
+#endif
+    }
+
+    public void SetMicrophoneAccess(bool allowed)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        // TODO: UNSUPPORTED
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetMicrophoneAccess", allowed);
+#else
+        // TODO: UNSUPPORTED
+#endif
     }
 
     public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern)
@@ -1088,10 +1229,28 @@ public class WebViewObject : MonoBehaviour
     }
 
 
+    public void SetTextZoom(int textZoom)
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE && !UNITY_EDITOR
+        //TODO: UNSUPPORTED
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("SetTextZoom", textZoom);
+#endif
+    }
+
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     void OnApplicationFocus(bool focus)
     {
-        hasFocus = focus;
+        if (!focus)
+        {
+            hasFocus = false;
+        }
     }
 
     void Update()
@@ -1155,6 +1314,10 @@ public class WebViewObject : MonoBehaviour
         if (webView == IntPtr.Zero || !visibility)
             return;
 
+        if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2))
+        {
+            hasFocus = rect.Contains(Input.mousePosition);
+        }
         switch (Event.current.type) {
         case EventType.MouseDown:
         case EventType.MouseUp:
@@ -1162,19 +1325,22 @@ public class WebViewObject : MonoBehaviour
         case EventType.MouseDrag:
         case EventType.ScrollWheel:
             {
-                Vector3 p;
-                p.x = Input.mousePosition.x - rect.x;
-                p.y = Input.mousePosition.y - rect.y;
+                if (hasFocus)
                 {
-                    int mouseState = 0;
-                    if (Input.GetButtonDown("Fire1")) {
-                        mouseState = 1;
-                    } else if (Input.GetButtonUp("Fire1")) {
-                        mouseState = 3;
-                    } else if (Input.GetButton("Fire1")) {
-                        mouseState = 2;
+                    Vector3 p;
+                    p.x = Input.mousePosition.x - rect.x;
+                    p.y = Input.mousePosition.y - rect.y;
+                    {
+                        int mouseState = 0;
+                        if (Input.GetButtonDown("Fire1")) {
+                            mouseState = 1;
+                        } else if (Input.GetButtonUp("Fire1")) {
+                            mouseState = 3;
+                        } else if (Input.GetButton("Fire1")) {
+                            mouseState = 2;
+                        }
+                        _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
                     }
-                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
                 }
             }
             break;
@@ -1189,10 +1355,13 @@ public class WebViewObject : MonoBehaviour
                         inputString = inputString.Substring(1);
                 }
                 if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
-                    Vector3 p;
-                    p.x = Input.mousePosition.x - rect.x;
-                    p.y = Input.mousePosition.y - rect.y;
-                    _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                    if (hasFocus)
+                    {
+                        Vector3 p;
+                        p.x = Input.mousePosition.x - rect.x;
+                        p.y = Input.mousePosition.y - rect.y;
+                        _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                    }
                 }
                 // if (keyChars != keyChars0) {
                 //     if (!string.IsNullOrEmpty(keyChars0)) {

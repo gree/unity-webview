@@ -1,0 +1,37 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:1-6:12
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:1-6:12
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:1-6:12
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:1-6:12
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:1-6:12
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:1-6:12
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:1-6:12
+	package
+		ADDED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:3:7-38
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+	android:versionName
+		ADDED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:5:7-32
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:2:11-69
+	android:versionCode
+		ADDED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml:4:7-30
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+uses-sdk
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+		ADDED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+		ADDED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
+		INJECTED from /Users/nir/unity-webview-GREE/plugins/Android/webview/src/main/AndroidManifest.xml
