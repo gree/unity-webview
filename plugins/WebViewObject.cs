@@ -144,12 +144,12 @@ public class WebViewObject : MonoBehaviour
     /// Called from Java native plugin to set when the keyboard is opened
     public void SetKeyboardVisible(string pIsVisible)
     {
-        bool isKeyboardVisible0 = mIsKeyboardVisible;
-        mIsKeyboardVisible = (pIsVisible == "true");
-        if (!Screen.fullScreen)
+        if (BottomAdjustmentDisabled())
         {
             return;
         }
+        bool isKeyboardVisible0 = mIsKeyboardVisible;
+        mIsKeyboardVisible = (pIsVisible == "true");
         if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
         {
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
@@ -158,7 +158,11 @@ public class WebViewObject : MonoBehaviour
     
     public int AdjustBottomMargin(int bottom)
     {
-        if (!mIsKeyboardVisible || !Screen.fullScreen)
+        if (BottomAdjustmentDisabled())
+        {
+            return bottom;
+        }
+        else if (!mIsKeyboardVisible)
         {
             return bottom;
         }
@@ -176,6 +180,14 @@ public class WebViewObject : MonoBehaviour
             }
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
         }
+    }
+
+    private bool BottomAdjustmentDisabled()
+    {
+        return
+            !Screen.fullScreen
+            || ((Screen.autorotateToLandscapeLeft || Screen.autorotateToLandscapeRight)
+                && (Screen.autorotateToPortrait || Screen.autorotateToPortraitUpsideDown));
     }
 #else
     IntPtr webView;
