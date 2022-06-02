@@ -5,11 +5,15 @@
 ## Sample Project
 This is a custom unity webview fork to allow pausing and resuming unity while the WebView is running. (Notice: some of our unique implementation is in `webviewObject.cs`)
  	 
-1. Goto `plugins\Android` and open `install.sh`
-2. Update "UNITY" with your unity version path (i.e. UNITY="/Applications/Unity/Hub/Editor/2020.3.30f1") This batch sets up the android project (copies files into src) 
-3. Update `classes.jar` with the `webview/libs` folder with the relevant unity classes (i.e. `${UNITY}/PlaybackEngines/AndroidPlayer/Variations/${SCRIPTING_BACKEND}/${MODE}/Classes/classes.jar`)
+1. `plugins/Android/local.properties` needs to be configured w/ path to Android SDK used by Unity (i.e. `sdk.dir=/Applications/Unity/Hub/Editor/2020.3.30f1/PlaybackEngines/AndroidPlayer/SDK`)
+2. Goto `plugins\Android` and open `install.sh` or `install-nofragment.sh`
+3. In the sh script update `UNITY` variable with your unity version path (i.e. `UNITY="/Applications/Unity/Hub/Editor/2020.3.30f1"`) This batch sets up the android project (copies files into src)
+4. Run the script!
+   1. The script updates `webview/libs/classes.jar` with the relevant unity classes (i.e. `${UNITY}/PlaybackEngines/AndroidPlayer/Variations/${SCRIPTING_BACKEND}/${MODE}/Classes/classes.jar`)
+   2. The script generates `WebViewPlugin.aar` and place it in `DEST_DIR` folder `../../build/Packager/Assets/Plugins/Android` 
+5. Push to git `WebViewPlugin.aar
 
-*NOTE: `local.properties` needs to be configured w/ path to Android SDK used by Unity (i.e. sdk.dir=/Applications/Unity/Hub/Editor/2020.3.30f1/PlaybackEngines/AndroidPlayer/SDK)
-
-####
-After Building the project with `install.sh` copy the `WebViewPlugin.aar` from dest directory into the relevant path in dist directory.
+If you get this error:
+> Failed to install the following Android SDK packages as some licences have not been accepted.
+> 
+you need to install the sdk tool follow this guide https://developer.android.com/studio/intro/update#sdk-manager in your android-studio/intelij
