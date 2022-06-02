@@ -10,8 +10,9 @@ This is a custom unity webview fork to allow pausing and resuming unity while th
 3. In the sh script update `UNITY` variable with your unity version path (i.e. `UNITY="/Applications/Unity/Hub/Editor/2020.3.30f1"`) This batch sets up the android project (copies files into src)
 4. Run the script!
    1. The script updates `webview/libs/classes.jar` with the relevant unity classes (i.e. `${UNITY}/PlaybackEngines/AndroidPlayer/Variations/${SCRIPTING_BACKEND}/${MODE}/Classes/classes.jar`)
-   2. The script generates `WebViewPlugin.aar` and place it in `DEST_DIR` folder `../../build/Packager/Assets/Plugins/Android` 
-5. Push to git `WebViewPlugin.aar
+   2. The script generates `WebViewPlugin.aar` and place it in `DEST_DIR` folder `../../build/Packager/Assets/Plugins/Android`
+5. Copy `WebViewPlugin.aar` and `core-1.6.0.aar.tmpl` (why not in the script) to `dist/package/Assets/Plugins/Android` 
+6. Push to git files from previous step. 
 
 If you get this error:
 > Failed to install the following Android SDK packages as some licences have not been accepted.
