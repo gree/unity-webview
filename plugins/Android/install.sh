@@ -9,7 +9,7 @@ LIBS_DIR="${BUILD_DIR}/libs"
 
 # options
 MODE="Release"
-SCRIPTING_BACKEND="il2cpp"
+SCRIPTING_BACKEND="mono"
 UNITY="/Applications/Unity/Hub/Editor/2020.3.30f1"
 for OPT in $*
 do

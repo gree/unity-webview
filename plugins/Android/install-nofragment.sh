@@ -9,8 +9,8 @@ LIBS_DIR="${BUILD_DIR}/libs"
 
 # options
 MODE="Release"
-SCRIPTING_BACKEND="il2cpp"
-UNITY="/Applications/Unity5.6.1f1"
+SCRIPTING_BACKEND="mono"
+UNITY="/Applications/Unity/Hub/Editor/2020.3.30f1"
 for OPT in $*
 do
     case $OPT in
