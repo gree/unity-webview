@@ -74,8 +74,6 @@ public class WebViewObject : MonoBehaviour
     Texture2D texture;
     byte[] textureDataBuffer;
     string inputString = "";
-    // string keyChars0 = "";
-    // ushort keyCode0 = 0;
     bool hasFocus;
 #elif UNITY_IPHONE
     IntPtr webView;
@@ -146,12 +144,12 @@ public class WebViewObject : MonoBehaviour
     /// Called from Java native plugin to set when the keyboard is opened
     public void SetKeyboardVisible(string pIsVisible)
     {
-        bool isKeyboardVisible0 = mIsKeyboardVisible;
-        mIsKeyboardVisible = (pIsVisible == "true");
-        if (!Screen.fullScreen)
+        if (BottomAdjustmentDisabled())
         {
             return;
         }
+        bool isKeyboardVisible0 = mIsKeyboardVisible;
+        mIsKeyboardVisible = (pIsVisible == "true");
         if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
         {
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
@@ -160,7 +158,11 @@ public class WebViewObject : MonoBehaviour
     
     public int AdjustBottomMargin(int bottom)
     {
-        if (!mIsKeyboardVisible || !Screen.fullScreen)
+        if (BottomAdjustmentDisabled())
+        {
+            return bottom;
+        }
+        else if (!mIsKeyboardVisible)
         {
             return bottom;
         }
@@ -179,6 +181,14 @@ public class WebViewObject : MonoBehaviour
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
         }
     }
+
+    private bool BottomAdjustmentDisabled()
+    {
+        return
+            !Screen.fullScreen
+            || ((Screen.autorotateToLandscapeLeft || Screen.autorotateToLandscapeRight)
+                && (Screen.autorotateToPortrait || Screen.autorotateToPortraitUpsideDown));
+    }
 #else
     IntPtr webView;
 #endif
@@ -193,14 +203,15 @@ public class WebViewObject : MonoBehaviour
         mMarginBottomComputed = -9999;
     }
 
-    //MATIFIC SPECIFIC
-    public void Android_RequestUnityPause()
-    {
-#if UNITY_ANDROID && !UNITY_EDITOR
-        webView.Call("RequestPauseUnity");
-#endif 
-    }
-    //END MATIFIC SPECIFIC
+        //MATIFIC SPECIFIC
+        public void Android_RequestUnityPause()
+        {
+    #if UNITY_ANDROID && !UNITY_EDITOR
+            webView.Call("RequestPauseUnity");
+    #endif
+        }
+        //END MATIFIC SPECIFIC
+
     public bool IsKeyboardVisible
     {
         get
@@ -1313,76 +1324,48 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == IntPtr.Zero || !visibility)
             return;
-
-        if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2))
-        {
-            hasFocus = rect.Contains(Input.mousePosition);
-        }
         switch (Event.current.type) {
         case EventType.MouseDown:
         case EventType.MouseUp:
-        case EventType.MouseMove:
-        case EventType.MouseDrag:
-        case EventType.ScrollWheel:
-            {
-                if (hasFocus)
-                {
-                    Vector3 p;
-                    p.x = Input.mousePosition.x - rect.x;
-                    p.y = Input.mousePosition.y - rect.y;
-                    {
-                        int mouseState = 0;
-                        if (Input.GetButtonDown("Fire1")) {
-                            mouseState = 1;
-                        } else if (Input.GetButtonUp("Fire1")) {
-                            mouseState = 3;
-                        } else if (Input.GetButton("Fire1")) {
-                            mouseState = 2;
-                        }
-                        _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
-                    }
-                }
-            }
+            hasFocus = rect.Contains(Input.mousePosition);
             break;
-        case EventType.KeyDown:
-        case EventType.KeyUp:
-            {
-                string keyChars = "";
-                ushort keyCode = 0;
-                if (!string.IsNullOrEmpty(inputString)) {
-                    keyChars = inputString.Substring(0, 1);
-                    keyCode = (ushort)inputString[0];
-                        inputString = inputString.Substring(1);
-                }
-                if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
-                    if (hasFocus)
-                    {
-                        Vector3 p;
-                        p.x = Input.mousePosition.x - rect.x;
-                        p.y = Input.mousePosition.y - rect.y;
-                        _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+        }
+        switch (Event.current.type) {
+        case EventType.MouseMove:
+        case EventType.MouseDown:
+        case EventType.MouseDrag:
+        case EventType.MouseUp:
+        case EventType.ScrollWheel:
+            if (hasFocus) {
+                Vector3 p;
+                p.x = Input.mousePosition.x - rect.x;
+                p.y = Input.mousePosition.y - rect.y;
+                {
+                    int mouseState = 0;
+                    if (Input.GetButtonDown("Fire1")) {
+                        mouseState = 1;
+                    } else if (Input.GetButton("Fire1")) {
+                        mouseState = 2;
+                    } else if (Input.GetButtonUp("Fire1")) {
+                        mouseState = 3;
                     }
+                    //_CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
+                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.mouseScrollDelta.y, mouseState);
                 }
-                // if (keyChars != keyChars0) {
-                //     if (!string.IsNullOrEmpty(keyChars0)) {
-                //         Debug.Log("XX1 " + (short)keyChars0[0]);
-                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars0, keyCode0, 3);
-                //     }
-                //     if (!string.IsNullOrEmpty(keyChars)) {
-                //         Debug.Log("XX2 " + (short)keyChars[0]);
-                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
-                //     }
-                // } else {
-                //     if (!string.IsNullOrEmpty(keyChars)) {
-                //         Debug.Log("XX3");
-                //         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 2);
-                //     }
-                // }
-                // keyChars0 = keyChars;
-                // keyCode0 = keyCode;
             }
             break;
         case EventType.Repaint:
+            while (!string.IsNullOrEmpty(inputString)) {
+                var keyChars = inputString.Substring(0, 1);
+                var keyCode = (ushort)inputString[0];
+                inputString = inputString.Substring(1);
+                if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
+                    Vector3 p;
+                    p.x = Input.mousePosition.x - rect.x;
+                    p.y = Input.mousePosition.y - rect.y;
+                    _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
+                }
+            }
             if (texture != null) {
                 Matrix4x4 m = GUI.matrix;
                 GUI.matrix
