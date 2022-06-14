@@ -363,20 +363,9 @@ static std::unordered_map<int, int> _nskey2cgkey{
         [webView loadRequest:navigationAction.request];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else {
-        if ([customRequestHeader count] > 0) {
-            bool isCustomized = YES;
-
-            // Check for additional custom header.
-            for (NSString *key in [customRequestHeader allKeys])
-            {
-                if (![[[navigationAction.request allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
-                    isCustomized = NO;
-                    break;
-                }
-            }
-
+        if (navigationAction.targetFrame != nil && navigationAction.targetFrame.isMainFrame) {
             // If the custom header is not attached, give it and make a request again.
-            if (!isCustomized) {
+            if (![self isSetupedCustomHeader:[navigationAction request]]) {
                 decisionHandler(WKNavigationActionPolicyCancel);
                 [webView loadRequest:[self constructionCustomHeader:navigationAction.request]];
                 return;
@@ -461,6 +450,17 @@ static std::unordered_map<int, int> _nskey2cgkey{
     if (webView == nil)
         return;
     webView.hidden = visibility ? NO : YES;
+}
+
+- (BOOL)isSetupedCustomHeader:(NSURLRequest *)targetRequest
+{
+    // Check for additional custom header.
+    for (NSString *key in [customRequestHeader allKeys]) {
+        if (![[[targetRequest allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
+            return NO;
+        }
+    }
+    return YES;
 }
 
 - (NSURLRequest *)constructionCustomHeader:(NSURLRequest *)originalRequest
