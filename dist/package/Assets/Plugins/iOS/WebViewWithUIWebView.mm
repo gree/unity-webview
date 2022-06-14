@@ -656,8 +656,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 - (BOOL)isSetupedCustomHeader:(NSURLRequest *)targetRequest
 {
     // Check for additional custom header.
-    for (NSString *key in [customRequestHeader allKeys])
-    {
+    for (NSString *key in [customRequestHeader allKeys]) {
         if (![[[targetRequest allHTTPHeaderFields] objectForKey:key] isEqualToString:[customRequestHeader objectForKey:key]]) {
             return NO;
         }
