@@ -31,6 +31,19 @@ public class SampleWebView : MonoBehaviour
     public Text status;
     WebViewObject webViewObject;
 
+    // cf. https://answers.unity.com/questions/1013011/convert-recttransform-rect-to-screen-space.html?childToView=1628573#answer-1628573
+   public static Bounds GetRectTransformBounds(RectTransform transform)
+   {
+       var corners = new Vector3[4];
+       transform.GetWorldCorners(corners);
+       var bounds = new Bounds(corners[0], Vector3.zero);
+       for (var i = 1; i < 4; i++)
+       {
+           bounds.Encapsulate(corners[i]);
+       }
+       return bounds;
+   }
+
     IEnumerator Start()
     {
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
@@ -148,7 +161,8 @@ public class SampleWebView : MonoBehaviour
 
         //webViewObject.SetScrollbarsVisibility(true);
 
-        webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
+        // webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
+
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
 
@@ -195,6 +209,28 @@ public class SampleWebView : MonoBehaviour
         }
 #endif
         yield break;
+    }
+
+    RectTransform? rt0 = null;
+    RectTransform? rt1 = null;
+
+    void Update()
+    {
+        if (rt0 == null) {
+            rt0 = GameObject.Find("Panel").GetComponent<RectTransform>();
+        }
+        if (rt1 == null) {
+            rt1 = GameObject.Find("Image").GetComponent<RectTransform>();
+        }
+        if (Time.frameCount % 60 == 0) {
+            rt0.anchoredPosition += new Vector2(-5, 5);
+        }
+        var bounds = GetRectTransformBounds(rt1);
+        webViewObject.SetMargins(
+            (int)bounds.min.x,
+            (int)(Screen.height - bounds.max.y),
+            (int)(Screen.width - bounds.max.x),
+            (int)bounds.min.y);
     }
 
     void OnGUI()
