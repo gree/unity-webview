@@ -14,6 +14,7 @@ This is a custom unity webview fork to allow pausing and resuming unity while th
 5. Copy `WebViewPlugin.aar` and `core-1.6.0.aar.tmpl` (why not in the script) to `dist/package/Assets/Plugins/Android` 
 6. Push to git files from previous step. 
 7. In your SlateApps's branch - reimport the plugin (delete `packages-lock` entry or remove and reimport from packages manager) - the package's `hash` should change in the packages-lock file
+8. For reimporting the package to unity project delete the relevant section in "Packages/packages-lock.json" under the unity project and reload.
 
 If you get this error:
 > Failed to install the following Android SDK packages as some licences have not been accepted.
