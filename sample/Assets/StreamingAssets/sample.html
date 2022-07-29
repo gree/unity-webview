@@ -1,38 +1,40 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Unity WebView</title>
-    <script src="sample.js"></script>
-    <!-- geolocation example
-    <script>
-      window.addEventListener(
-        'load',
-        function() {
-          if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-              document.getElementById('msg').innerHTML = '[' + position.coords.latitude + ', ' + position.coords.longitude + ']';
-            });
-          }
-        });
-    </script>
-    -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"
+    />
+
+    <title>Test</title>
+
+    <style>
+      html,
+      body {
+        height: 100vh;
+        width: 100vw;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+      }
+      .container {
+        height: 100vh;
+        background-color: black;
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+      .content {
+        height: 100vh;
+        background-color: red;
+      }
+    </style>
   </head>
   <body>
-    <h1>Hello Unity WebView!</h1>
-    <hr/>
-    <!-- geolocation example
-    <p id="msg">()</p>
-    -->
-    <p><a href="https://google.com">https://google.com</a> (for testing go/back buttons)</p>
-    <p><a href="http://httpbin.org/headers">http://httpbin.org/headers</a> (for testing custom headers.)</p>
-    <p><img src="sample.jpg"/> (local image)</p>
-    <hr/>
-    <div id="msg">[]</div>
-    <p><a href="javascript:void(0)" onclick="Unity.call('anchor');">[Send Message!]</a></p>
-    <form method="get" action="form">
-      <input id="input1" type="text" value="hoge" name="msg"/>
-      <input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/><br/>
-      <input type="file" name="datafile"/>
-    </form>
+    <div class="container">
+      <div class="content">
+        <p>TEST APP</p>
+      </div>
+    </div>
   </body>
 </html>
