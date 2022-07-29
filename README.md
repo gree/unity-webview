@@ -7,7 +7,7 @@ on Unity view. It works on Android, iOS, Unity Web Player, and Mac
 unity-webview is derived from keijiro-san's
 https://github.com/keijiro/unity-webview-integration .
 
-*NOTE: This plugin overlays native WebView/WKWebView views over unity's rendering view and doesn't support those views in 3D. https://github.com/gree/unity-webview/issues/658#issuecomment-793636658 discusses other solutions.*
+*NOTE: This plugin overlays native WebView/WKWebView views over unity's rendering view and doesn't support those views in 3D. https://github.com/gree/unity-webview/issues/612#issuecomment-724541385 discusses other solutions.*
 
 ## Sample Project
 
