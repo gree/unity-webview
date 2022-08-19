@@ -22,6 +22,7 @@
 package net.gree.unitywebview;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -440,9 +441,13 @@ public class CWebViewPlugin {
                     }
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     PackageManager pm = a.getPackageManager();
-                    List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
-                    if (apps.size() > 0) {
+                    // List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+                    // if (apps.size() > 0) {
+                    //     view.getContext().startActivity(intent);
+                    // }
+                    try {
                         view.getContext().startActivity(intent);
+                    } catch (ActivityNotFoundException ex) {
                     }
                     return true;
                 }
