@@ -313,7 +313,8 @@ $ ./install.sh
 
 *NOTE: for Unity 2020.1.0f1 or newer, please use `unity-webview-2020` instead of `unity-webview` below.*
 
-After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy `WebGLTemplates/Default/TemplateData` from your Unity installation to `Assets/WebGLTemplates/unity-webivew`. If you utilize Unity 2018.4.13f1 for example,
+After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy 
+`WebGLTemplates/Default/TemplateData` from your Unity installation to `Assets/WebGLTemplates/unity-webview`. If you utilize Unity 2018.4.13f1 for example,
 
 ```bash
 $ cp -a /Applications/Unity/Hub/Editor/2018.4.13f1/PlaybackEngines/WebGLSupport/BuildTools/WebGLTemplates/Default/TemplateData Assets/WebGLTemplates/unity-webview
