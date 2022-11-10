@@ -19,6 +19,7 @@
  */
 
 using System.Collections;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
@@ -27,7 +28,7 @@ using UnityEngine.UI;
 
 public class SampleWebView : MonoBehaviour
 {
-    public string Url;
+    public static string Url;
     public Text status;
     WebViewObject webViewObject;
 
@@ -200,6 +201,11 @@ public class SampleWebView : MonoBehaviour
     void OnGUI()
     {
         var x = 10;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "Back")) {
+            SceneManager.LoadScene("Boot", LoadSceneMode.Single);
+        }
+        x += 90;
 
         GUI.enabled = webViewObject.CanGoBack();
         if (GUI.Button(new Rect(x, 10, 80, 80), "<")) {
