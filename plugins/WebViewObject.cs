@@ -294,7 +294,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGesture);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -403,7 +403,7 @@ public class WebViewObject : MonoBehaviour
         bool enableWKWebView = true,
         int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
         bool wkAllowsLinkPreview = true,
-        bool wkAllowsBackForwardNavigationGesture = true,
+        bool wkAllowsBackForwardNavigationGestures = true,
         // editor
         bool separated = false)
     {
@@ -469,7 +469,7 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGesture);
+        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
         webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua);
