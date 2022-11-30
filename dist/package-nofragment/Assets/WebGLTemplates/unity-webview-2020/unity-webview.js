@@ -53,8 +53,9 @@ var unityWebView =
 
     setMargins: function (name, left, top, right, bottom) {
         var container = $('#unity-container');
-        var w0 = container.width() * window.devicePixelRatio;
-        var h0 = container.height() * window.devicePixelRatio;
+        var r = (container.hasClass('unity-desktop')) ? window.devicePixelRatio : 1;
+        var w0 = container.width() * r;
+        var h0 = container.height() * r;
         var canvas = $('#unity-canvas');
         var w1 = canvas.attr('width');
         var h1 = canvas.attr('height');
