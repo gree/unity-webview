@@ -405,7 +405,8 @@ public class WebViewObject : MonoBehaviour
         bool wkAllowsLinkPreview = true,
         bool wkAllowsBackForwardNavigationGestures = true,
         // editor
-        bool separated = false)
+        bool separated = false, 
+        int radius = 0)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
@@ -469,10 +470,10 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures);
+        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures, radius);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
-        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua);
+        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
 
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
         {

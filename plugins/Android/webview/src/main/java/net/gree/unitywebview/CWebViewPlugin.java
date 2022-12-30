@@ -295,7 +295,7 @@ public class CWebViewPlugin extends Fragment {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua) {
+    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         instanceCount++;
@@ -327,7 +327,7 @@ public class CWebViewPlugin extends Fragment {
             mAllowAudioCapture = false;
             mCustomHeaders = new Hashtable<String, String>();
 
-            final WebView webView = new WebView(a);
+            final WebView webView = new RoundedWebView(a, radius);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     ApplicationInfo ai = a.getPackageManager().getApplicationInfo(a.getPackageName(), 0);
