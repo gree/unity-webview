@@ -397,6 +397,7 @@ public class WebViewObject : MonoBehaviour
         bool transparent = false,
         bool zoom = true,
         string ua = "",
+        int radius = 0,
         // android
         int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
         // ios
@@ -405,8 +406,7 @@ public class WebViewObject : MonoBehaviour
         bool wkAllowsLinkPreview = true,
         bool wkAllowsBackForwardNavigationGestures = true,
         // editor
-        bool separated = false, 
-        int radius = 0)
+        bool separated = false)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
