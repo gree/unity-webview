@@ -116,7 +116,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
 static WKProcessPool *_sharedProcessPool;
 static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent zoom:(BOOL)zoom ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode allowsLinkPreview:(BOOL)allowsLinkPreview allowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent zoom:(BOOL)zoom ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode allowsLinkPreview:(BOOL)allowsLinkPreview allowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures radius:(int)radius
 {
     self = [super init];
 
@@ -190,6 +190,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         webView = wkwebView;
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
+        webView.layer.cornerRadius = radius;
+        webView.layer.masksToBounds = YES;
         if (ua != NULL && strcmp(ua, "") != 0) {
             ((WKWebView *)webView).customUserAgent = [[NSString alloc] initWithUTF8String:ua];
         }
