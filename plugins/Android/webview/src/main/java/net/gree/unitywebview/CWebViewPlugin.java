@@ -327,7 +327,7 @@ public class CWebViewPlugin extends Fragment {
             mAllowAudioCapture = false;
             mCustomHeaders = new Hashtable<String, String>();
 
-            final WebView webView = new RoundedWebView(a, radius);
+            final WebView webView = (radius > 0) ? new RoundedWebView(a, radius) : new WebView(a);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     ApplicationInfo ai = a.getPackageManager().getApplicationInfo(a.getPackageName(), 0);

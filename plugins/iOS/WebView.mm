@@ -190,8 +190,10 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         webView = wkwebView;
         webView.UIDelegate = self;
         webView.navigationDelegate = self;
-        webView.layer.cornerRadius = radius;
-        webView.layer.masksToBounds = YES;
+        if (radius > 0) {
+            webView.layer.cornerRadius = radius;
+            webView.layer.masksToBounds = YES;
+        }
         if (ua != NULL && strcmp(ua, "") != 0) {
             ((WKWebView *)webView).customUserAgent = [[NSString alloc] initWithUTF8String:ua];
         }
