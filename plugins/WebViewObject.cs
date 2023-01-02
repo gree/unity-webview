@@ -294,7 +294,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures, int radius);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
