@@ -84,6 +84,10 @@ public class WebViewObject : MonoBehaviour
     bool mIsKeyboardVisible;
     int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
+#if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
+    float androidNetworkReachabilityCheckT0 = -1.0f;
+    NetworkReachability? androidNetworkReachability0 = null;
+#endif
     
     void OnApplicationPause(bool paused)
     {
@@ -101,6 +105,19 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == null)
             return;
+#if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
+        var t = Time.time;
+        if (t - 1.0f >= androidNetworkReachabilityCheckT0)
+        {
+            androidNetworkReachabilityCheckT0 = t;
+            var androidNetworkReachability = Application.internetReachability;
+            if (androidNetworkReachability0 != androidNetworkReachability)
+            {
+                androidNetworkReachability0 = androidNetworkReachability;
+                webView.Call("SetNetworkAvailable", androidNetworkReachability != NetworkReachability.NotReachable);
+            }
+        }
+#endif
         if (mResumedTimestamp != 0.0f && Time.realtimeSinceStartup - mResumedTimestamp > 0.5f)
         {
             mResumedTimestamp = 0.0f;

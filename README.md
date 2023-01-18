@@ -285,6 +285,10 @@ index a62c1ca..a5efe9f 100644
 (cf. https://github.com/gree/unity-webview/issues/473#issuecomment-559412496)
 (cf. https://docs.unity3d.com/Manual/android-RequestingPermissions.html)
 
+#### navigator.onLine
+
+By default, `navigator.onLine` doesn't work on Android WebView. Please define `UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE` to enable it. The plugin will then periodically check `Application.internetReachability` and call WebView's `setNetworkAvailable()` adequately.
+
 #### How to build WebViewPlugin.jar
 
 The following steps are for Mac but you can follow similar ones for Windows.
