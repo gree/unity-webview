@@ -811,6 +811,19 @@ public class CWebViewPlugin {
         }});
     }
 
+    public void SetNetworkAvailable(final boolean networkUp) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.setNetworkAvailable(networkUp);
+        }});
+    }
+
     // as the following explicitly pause/resume, pauseTimers()/resumeTimers() are always
     // called. this differs from OnApplicationPause().
     public void Pause() {
