@@ -355,7 +355,8 @@ public class CWebViewPlugin extends Fragment {
                     final String[] requestedResources = request.getResources();
                     for (String r : requestedResources) {
                         if ((r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) && mAllowVideoCapture)
-                            || (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) && mAllowAudioCapture)) {
+                            || (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) && mAllowAudioCapture)
+                            || r.equals(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
                             request.grant(requestedResources);
                             // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             //     a.runOnUiThread(new Runnable() {public void run() {
