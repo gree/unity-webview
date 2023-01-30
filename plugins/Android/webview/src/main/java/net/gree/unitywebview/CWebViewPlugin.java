@@ -66,6 +66,7 @@ import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -109,6 +110,19 @@ class CWebViewPluginInterface {
             }
         }});
     }
+
+    @JavascriptInterface
+    public void saveDataURL(final String fileName, final String dataURL) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mPlugin.IsInitialized()) {
+                mPlugin.SaveDataURL(fileName, dataURL);
+            }
+        }});
+    }
 }
 
 public class CWebViewPlugin extends Fragment {
@@ -135,6 +149,8 @@ public class CWebViewPlugin extends Fragment {
     private Pattern mHookRegex;
 
     private static final int INPUT_FILE_REQUEST_CODE = 1;
+    private String mBase64Data;
+    private static final int OUTPUT_FILE_REQUEST_CODE = 2;
     private ValueCallback<Uri> mUploadMessage;
     private ValueCallback<Uri[]> mFilePathCallback;
     private Uri mCameraPhotoUri;
@@ -146,6 +162,27 @@ public class CWebViewPlugin extends Fragment {
 
     private String mBasicAuthUserName;
     private String mBasicAuthPassword;
+
+    public void SaveDataURL(String fileName, String dataURL) {
+        if (mBase64Data != null) {
+            return;
+        }
+        if (!dataURL.startsWith("data:")) {
+            return;
+        }
+        String tmp = dataURL.substring("data:".length());
+        int i = tmp.indexOf(";");
+        if (i < 0) {
+            return;
+        }
+        mBase64Data = tmp.substring(i + 1 + "base64,".length());
+        String type = tmp.substring(0, i);
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(type);
+        intent.putExtra(Intent.EXTRA_TITLE, fileName);
+        startActivityForResult(intent, OUTPUT_FILE_REQUEST_CODE);
+    }
 
     // cf. https://github.com/gree/unity-webview/issues/753
     // cf. https://github.com/mixpanel/mixpanel-android/issues/400
@@ -178,6 +215,24 @@ public class CWebViewPlugin extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == OUTPUT_FILE_REQUEST_CODE) {
+            String base64data = mBase64Data;
+            mBase64Data = null;
+            // Check that the response is a good one
+            if (resultCode == Activity.RESULT_OK) {
+                final Activity a = UnityPlayer.currentActivity;
+                final Uri uri = data.getData();
+                final byte[] bytes = Base64.decode(base64data, Base64.DEFAULT);
+                try (OutputStream out = getActivity().getContentResolver().openOutputStream(uri)) {
+                    if (out != null) {
+                        out.write(bytes);
+                    }
+                } catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return;
+        }
         if (requestCode != INPUT_FILE_REQUEST_CODE) {
             super.onActivityResult(requestCode, resultCode, data);
             return;
