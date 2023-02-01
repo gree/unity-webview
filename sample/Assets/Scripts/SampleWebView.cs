@@ -253,5 +253,11 @@ public class SampleWebView : MonoBehaviour
             webViewObject.SetInteractionEnabled(true);
         }
         x += 90;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "beep")) {
+            var audioData = GetComponent<AudioSource>();
+            audioData.Play(0);
+        }
+        x += 90;
     }
 }
