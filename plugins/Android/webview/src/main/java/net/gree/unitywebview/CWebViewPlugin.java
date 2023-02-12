@@ -25,6 +25,9 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.app.Fragment;
+import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -65,7 +68,9 @@ import androidx.core.content.FileProvider;
 // import android.support.v4.app.ActivityCompat;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -126,6 +131,19 @@ class CWebViewPluginInterface {
             }
         }});
     }
+
+    @JavascriptInterface
+    public void saveDataURL(final String fileName, final String dataURL) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mPlugin.IsInitialized()) {
+                mPlugin.SaveDataURL(fileName, dataURL);
+            }
+        }});
+    }
 }
 
 public class CWebViewPlugin extends Fragment {
@@ -152,6 +170,8 @@ public class CWebViewPlugin extends Fragment {
     private Pattern mHookRegex;
 
     private static final int INPUT_FILE_REQUEST_CODE = 1;
+    // private String mBase64Data;
+    // private static final int OUTPUT_FILE_REQUEST_CODE = 2;
     private ValueCallback<Uri> mUploadMessage;
     private ValueCallback<Uri[]> mFilePathCallback;
     private Uri mCameraPhotoUri;
@@ -166,6 +186,86 @@ public class CWebViewPlugin extends Fragment {
 
     private String mBasicAuthUserName;
     private String mBasicAuthPassword;
+
+    public void SaveDataURL(final String fileName, final String dataURL) {
+        if (!dataURL.startsWith("data:")) {
+            return;
+        }
+        String tmp = dataURL.substring("data:".length());
+        int i = tmp.indexOf(";");
+        if (i < 0) {
+            return;
+        }
+        final String base64data = tmp.substring(i + 1 + "base64,".length());
+        final String type = tmp.substring(0, i);
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ContentValues values = new ContentValues();
+                values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                values.put(MediaStore.MediaColumns.MIME_TYPE, type);
+                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                ContentResolver resolver = a.getContentResolver();
+                Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                if (uri != null) {
+                    byte[] bytes = Base64.decode(base64data, Base64.DEFAULT);
+                    try (OutputStream out = resolver.openOutputStream(uri)) {
+                        if (out != null) {
+                            out.write(bytes);
+                        }
+                    } catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                values.clear();
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                resolver.update(uri, values, null, null);
+            } else {
+                File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+                String parent = file.getParent();
+                String name = file.getName();
+                String ext = "";
+                int i = name.lastIndexOf(".");
+                if (i >= 0) {
+                    ext = name.substring(i);
+                    name = name.substring(0, i);
+                }
+                for (i = 1; file.exists(); i++) {
+                    file = new File(file.getParent(), name + " (" + i + ")" + ext);
+                }
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    byte[] bytes = Base64.decode(base64data, Base64.DEFAULT);
+                    if (out != null) {
+                        out.write(bytes);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }});
+    }
+
+    // public void SaveDataURL(final String fileName, final String dataURL) {
+    //     if (mBase64Data != null) {
+    //         return;
+    //     }
+    //     if (!dataURL.startsWith("data:")) {
+    //         return;
+    //     }
+    //     String tmp = dataURL.substring("data:".length());
+    //     int i = tmp.indexOf(";");
+    //     if (i < 0) {
+    //         return;
+    //     }
+    //     mBase64Data = tmp.substring(i + 1 + "base64,".length());
+    //     final String type = tmp.substring(0, i);
+    //     Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+    //     intent.addCategory(Intent.CATEGORY_OPENABLE);
+    //     intent.setType(type);
+    //     intent.putExtra(Intent.EXTRA_TITLE, fileName);
+    //     startActivityForResult(intent, OUTPUT_FILE_REQUEST_CODE);
+    // }
 
     // cf. https://github.com/gree/unity-webview/issues/753
     // cf. https://github.com/mixpanel/mixpanel-android/issues/400
@@ -198,6 +298,24 @@ public class CWebViewPlugin extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // if (requestCode == OUTPUT_FILE_REQUEST_CODE) {
+        //     String base64data = mBase64Data;
+        //     mBase64Data = null;
+        //     // Check that the response is a good one
+        //     if (resultCode == Activity.RESULT_OK) {
+        //         final Activity a = UnityPlayer.currentActivity;
+        //         final Uri uri = data.getData();
+        //         final byte[] bytes = Base64.decode(base64data, Base64.DEFAULT);
+        //         try (OutputStream out = getActivity().getContentResolver().openOutputStream(uri)) {
+        //             if (out != null) {
+        //                 out.write(bytes);
+        //             }
+        //         } catch(Exception e) {
+        //             e.printStackTrace();
+        //         }
+        //     }
+        //     return;
+        // }
         if (requestCode != INPUT_FILE_REQUEST_CODE) {
             super.onActivityResult(requestCode, resultCode, data);
             return;
@@ -342,8 +460,7 @@ public class CWebViewPlugin extends Fragment {
         PauseUnityInternal();
     }
 //END MATIFIC SPECIFIC
-
-    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua) {
+    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         instanceCount++;
@@ -375,7 +492,7 @@ public class CWebViewPlugin extends Fragment {
             mAllowAudioCapture = false;
             mCustomHeaders = new Hashtable<String, String>();
 
-            final WebView webView = new WebView(a);
+            final WebView webView = (radius > 0) ? new RoundedWebView(a, radius) : new WebView(a);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     ApplicationInfo ai = a.getPackageManager().getApplicationInfo(a.getPackageName(), 0);
@@ -403,7 +520,8 @@ public class CWebViewPlugin extends Fragment {
                     final String[] requestedResources = request.getResources();
                     for (String r : requestedResources) {
                         if ((r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) && mAllowVideoCapture)
-                            || (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) && mAllowAudioCapture)) {
+                            || (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) && mAllowAudioCapture)
+                            || r.equals(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
                             request.grant(requestedResources);
                             // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             //     a.runOnUiThread(new Runnable() {public void run() {
@@ -658,11 +776,11 @@ public class CWebViewPlugin extends Fragment {
                         return false;
                     }
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-//                    PackageManager pm = a.getPackageManager();
-//                    List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
-//                    if (apps.size() > 0) {
-//                        view.getContext().startActivity(intent);
-//                    }
+                    // PackageManager pm = a.getPackageManager();
+                    // List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+                    // if (apps.size() > 0) {
+                    //     view.getContext().startActivity(intent);
+                    // }
                     try {
                         view.getContext().startActivity(intent);
                     } catch (ActivityNotFoundException ex) {
@@ -1104,6 +1222,19 @@ public class CWebViewPlugin extends Fragment {
         }
         a.runOnUiThread(new Runnable() {public void run() {
             mAllowAudioCapture = allowed;
+        }});
+    }
+
+    public void SetNetworkAvailable(final boolean networkUp) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.setNetworkAvailable(networkUp);
         }});
     }
 

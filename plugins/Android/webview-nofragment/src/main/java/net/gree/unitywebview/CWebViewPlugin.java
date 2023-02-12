@@ -22,6 +22,7 @@
 package net.gree.unitywebview;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -178,7 +179,7 @@ public class CWebViewPlugin {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua) {
+    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         if (CWebViewPlugin.isDestroyed(a)) {
@@ -193,7 +194,7 @@ public class CWebViewPlugin {
             mAllowAudioCapture = false;
             mCustomHeaders = new Hashtable<String, String>();
 
-            final WebView webView = new WebView(a);
+            final WebView webView = (radius > 0) ? new RoundedWebView(a, radius) : new WebView(a);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     ApplicationInfo ai = a.getPackageManager().getApplicationInfo(a.getPackageName(), 0);
@@ -221,7 +222,8 @@ public class CWebViewPlugin {
                     final String[] requestedResources = request.getResources();
                     for (String r : requestedResources) {
                         if ((r.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) && mAllowVideoCapture)
-                            || (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) && mAllowAudioCapture)) {
+                            || (r.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) && mAllowAudioCapture)
+                            || r.equals(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
                             request.grant(requestedResources);
                             // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             //     a.runOnUiThread(new Runnable() {public void run() {
@@ -440,9 +442,13 @@ public class CWebViewPlugin {
                     }
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     PackageManager pm = a.getPackageManager();
-                    List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
-                    if (apps.size() > 0) {
+                    // List<ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+                    // if (apps.size() > 0) {
+                    //     view.getContext().startActivity(intent);
+                    // }
+                    try {
                         view.getContext().startActivity(intent);
+                    } catch (ActivityNotFoundException ex) {
                     }
                     return true;
                 }
@@ -803,6 +809,19 @@ public class CWebViewPlugin {
         }
         a.runOnUiThread(new Runnable() {public void run() {
             mAllowAudioCapture = allowed;
+        }});
+    }
+
+    public void SetNetworkAvailable(final boolean networkUp) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            mWebView.setNetworkAvailable(networkUp);
         }});
     }
 

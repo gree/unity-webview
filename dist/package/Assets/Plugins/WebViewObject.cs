@@ -84,6 +84,10 @@ public class WebViewObject : MonoBehaviour
     bool mIsKeyboardVisible;
     int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
+#if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
+    float androidNetworkReachabilityCheckT0 = -1.0f;
+    NetworkReachability? androidNetworkReachability0 = null;
+#endif
     
     void OnApplicationPause(bool paused)
     {
@@ -101,6 +105,19 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == null)
             return;
+#if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
+        var t = Time.time;
+        if (t - 1.0f >= androidNetworkReachabilityCheckT0)
+        {
+            androidNetworkReachabilityCheckT0 = t;
+            var androidNetworkReachability = Application.internetReachability;
+            if (androidNetworkReachability0 != androidNetworkReachability)
+            {
+                androidNetworkReachability0 = androidNetworkReachability;
+                webView.Call("SetNetworkAvailable", androidNetworkReachability != NetworkReachability.NotReachable);
+            }
+        }
+#endif
         if (mResumedTimestamp != 0.0f && Time.realtimeSinceStartup - mResumedTimestamp > 0.5f)
         {
             mResumedTimestamp = 0.0f;
@@ -303,7 +320,7 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures, int radius);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -406,12 +423,14 @@ public class WebViewObject : MonoBehaviour
         bool transparent = false,
         bool zoom = true,
         string ua = "",
+        int radius = 0,
         // android
         int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
         // ios
         bool enableWKWebView = true,
         int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
         bool wkAllowsLinkPreview = true,
+        bool wkAllowsBackForwardNavigationGestures = true,
         // editor
         bool separated = false)
     {
@@ -477,10 +496,10 @@ public class WebViewObject : MonoBehaviour
         rect = new Rect(0, 0, Screen.width, Screen.height);
         OnApplicationFocus(true);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview);
+        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures, radius);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
-        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua);
+        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
 
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
         {

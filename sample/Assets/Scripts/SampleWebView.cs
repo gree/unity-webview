@@ -118,6 +118,7 @@ public class SampleWebView : MonoBehaviour
             //transparent: false,
             //zoom: true,
             //ua: "custom user agent string",
+            //radius: 0,  // rounded corner radius in pixel
             //// android
             //androidForceDarkMode: 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
             //// ios
