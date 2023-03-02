@@ -318,17 +318,17 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
 - (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView
 {
-    [self addMessage:[NSString stringWithFormat:@"E%@",@"webViewWebContentProcessDidTerminate"]];
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",@"webViewWebContentProcessDidTerminate"]];
 }
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",[error description]]];
 }
 
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",[error description]]];
 }
 
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
@@ -352,10 +352,10 @@ static std::unordered_map<int, int> _nskey2cgkey{
         [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if ([url hasPrefix:@"unity:"]) {
-        [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
+        [self addMessage:[NSString stringWithFormat:@"CallFromJS:%@",[url substringFromIndex:6]]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
-        [self addMessage:[NSString stringWithFormat:@"H%@",url]];
+        [self addMessage:[NSString stringWithFormat:@"CallOnHooked:%@",url]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
@@ -371,9 +371,22 @@ static std::unordered_map<int, int> _nskey2cgkey{
                 return;
             }
         }
-        [self addMessage:[NSString stringWithFormat:@"S%@",url]];
+        [self addMessage:[NSString stringWithFormat:@"CallOnStarted:%@",url]];
         decisionHandler(WKNavigationActionPolicyAllow);
     }
+}
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+
+    if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
+
+        NSHTTPURLResponse * response = (NSHTTPURLResponse *)navigationResponse.response;
+        if (response.statusCode >= 400) {
+            [self addMessage:[NSString stringWithFormat:@"CallOnHttpError:%ld",(long)response.statusCode]];
+        }
+
+    }
+    decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController
@@ -381,7 +394,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
     // Log out the message received
     NSLog(@"Received event %@", message.body);
-    [self addMessage:[NSString stringWithFormat:@"J%@",message.body]];
+    [self addMessage:[NSString stringWithFormat:@"CallFromJS:%@",message.body]];
 
     /*
     // Then pull something from the device using the message body
@@ -403,7 +416,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
     if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0
         && [webView URL] != nil) {
-        [self addMessage:[NSString stringWithFormat:@"L%s",[[[webView URL] absoluteString] UTF8String]]];
+        [self addMessage:[NSString stringWithFormat:@"CallOnLoaded:%@",[[webView URL] absoluteString]]];
     }
 }
 
