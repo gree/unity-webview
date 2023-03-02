@@ -1285,21 +1285,27 @@ public class WebViewObject : MonoBehaviour
             string s = _CWebViewPlugin_GetMessage(webView);
             if (s == null)
                 break;
-            switch (s[0]) {
-            case 'E':
-                CallOnError(s.Substring(1));
+            var i = s.IndexOf(':', 0);
+            if (i == -1)
+                continue;
+            switch (s.Substring(0, i)) {
+            case "CallFromJS":
+                CallFromJS(s.Substring(i + 1));
                 break;
-            case 'S':
-                CallOnStarted(s.Substring(1));
+            case "CallOnError":
+                CallOnError(s.Substring(i + 1));
                 break;
-            case 'L':
-                CallOnLoaded(s.Substring(1));
+            case "CallOnHttpError":
+                CallOnHttpError(s.Substring(i + 1));
                 break;
-            case 'J':
-                CallFromJS(s.Substring(1));
+            case "CallOnLoaded":
+                CallOnLoaded(s.Substring(i + 1));
                 break;
-            case 'H':
-                CallOnHooked(s.Substring(1));
+            case "CallOnStarted":
+                CallOnStarted(s.Substring(i + 1));
+                break;
+            case "CallOnHooked":
+                CallOnHooked(s.Substring(i + 1));
                 break;
             }
         }
