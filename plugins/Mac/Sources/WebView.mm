@@ -30,7 +30,7 @@
 static BOOL s_inEditor;
 static BOOL s_useMetal;
 
-@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
+@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler, NSWindowDelegate>
 {
     NSWindow *window;
     NSWindowController *windowController;
@@ -196,6 +196,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
                                                  defer:NO];
         [window setContentView:webView];
         [window orderFront:NSApp];
+        [window setDelegate:self];
         windowController = [[NSWindowController alloc] initWithWindow:window];
     }
     return self;
@@ -319,6 +320,11 @@ static std::unordered_map<int, int> _nskey2cgkey{
 - (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView
 {
     [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",@"webViewWebContentProcessDidTerminate"]];
+}
+
+- (void)windowWillClose:(NSNotification *)notification
+{
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",@"windowWillClose"]];
 }
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
