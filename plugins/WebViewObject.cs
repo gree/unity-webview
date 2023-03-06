@@ -521,7 +521,14 @@ public class WebViewObject : MonoBehaviour
             return;
         _CWebViewPlugin_Destroy(webView);
         webView = IntPtr.Zero;
-        Destroy(texture);
+        if (Application.isPlaying)
+        {
+            Destroy(texture);
+        }
+        else
+        {
+            DestroyImmediate(texture);
+        }
 #elif UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
