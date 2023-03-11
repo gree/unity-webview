@@ -486,7 +486,7 @@ public class CWebViewPlugin extends Fragment {
                     super.onHideCustomView();
                     if (layout != null) {
                         layout.removeView(mVideoView);
-                        layout.setBackgroundColor(0x00000000);
+                        layout.setBackgroundColor(0xff000000);
                         mVideoView = null;
                     }
                 }
@@ -786,6 +786,7 @@ public class CWebViewPlugin extends Fragment {
 
             if (layout == null || layout.getParent() != a.findViewById(android.R.id.content)) {
                 layout = new FrameLayout(a);
+                layout.setBackgroundColor(0xff000000);
                 a.addContentView(
                     layout,
                     new LayoutParams(
@@ -793,6 +794,14 @@ public class CWebViewPlugin extends Fragment {
                         LayoutParams.MATCH_PARENT));
                 layout.setFocusable(true);
                 layout.setFocusableInTouchMode(true);
+                {
+                    // cf. https://stackoverflow.com/questions/6759036/how-to-send-view-to-back-how-to-control-the-z-order-programmatically/19872801#19872801
+                    ViewGroup parent = (ViewGroup)layout.getParent();
+                    if (parent != null) {
+                        parent.removeView(layout);
+                        parent.addView(layout, 0);
+                    }
+                }
             }
             layout.addView(
                 webView,
