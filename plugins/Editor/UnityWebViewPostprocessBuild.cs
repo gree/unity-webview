@@ -75,6 +75,8 @@ public class UnityWebViewPostprocessBuild
                 }
             }
         }
+        changed = (androidManifest.SetApplicationTheme("@style/UnityThemeSelector") || changed);
+        changed = (androidManifest.SetActivityTheme("@style/UnityThemeSelector.Translucent") || changed);
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
         changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
@@ -297,6 +299,25 @@ internal class AndroidManifest : AndroidXmlDocument {
         bool changed = false;
         if (ApplicationElement.GetAttribute("usesCleartextTraffic", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
             ApplicationElement.SetAttribute("usesCleartextTraffic", AndroidXmlNamespace, (enabled) ? "true" : "false");
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool SetApplicationTheme(string theme) {
+        bool changed = false;
+        if (ApplicationElement.GetAttribute("theme", AndroidXmlNamespace) != theme) {
+            ApplicationElement.SetAttribute("theme", AndroidXmlNamespace, theme);
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool SetActivityTheme(string theme) {
+        bool changed = false;
+        var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity.GetAttribute("theme", AndroidXmlNamespace) != theme) {
+            activity.SetAttribute("theme", AndroidXmlNamespace, theme);
             changed = true;
         }
         return changed;
