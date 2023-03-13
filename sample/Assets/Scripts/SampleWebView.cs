@@ -24,6 +24,9 @@ using UnityEngine;
 using UnityEngine.Networking;
 #endif
 using UnityEngine.UI;
+#if !UNITY_EDITOR && UNITY_ANDROID
+using UnityEngine.Android;
+#endif
 
 public class SampleWebView : MonoBehaviour
 {
@@ -31,8 +34,29 @@ public class SampleWebView : MonoBehaviour
     public Text status;
     WebViewObject webViewObject;
 
+#if !UNITY_EDITOR && UNITY_ANDROID
+    bool inRequestingCameraPermission;
+
+    void OnApplicationFocus(bool hasFocus)
+    {
+        if (inRequestingCameraPermission && hasFocus) {
+            inRequestingCameraPermission = false;
+        }
+    }
+#endif
+
     IEnumerator Start()
     {
+#if !UNITY_EDITOR && UNITY_ANDROID
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+        {
+            inRequestingCameraPermission = true;
+            Permission.RequestUserPermission(Permission.Camera);
+        }        
+        while (inRequestingCameraPermission) {
+            yield return new WaitForSeconds(0.5f);
+        }
+#endif
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
         webViewObject.Init(
             cb: (msg) =>
@@ -149,6 +173,7 @@ public class SampleWebView : MonoBehaviour
 
         //webViewObject.SetScrollbarsVisibility(true);
 
+        webViewObject.SetCameraAccess(true);
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
