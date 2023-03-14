@@ -210,6 +210,11 @@ For allowing camera access (`navigator.mediaDevices.getUserMedia({ video:true })
 ```xml
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-feature android:name="android.hardware.camera" />
+  <queries>
+    <intent>
+      <action android:name="android.media.action.IMAGE_CAPTURE" />
+    </intent>
+  </queries>
 ```
 
 and call the following on runtime.
