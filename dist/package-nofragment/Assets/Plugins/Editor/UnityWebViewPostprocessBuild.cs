@@ -373,6 +373,21 @@ internal class AndroidManifest : AndroidXmlDocument {
             ManifestElement.AppendChild(elem);
             changed = true;
         }
+        // cf. https://developer.android.com/training/package-visibility/declaring
+        if (SelectNodes("/manifest/queries", nsMgr).Count == 0) {
+            var elem = CreateElement("queries");
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/queries/intent/action[@android:name='android.media.action.IMAGE_CAPTURE']", nsMgr).Count == 0) {
+            var action = CreateElement("action");
+            action.Attributes.Append(CreateAndroidAttribute("name", "android.media.action.IMAGE_CAPTURE"));
+            var intent = CreateElement("intent");
+            intent.AppendChild(action);
+            var queries = SelectSingleNode("/manifest/queries") as XmlElement;
+            queries.AppendChild(intent);
+            changed = true;
+        }
         return changed;
     }
 
