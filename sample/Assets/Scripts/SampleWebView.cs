@@ -61,6 +61,10 @@ public class SampleWebView : MonoBehaviour
             {
                 Debug.Log(string.Format("CallOnHooked[{0}]", msg));
             },
+            cookies: (msg) =>
+            {
+                Debug.Log(string.Format("CallOnCookies[{0}]", msg));
+            },
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));

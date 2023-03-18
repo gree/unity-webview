@@ -55,6 +55,7 @@ public class WebViewObject : MonoBehaviour
     Callback onStarted;
     Callback onLoaded;
     Callback onHooked;
+    Callback onCookies;
     bool visibility;
     bool alertDialogEnabled;
     bool scrollBounceEnabled;
@@ -150,6 +151,9 @@ public class WebViewObject : MonoBehaviour
                 break;
             case "CallOnHooked":
                 CallOnHooked(s.Substring(i + 1));
+                break;
+            case "CallOnCookies":
+                CallOnCookies(s.Substring(i + 1));
                 break;
             case "SetKeyboardVisible":
                 SetKeyboardVisible(s.Substring(i + 1));
@@ -302,11 +306,11 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
     [DllImport("WebView")]
-    private static extern void   _CWebViewPlugin_ClearCookies();
+    private static extern void _CWebViewPlugin_ClearCookies();
     [DllImport("WebView")]
-    private static extern void   _CWebViewPlugin_SaveCookies();
+    private static extern void _CWebViewPlugin_SaveCookies();
     [DllImport("WebView")]
-    private static extern string _CWebViewPlugin_GetCookies(string url);
+    private static extern void _CWebViewPlugin_GetCookies(IntPtr instance, string url);
     [DllImport("WebView")]
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
@@ -363,23 +367,23 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_Reload(
         IntPtr instance);
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
+    private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
     [DllImport("__Internal")]
     private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
+    private static extern void _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
+    private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_ClearCookies();
+    private static extern void _CWebViewPlugin_ClearCookies();
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_SaveCookies();
+    private static extern void _CWebViewPlugin_SaveCookies();
     [DllImport("__Internal")]
-    private static extern string _CWebViewPlugin_GetCookies(string url);
+    private static extern void _CWebViewPlugin_GetCookies(IntPtr instance, string url);
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
+    private static extern void _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
     [DllImport("__Internal")]
-    private static extern void   _CWebViewPlugin_ClearCache(IntPtr instance, bool includeDiskFiles);
+    private static extern void _CWebViewPlugin_ClearCache(IntPtr instance, bool includeDiskFiles);
 #elif UNITY_WEBGL
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_init(string name);
@@ -411,6 +415,7 @@ public class WebViewObject : MonoBehaviour
         Callback ld = null,
         Callback started = null,
         Callback hooked = null,
+        Callback cookies = null,
         bool transparent = false,
         bool zoom = true,
         string ua = "",
@@ -436,6 +441,7 @@ public class WebViewObject : MonoBehaviour
         onStarted = started;
         onLoaded = ld;
         onHooked = hooked;
+        onCookies = cookies;
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_init(name);
@@ -1086,6 +1092,13 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    public void CallOnCookies(string cookies)
+    {
+        if (onCookies != null)
+        {
+            onCookies(cookies);
+        }
+    }
 
     public void AddCustomHeader(string headerKey, string headerValue)
     {
@@ -1191,25 +1204,22 @@ public class WebViewObject : MonoBehaviour
     }
 
 
-    public string GetCookies(string url)
+    public void GetCookies(string url)
     {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
-        return "";
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
-        return "";
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
-            return "";
-        return _CWebViewPlugin_GetCookies(url);
+            return;
+        _CWebViewPlugin_GetCookies(webView, url);
 #elif UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
-            return "";
-        return webView.Call<string>("GetCookies", url);
+            return;
+        webView.Call("GetCookies", url);
 #else
         //TODO: UNSUPPORTED
-        return "";
 #endif
     }
 
@@ -1306,6 +1316,9 @@ public class WebViewObject : MonoBehaviour
                 break;
             case "CallOnHooked":
                 CallOnHooked(s.Substring(i + 1));
+                break;
+            case "CallOnCookies":
+                CallOnCookies(s.Substring(i + 1));
                 break;
             }
         }

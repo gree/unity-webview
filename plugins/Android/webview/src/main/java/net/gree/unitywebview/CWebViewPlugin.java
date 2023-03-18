@@ -650,7 +650,7 @@ public class CWebViewPlugin extends Fragment {
 
                         if (Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT_WATCH) {
                             // cf. https://issuetracker.google.com/issues/36989494
-                            String cookies = GetCookies(url);
+                            String cookies = CookieManager.getInstance().getCookie(url);
                             if (cookies != null && !cookies.isEmpty()) {
                                 urlCon.addRequestProperty("Cookie", cookies);
                             }
@@ -1343,10 +1343,10 @@ public class CWebViewPlugin extends Fragment {
         }
     }
 
-    public String GetCookies(String url)
+    public void GetCookies(String url)
     {
         CookieManager cookieManager = CookieManager.getInstance();
-        return cookieManager.getCookie(url);
+        mWebViewPlugin.call("CallOnCookies", cookieManager.getCookie(url));
     }
 
     public void SetCookies(String url, List<String> setCookieHeaders)
