@@ -239,7 +239,7 @@ public class SampleWebView : MonoBehaviour
         x += 90;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "c")) {
-            Debug.Log(webViewObject.GetCookies(Url));
+            webViewObject.GetCookies(Url);
         }
         x += 90;
 
