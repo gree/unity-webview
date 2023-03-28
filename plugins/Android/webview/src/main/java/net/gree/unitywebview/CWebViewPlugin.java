@@ -320,8 +320,8 @@ public class CWebViewPlugin extends Fragment {
                 }
             }
             webView.setVisibility(View.GONE);
-            webView.setFocusable(true);
-            webView.setFocusableInTouchMode(true);
+            webView.setFocusable(false);
+            webView.setFocusableInTouchMode(false);
 
             // webView.setWebChromeClient(new WebChromeClient() {
             //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
@@ -669,8 +669,8 @@ public class CWebViewPlugin extends Fragment {
                     new LayoutParams(
                         LayoutParams.MATCH_PARENT,
                         LayoutParams.MATCH_PARENT));
-                layout.setFocusable(true);
-                layout.setFocusableInTouchMode(true);
+                layout.setFocusable(false);
+                layout.setFocusableInTouchMode(false);
             }
             layout.addView(
                 webView,
