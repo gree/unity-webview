@@ -30,8 +30,11 @@ using UnityEngine.Android;
 
 public class SampleWebView : MonoBehaviour
 {
+    public GameObject canvas;
+    public GameObject webViewImagePrefab;
     public string Url;
     public Text status;
+    GameObject webViewImage;
     WebViewObject webViewObject;
 
 #if !UNITY_EDITOR && UNITY_ANDROID
@@ -45,9 +48,21 @@ public class SampleWebView : MonoBehaviour
     }
 #endif
 
+    // cf. https://answers.unity.com/questions/1013011/convert-recttransform-rect-to-screen-space.html?childToView=1628573#answer-1628573
+    Bounds GetRectTransformBounds(RectTransform transform)
+    {
+        var corners = new Vector3[4];
+        transform.GetWorldCorners(corners);
+        var bounds = new Bounds(corners[0], Vector3.zero);
+        for (var i = 1; i < 4; i++)
+        {
+            bounds.Encapsulate(corners[i]);
+        }
+        return bounds;
+    }
+
     IEnumerator Start()
     {
-        webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
 #if !UNITY_EDITOR && UNITY_ANDROID
         if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
         {
@@ -58,6 +73,9 @@ public class SampleWebView : MonoBehaviour
             yield return new WaitForSeconds(0.5f);
         }
 #endif
+        webViewImage = Instantiate(webViewImagePrefab, Vector3.zero, Quaternion.identity);
+        webViewImage.transform.SetParent(canvas.transform, false);
+        webViewObject = webViewImage.AddComponent<WebViewObject>();
         webViewObject.Init(
             cb: (msg) =>
             {
@@ -177,7 +195,14 @@ public class SampleWebView : MonoBehaviour
 
         //webViewObject.SetScrollbarsVisibility(true);
 
-        webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
+        webViewObject.SetCameraAccess(true);
+        var bounds = GetRectTransformBounds(webViewImage.GetComponent<RectTransform>());
+        bounds.Expand(-20);
+        webViewObject.SetMargins(
+            (int)bounds.min.x,
+            (int)(Screen.height - bounds.max.y),
+            (int)(Screen.width - bounds.max.x),
+            (int)bounds.min.y);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
 
@@ -253,9 +278,9 @@ public class SampleWebView : MonoBehaviour
         x += 190;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "*")) {
-            var g = GameObject.Find("WebViewObject");
-            if (g != null) {
-                Destroy(g);
+            if (webViewImage != null) {
+                Destroy(webViewImage);
+                webViewImage = null;
             } else {
                 StartCoroutine(Start());
             }
