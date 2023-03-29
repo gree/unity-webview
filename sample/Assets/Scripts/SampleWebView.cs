@@ -157,6 +157,19 @@ public class SampleWebView : MonoBehaviour
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
 
+        webViewObject.LoadHTML(@"
+<html>
+  <head>
+    <meta http-equiv=""Content-Type"" content=""text/html; charset=UTF-8"">
+    <title>Unity WebView</title>
+  </head>
+  <body>
+    <a href=""https://google.com"">https://google.com</a>
+  </body>
+</html>
+",
+            "/");
+        yield break;
 #if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
