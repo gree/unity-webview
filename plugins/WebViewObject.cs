@@ -32,6 +32,9 @@ using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine.Rendering;
 #endif
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
 
 using Callback = System.Action<string>;
 
@@ -158,6 +161,9 @@ public class WebViewObject : MonoBehaviour
             case "SetKeyboardVisible":
                 SetKeyboardVisible(s.Substring(i + 1));
                 break;
+            case "RequestFileChooserPermissions":
+                RequestFileChooserPermissions();
+                break;
             }
         }
     }
@@ -177,6 +183,59 @@ public class WebViewObject : MonoBehaviour
         }
     }
     
+    /// Called from Java native plugin to request permissions for the file chooser.
+    public void RequestFileChooserPermissions()
+    {
+        var permissions = new List<string>();
+        if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
+        {
+            permissions.Add(Permission.ExternalStorageRead);
+        }
+        if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
+        {
+            permissions.Add(Permission.ExternalStorageWrite);
+        }
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+        {
+            permissions.Add(Permission.Camera);
+        }
+        if (permissions.Count > 0)
+        {
+            var grantedCount = 0;
+            var deniedCount = 0;
+            var callbacks = new PermissionCallbacks();
+            callbacks.PermissionGranted += (permission) =>
+            {
+                grantedCount++;
+                if (grantedCount + deniedCount == permissions.Count)
+                {
+                    webView.Call("OnRequestFileChooserPermissionsResult", grantedCount == permissions.Count);
+                }
+            };
+            callbacks.PermissionDenied += (permission) =>
+            {
+                deniedCount++;
+                if (grantedCount + deniedCount == permissions.Count)
+                {
+                    webView.Call("OnRequestFileChooserPermissionsResult", grantedCount == permissions.Count);
+                }
+            };
+            callbacks.PermissionDeniedAndDontAskAgain += (permission) =>
+            {
+                deniedCount++;
+                if (grantedCount + deniedCount == permissions.Count)
+                {
+                    webView.Call("OnRequestFileChooserPermissionsResult", grantedCount == permissions.Count);
+                }
+            };
+            Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
+        }
+        else
+        {
+            webView.Call("OnRequestFileChooserPermissionsResult", true);
+        }
+    }
+
     public int AdjustBottomMargin(int bottom)
     {
         if (BottomAdjustmentDisabled())

@@ -130,8 +130,6 @@ class CWebViewPluginInterface {
 
 public class CWebViewPlugin extends Fragment {
 
-    private static final int REQUEST_CODE = 100001;
-
     private static FrameLayout layout = null;
     private Queue<String> mMessages = new ArrayDeque<String>();
     private WebView mWebView;
@@ -262,17 +260,19 @@ public class CWebViewPlugin extends Fragment {
     public CWebViewPlugin() {
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if (requestCode == REQUEST_CODE) {
-            if (grantResults != null && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+    public void OnRequestFileChooserPermissionsResult(final boolean granted) {
+        final Activity a = UnityPlayer.currentActivity;
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            if (granted) {
                 ProcessChooser();
             } else {
                 mFilePathCallback.onReceiveValue(null);
                 mFilePathCallback = null;
             }
-        }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }});
     }
 
     @Override
@@ -365,34 +365,6 @@ public class CWebViewPlugin extends Fragment {
             return t.get();
         } catch (Exception e) {
             return false;
-        }
-    }
-
-    public boolean verifyStoragePermissions(final Activity activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PackageManager pm = activity.getPackageManager();
-            int hasPerm1 = pm.checkPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE, activity.getPackageName());
-            int hasPerm2 = pm.checkPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE, activity.getPackageName());
-            int hasPerm3 = pm.checkPermission(android.Manifest.permission.CAMERA, activity.getPackageName());
-            if (hasPerm1 != PackageManager.PERMISSION_GRANTED
-                || hasPerm2 != PackageManager.PERMISSION_GRANTED
-                || hasPerm3 != PackageManager.PERMISSION_GRANTED) {
-                if (CWebViewPlugin.isDestroyed(activity)) {
-                    return false;
-                }
-                activity.runOnUiThread(new Runnable() {public void run() {
-                    String[] PERMISSIONS = {
-                        Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.CAMERA
-                    };
-                    requestPermissions(PERMISSIONS, REQUEST_CODE);
-                }});
-                return false;
-            }
-            return true;
-        } else {
-            return true;
         }
     }
 
@@ -574,11 +546,7 @@ public class CWebViewPlugin extends Fragment {
                     // cf. https://github.com/googlearchive/chromium-webview-samples/blob/master/input-file-example/app/src/main/java/inputfilesample/android/chrome/google/com/inputfilesample/MainFragment.java
 
                     mFilePathCallback = filePathCallback;
-
-                    if (!verifyStoragePermissions(a)) return true;
-
-                    ProcessChooser();
-
+                    MyUnitySendMessage(gameObject, "RequestFileChooserPermissions", "");
                     return true;
                 }
 
