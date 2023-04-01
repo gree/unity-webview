@@ -201,6 +201,7 @@ public class WebViewObject : MonoBehaviour
         }
         if (permissions.Count > 0)
         {
+#if UNITY_2020_2_OR_NEWER
             var grantedCount = 0;
             var deniedCount = 0;
             var callbacks = new PermissionCallbacks();
@@ -229,12 +230,71 @@ public class WebViewObject : MonoBehaviour
                 }
             };
             Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
+#else
+            StartCoroutine(RequestFileChooserPermissionsCoroutine(permissions.ToArray()));
+#endif
         }
         else
         {
             webView.Call("OnRequestFileChooserPermissionsResult", true);
         }
     }
+
+#if UNITY_2020_2_OR_NEWER
+#else
+    int mRequestPermissionPhase;
+
+    IEnumerator RequestFileChooserPermissionsCoroutine(string[] permissions)
+    {
+        foreach (var permission in permissions)
+        {
+            mRequestPermissionPhase = 0;
+            Permission.RequestUserPermission(permission);
+            // waiting permission dialog that may not be opened.
+            for (var i = 0; i < 8 && mRequestPermissionPhase == 0; i++)
+            {
+                yield return new WaitForSeconds(0.25f);
+            }
+            if (mRequestPermissionPhase == 0)
+            {
+                // permission dialog was not opened.
+                continue;
+            }
+            while (mRequestPermissionPhase == 1)
+            {
+                yield return new WaitForSeconds(0.3f);
+            }
+        }
+        yield return new WaitForSeconds(0.3f);
+        var granted = 0;
+        foreach (var permission in permissions)
+        {
+            if (Permission.HasUserAuthorizedPermission(permission))
+            {
+                granted++;
+            }
+        }
+        webView.Call("OnRequestFileChooserPermissionsResult", granted == permissions.Length);
+    }
+
+    void OnApplicationFocus(bool hasFocus)
+    {
+        if (hasFocus)
+        {
+            if (mRequestPermissionPhase == 1)
+            {
+                mRequestPermissionPhase = 2;
+            }
+        }
+        else
+        {
+            if (mRequestPermissionPhase == 0)
+            {
+                mRequestPermissionPhase = 1;
+            }
+        }
+    }
+#endif
 
     public int AdjustBottomMargin(int bottom)
     {
@@ -550,7 +610,6 @@ public class WebViewObject : MonoBehaviour
             };
         })()");
         rect = new Rect(0, 0, Screen.width, Screen.height);
-        OnApplicationFocus(true);
 #elif UNITY_IPHONE
         webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures, radius);
 #elif UNITY_ANDROID
