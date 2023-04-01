@@ -87,6 +87,11 @@ public class SampleWebView : MonoBehaviour
                       }
                     }
                   }
+                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.saveDataURL) {
+                    window.Unity.saveDataURL = function(fileName, dataURL) {
+                      window.webkit.messageHandlers.saveDataURL.postMessage(fileName + '\t' + dataURL);
+                    }
+                  }
                 ");
 #else
                 webViewObject.EvaluateJS(@"
@@ -105,6 +110,11 @@ public class SampleWebView : MonoBehaviour
                         iframe.parentNode.removeChild(iframe);
                         iframe = null;
                       }
+                    }
+                  }
+                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.saveDataURL) {
+                    window.Unity.saveDataURL = function(fileName, dataURL) {
+                      window.webkit.messageHandlers.saveDataURL.postMessage(fileName + '\t' + dataURL);
                     }
                   }
                 ");

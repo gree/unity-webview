@@ -136,6 +136,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
         WKUserContentController *controller = [[WKUserContentController alloc] init];
         [controller addScriptMessageHandler:self name:@"unityControl"];
+        [controller addScriptMessageHandler:self name:@"saveDataURL"];
         if (!zoom) {
             WKUserScript *script
                 = [[WKUserScript alloc]
@@ -364,9 +365,57 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
       didReceiveScriptMessage:(WKScriptMessage *)message {
 
     // Log out the message received
-    NSLog(@"Received event %@", message.body);
-    UnitySendMessage([gameObjectName UTF8String], "CallFromJS",
-                     [[NSString stringWithFormat:@"%@", message.body] UTF8String]);
+    //NSLog(@"Received event %@", message.body);
+    if ([message.name isEqualToString:@"unityControl"]) {
+        UnitySendMessage([gameObjectName UTF8String], "CallFromJS", [[NSString stringWithFormat:@"%@", message.body] UTF8String]);
+    } else if ([message.name isEqualToString:@"saveDataURL"]) {
+        NSRange range = [message.body rangeOfString:@"\t"];
+        if (range.location == NSNotFound) {
+            return;
+        }
+        NSString *fileName = [[message.body substringWithRange:NSMakeRange(0, range.location)] lastPathComponent];
+        NSString *dataURL = [message.body substringFromIndex:(range.location + 1)];
+        range = [dataURL rangeOfString:@"data:"];
+        if (range.location != 0) {
+            return;
+        }
+        NSString *tmp = [dataURL substringFromIndex:[@"data:" length]];
+        range = [tmp rangeOfString:@";"];
+        if (range.location == NSNotFound) {
+            return;
+        }
+        NSString *base64data = [tmp substringFromIndex:(range.location + 1 + [@"base64," length])];
+        NSString *type = [tmp substringWithRange:NSMakeRange(0, range.location)];
+        NSData *data = [[NSData alloc] initWithBase64EncodedString:base64data options:0];
+        NSString *path = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
+        path = [path stringByAppendingString:@"/Downloads"];
+        BOOL isDir;
+        NSError *err = nil;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir]) {
+            if (!isDir) {
+                return;
+            }
+        } else {
+            [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&err];
+            if (err != nil) {
+                return;
+            }
+        }
+        NSString *prefix  = [path stringByAppendingString:@"/"];
+        path = [prefix stringByAppendingString:fileName];
+        int count = 0;
+        while ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+            count++;
+            NSString *name = [fileName stringByDeletingPathExtension];
+            NSString *ext = [fileName pathExtension];
+            if (ext.length == 0) {
+                path = [NSString stringWithFormat:@"%@%@ (%d)", prefix, name, count];
+            } else {
+                path = [NSString stringWithFormat:@"%@%@ (%d).%@", prefix, name, count, ext];
+            }
+        }
+        [data writeToFile:path atomically:YES];
+    }
 
     /*
     // Then pull something from the device using the message body
