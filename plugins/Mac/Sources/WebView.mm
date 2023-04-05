@@ -146,10 +146,15 @@ static std::unordered_map<int, int> _nskey2cgkey{
     preferences.javaScriptEnabled = true;
     preferences.plugInsEnabled = true;
     [controller addScriptMessageHandler:self name:@"unityControl"];
+    NSString *str = @"\
+window.Unity = { \
+    call: function(msg) { \
+        window.webkit.messageHandlers.unityControl.postMessage(msg); \
+    } \
+}; \
+";
     if (!zoom) {
-        WKUserScript *script
-            = [[WKUserScript alloc]
-                      initWithSource:@"\
+        str = [str stringByAppendingString:@"\
 (function() { \
     var meta = document.querySelector('meta[name=viewport]'); \
     if (meta == null) { \
@@ -161,10 +166,11 @@ static std::unordered_map<int, int> _nskey2cgkey{
     head.appendChild(meta); \
 })(); \
 "
-                       injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
-                    forMainFrameOnly:YES];
-        [controller addUserScript:script];
+          ];
     }
+    WKUserScript *script
+        = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
+    [controller addUserScript:script];
     configuration.userContentController = controller;
     configuration.processPool = _sharedProcessPool;
     // configuration.preferences = preferences;

@@ -68,66 +68,47 @@ public class SampleWebView : MonoBehaviour
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
-#if UNITY_EDITOR_OSX || (!UNITY_ANDROID && !UNITY_WEBPLAYER && !UNITY_WEBGL)
-                // NOTE: depending on the situation, you might prefer
-                // the 'iframe' approach.
-                // cf. https://github.com/gree/unity-webview/issues/189
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS
+                // NOTE: the following js definition is required only for UIWebView; if
+                // enabledWKWebView is true and runtime has WKWebView, Unity.call is defined
+                // directly by the native plugin.
 #if true
-                webViewObject.EvaluateJS(@"
-                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
-                    window.Unity = {
-                      call: function(msg) {
-                        window.webkit.messageHandlers.unityControl.postMessage(msg);
-                      }
+                var js = @"
+                    if (!(window.webkit && window.webkit.messageHandlers)) {
+                        window.Unity = {
+                            call: function(msg) {
+                                window.location = 'unity:' + msg;
+                            }
+                        };
                     }
-                  } else {
-                    window.Unity = {
-                      call: function(msg) {
-                        window.location = 'unity:' + msg;
-                      }
-                    }
-                  }
-                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.saveDataURL) {
-                    window.Unity.saveDataURL = function(fileName, dataURL) {
-                      window.webkit.messageHandlers.saveDataURL.postMessage(fileName + '\t' + dataURL);
-                    }
-                  }
-                ");
+                ";
 #else
-                webViewObject.EvaluateJS(@"
-                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
-                    window.Unity = {
-                      call: function(msg) {
-                        window.webkit.messageHandlers.unityControl.postMessage(msg);
-                      }
+                // NOTE: depending on the situation, you might prefer this 'iframe' approach.
+                // cf. https://github.com/gree/unity-webview/issues/189
+                var js = @"
+                    if (!(window.webkit && window.webkit.messageHandlers)) {
+                        window.Unity = {
+                            call: function(msg) {
+                                var iframe = document.createElement('IFRAME');
+                                iframe.setAttribute('src', 'unity:' + msg);
+                                document.documentElement.appendChild(iframe);
+                                iframe.parentNode.removeChild(iframe);
+                                iframe = null;
+                            }
+                        };
                     }
-                  } else {
-                    window.Unity = {
-                      call: function(msg) {
-                        var iframe = document.createElement('IFRAME');
-                        iframe.setAttribute('src', 'unity:' + msg);
-                        document.documentElement.appendChild(iframe);
-                        iframe.parentNode.removeChild(iframe);
-                        iframe = null;
-                      }
-                    }
-                  }
-                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.saveDataURL) {
-                    window.Unity.saveDataURL = function(fileName, dataURL) {
-                      window.webkit.messageHandlers.saveDataURL.postMessage(fileName + '\t' + dataURL);
-                    }
-                  }
-                ");
+                ";
 #endif
 #elif UNITY_WEBPLAYER || UNITY_WEBGL
-                webViewObject.EvaluateJS(
-                    "window.Unity = {" +
-                    "   call:function(msg) {" +
-                    "       parent.unityWebView.sendMessage('WebViewObject', msg)" +
-                    "   }" +
-                    "};");
+                var js = @"
+                    window.Unity = {
+                        call:function(msg) {
+                            parent.unityWebView.sendMessage('WebViewObject', msg);
+                        }
+                    };
+                ";
 #endif
-                webViewObject.EvaluateJS(@"Unity.call('ua=' + navigator.userAgent)");
+                webViewObject.EvaluateJS(js + @"Unity.call('ua=' + navigator.userAgent)");
             }
             //transparent: false,
             //zoom: true,
