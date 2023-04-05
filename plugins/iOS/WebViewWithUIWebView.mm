@@ -190,10 +190,18 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         WKUserContentController *controller = [[WKUserContentController alloc] init];
         [controller addScriptMessageHandler:self name:@"unityControl"];
         [controller addScriptMessageHandler:self name:@"saveDataURL"];
+        NSString *str = @"\
+window.Unity = { \
+    call: function(msg) { \
+        window.webkit.messageHandlers.unityControl.postMessage(msg); \
+    }, \
+    saveDataURL: function(fileName, dataURL) { \
+        window.webkit.messageHandlers.saveDataURL.postMessage(fileName + '\t' + dataURL); \
+    } \
+}; \
+";
         if (!zoom) {
-            WKUserScript *script
-                = [[WKUserScript alloc]
-                      initWithSource:@"\
+          str = [str stringByAppendingString:@"\
 (function() { \
     var meta = document.querySelector('meta[name=viewport]'); \
     if (meta == null) { \
@@ -205,10 +213,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     head.appendChild(meta); \
 })(); \
 "
-                       injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
-                    forMainFrameOnly:YES];
-            [controller addUserScript:script];
+            ];
         }
+        WKUserScript *script
+            = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
+        [controller addUserScript:script];
         configuration.userContentController = controller;
         configuration.allowsInlineMediaPlayback = true;
         if (@available(iOS 10.0, *)) {
