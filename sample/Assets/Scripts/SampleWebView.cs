@@ -160,7 +160,7 @@ public class SampleWebView : MonoBehaviour
             foreach (var ext in exts) {
                 var url = Url.Replace(".html", ext);
                 var src = System.IO.Path.Combine(Application.streamingAssetsPath, url);
-                var dst = System.IO.Path.Combine(Application.persistentDataPath, url);
+                var dst = System.IO.Path.Combine(Application.temporaryCachePath, url);
                 byte[] result = null;
                 if (src.Contains("://")) {  // for Android
 #if UNITY_2018_4_OR_NEWER
