@@ -31,7 +31,7 @@ public class SampleWebView : MonoBehaviour
     public Text status;
     WebViewObject webViewObject;
 
-    IEnumerator Start()
+    IEnumerator ShowWebView()
     {
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
         webViewObject.Init(
@@ -226,7 +226,7 @@ public class SampleWebView : MonoBehaviour
             if (g != null) {
                 Destroy(g);
             } else {
-                StartCoroutine(Start());
+                StartCoroutine(ShowWebView());
             }
         }
         x += 90;
