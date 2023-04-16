@@ -81,6 +81,7 @@ public class UnityWebViewPostprocessBuild
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
         changed = (androidManifest.AddCamera() || changed);
+        changed = (androidManifest.AddGallery() || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
         changed = (androidManifest.AddMicrophone() || changed);
