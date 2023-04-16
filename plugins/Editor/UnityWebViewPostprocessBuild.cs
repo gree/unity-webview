@@ -167,6 +167,7 @@ public class UnityWebViewPostprocessBuild
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
             changed = (androidManifest.AddCamera() || changed);
+            changed = (androidManifest.AddGallery() || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
             changed = (androidManifest.AddMicrophone() || changed);
@@ -382,6 +383,26 @@ internal class AndroidManifest : AndroidXmlDocument {
         if (SelectNodes("/manifest/queries/intent/action[@android:name='android.media.action.IMAGE_CAPTURE']", nsMgr).Count == 0) {
             var action = CreateElement("action");
             action.Attributes.Append(CreateAndroidAttribute("name", "android.media.action.IMAGE_CAPTURE"));
+            var intent = CreateElement("intent");
+            intent.AppendChild(action);
+            var queries = SelectSingleNode("/manifest/queries") as XmlElement;
+            queries.AppendChild(intent);
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool AddGallery() {
+        bool changed = false;
+        // cf. https://developer.android.com/training/package-visibility/declaring
+        if (SelectNodes("/manifest/queries", nsMgr).Count == 0) {
+            var elem = CreateElement("queries");
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/queries/intent/action[@android:name='android.media.action.GET_CONTENT']", nsMgr).Count == 0) {
+            var action = CreateElement("action");
+            action.Attributes.Append(CreateAndroidAttribute("name", "android.media.action.GET_CONTENT"));
             var intent = CreateElement("intent");
             intent.AppendChild(action);
             var queries = SelectSingleNode("/manifest/queries") as XmlElement;
