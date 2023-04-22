@@ -195,6 +195,22 @@ public class SampleWebView : MonoBehaviour
         yield break;
     }
 
+    float t0;
+
+    void Update()
+    {
+        var t = Time.time;
+        if (t - t0 > 10.0f) {
+            var g = GameObject.Find("WebViewObject");
+            if (g != null) {
+                Destroy(g);
+            } else {
+                StartCoroutine(Start());
+            }
+            t0 = t;
+        }
+    }
+
     void OnGUI()
     {
         var x = 10;
