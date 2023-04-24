@@ -29,6 +29,33 @@
 extern "C" UIViewController *UnityGetGLViewController();
 extern "C" void UnitySendMessage(const char *, const char *, const char *);
 
+// cf. https://stackoverflow.com/questions/26383031/wkwebview-causes-my-view-controller-to-leak/33365424#33365424
+@interface WeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
+
+@property (nonatomic, weak) id<WKScriptMessageHandler> scriptDelegate;
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate;
+
+@end
+
+@implementation WeakScriptMessageDelegate
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate
+{
+    self = [super init];
+    if (self) {
+        _scriptDelegate = scriptDelegate;
+    }
+    return self;
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    [self.scriptDelegate userContentController:userContentController didReceiveScriptMessage:message];
+}
+
+@end
+
 @protocol WebViewProtocol <NSObject>
 @property (nonatomic, getter=isOpaque) BOOL opaque;
 @property (nullable, nonatomic, copy) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
@@ -135,8 +162,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         }
         WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
         WKUserContentController *controller = [[WKUserContentController alloc] init];
-        [controller addScriptMessageHandler:self name:@"unityControl"];
-        [controller addScriptMessageHandler:self name:@"saveDataURL"];
+        [controller addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:@"unityControl"];
+        [controller addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:@"saveDataURL"];
         NSString *str = @"\
 window.Unity = { \
     call: function(msg) { \
@@ -240,6 +267,8 @@ window.Unity = { \
         if ([webView0 isKindOfClass:[WKWebView class]]) {
             webView0.UIDelegate = nil;
             webView0.navigationDelegate = nil;
+            [((WKWebView *)webView0).configuration.userContentController removeScriptMessageHandlerForName:@"saveDataURL"];
+            [((WKWebView *)webView0).configuration.userContentController removeScriptMessageHandlerForName:@"unityControl"];
         }
         [webView0 stopLoading];
         [webView0 removeFromSuperview];
