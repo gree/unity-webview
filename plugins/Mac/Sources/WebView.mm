@@ -27,6 +27,33 @@
 #import <unistd.h>
 #include <unordered_map>
 
+// cf. https://stackoverflow.com/questions/26383031/wkwebview-causes-my-view-controller-to-leak/33365424#33365424
+@interface WeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
+
+@property (nonatomic, weak) id<WKScriptMessageHandler> scriptDelegate;
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate;
+
+@end
+
+@implementation WeakScriptMessageDelegate
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate
+{
+    self = [super init];
+    if (self) {
+        _scriptDelegate = scriptDelegate;
+    }
+    return self;
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    [self.scriptDelegate userContentController:userContentController didReceiveScriptMessage:message];
+}
+
+@end
+
 static BOOL s_inEditor;
 static BOOL s_useMetal;
 
@@ -145,7 +172,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
     WKPreferences *preferences = [[WKPreferences alloc] init];
     preferences.javaScriptEnabled = true;
     preferences.plugInsEnabled = true;
-    [controller addScriptMessageHandler:self name:@"unityControl"];
+    [controller addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:@"unityControl"];
     NSString *str = @"\
 window.Unity = { \
     call: function(msg) { \
@@ -218,6 +245,7 @@ window.Unity = { \
             // [webView setPolicyDelegate:nil];
             webView0.UIDelegate = nil;
             webView0.navigationDelegate = nil;
+            [((WKWebView *)webView0).configuration.userContentController removeScriptMessageHandlerForName:@"unityControl"];
             [webView0 stopLoading];
             [webView0 removeObserver:self forKeyPath:@"loading"];
         }
