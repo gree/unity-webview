@@ -384,7 +384,7 @@ public class CWebViewPlugin extends Fragment {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
+    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius, final boolean shouldInterceptRequest) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         instanceCount++;
@@ -600,10 +600,14 @@ public class CWebViewPlugin extends Fragment {
 
                 @Override
                 public WebResourceResponse shouldInterceptRequest(WebView view, final String url) {
-                    if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
+                    if (!shouldInterceptRequest) {
                         return super.shouldInterceptRequest(view, url);
                     }
 
+                    if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
+                        return super.shouldInterceptRequest(view, url);
+                    }
+                    
                     try {
                         HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
                         urlCon.setInstanceFollowRedirects(false);
