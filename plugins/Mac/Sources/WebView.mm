@@ -232,7 +232,8 @@ window.Unity = { \
         [window setDelegate:self];
         windowController = [[NSWindowController alloc] initWithWindow:window];
     }
-    // [self addMessage:[NSString stringWithFormat:@"CallOnInited:%@",""]];
+    
+    [self addMessage:@"CallOnInited:"];
     return self;
 }
 
