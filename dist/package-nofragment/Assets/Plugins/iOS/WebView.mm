@@ -222,6 +222,12 @@ window.Unity = { \
         }
 #endif
         WKWebView *wkwebView = [[WKWebView alloc] initWithFrame:view.frame configuration:configuration];
+#if UNITYWEBVIEW_DEVELOPMENT
+        NSOperatingSystemVersion version = { 16, 4, 0 };
+        if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]) {
+            wkwebView.inspectable = true;
+        }
+#endif
         wkwebView.allowsLinkPreview = allowsLinkPreview;
         wkwebView.allowsBackForwardNavigationGestures = allowsBackForwardNavigationGestures;
         webView = wkwebView;
