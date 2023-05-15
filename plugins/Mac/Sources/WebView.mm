@@ -999,6 +999,7 @@ void *_CWebViewPlugin_Init(
 {
     CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObject:gameObject transparent:transparent zoom:zoom width:width height:height ua:ua separated:separated];
     [_instances addObject:webViewPlugin];
+    UnitySendMessage([gameObjectName UTF8String], "CallOnInited", "");
     return (__bridge_retained void *)webViewPlugin;
 }
 

@@ -59,6 +59,7 @@ public class WebViewObject : MonoBehaviour
     Callback onLoaded;
     Callback onHooked;
     Callback onCookies;
+    Action onInited;
     bool visibility;
     bool alertDialogEnabled;
     bool scrollBounceEnabled;
@@ -163,6 +164,9 @@ public class WebViewObject : MonoBehaviour
                 break;
             case "RequestFileChooserPermissions":
                 RequestFileChooserPermissions();
+                break;
+            case "CallOnInited":
+                CallOnInited();
                 break;
             }
         }
@@ -535,6 +539,7 @@ public class WebViewObject : MonoBehaviour
         Callback started = null,
         Callback hooked = null,
         Callback cookies = null,
+        Action inited = null,
         bool transparent = false,
         bool zoom = true,
         string ua = "",
@@ -562,6 +567,7 @@ public class WebViewObject : MonoBehaviour
         onLoaded = ld;
         onHooked = hooked;
         onCookies = cookies;
+        onInited = inited;
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_init(name);
@@ -1438,6 +1444,9 @@ public class WebViewObject : MonoBehaviour
                 break;
             case "CallOnCookies":
                 CallOnCookies(s.Substring(i + 1));
+                break;
+            case "CallOnInited":
+                CallOnInited();
                 break;
             }
         }

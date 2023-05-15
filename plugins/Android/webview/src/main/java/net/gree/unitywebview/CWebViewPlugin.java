@@ -800,6 +800,7 @@ public class CWebViewPlugin extends Fragment {
                     LayoutParams.MATCH_PARENT,
                     Gravity.NO_GRAVITY));
             mWebView = webView;
+            mWebViewPlugin.call("CallOnInited", "");
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();

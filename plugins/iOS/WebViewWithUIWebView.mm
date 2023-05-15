@@ -1071,6 +1071,7 @@ void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zo
     }
     CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent zoom:zoom ua:ua enableWKWebView:enableWKWebView contentMode:wkContentMode allowsLinkPreview:allowsLinkPreview allowsBackForwardNavigationGestures:allowsBackForwardNavigationGestures radius:radius];
     [_instances addObject:webViewPlugin];
+    UnitySendMessage([gameObjectName UTF8String], "CallOnInited", "");
     return (__bridge_retained void *)webViewPlugin;
 }
 
