@@ -1225,6 +1225,14 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    public void CallOnInited()
+    {
+        if (onInited != null)
+        {
+            onInited();
+        }
+    }
+
     public void AddCustomHeader(string headerKey, string headerValue)
     {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
