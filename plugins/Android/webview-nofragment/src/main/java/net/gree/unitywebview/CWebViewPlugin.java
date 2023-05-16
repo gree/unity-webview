@@ -561,24 +561,26 @@ public class CWebViewPlugin {
                     h = display.getHeight();
                 }
 
-                View rootView = activityRootView.getRootView();
-                int bottomPadding = 0;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                    Point realSize = new Point();
-                    display.getRealSize(realSize); // this method was added at JELLY_BEAN_MR1
-                    int[] location = new int[2];
-                    rootView.getLocationOnScreen(location);
-                    bottomPadding = realSize.y - (location[1] + rootView.getHeight());
-                }
-                int heightDiff = rootView.getHeight() - (r.bottom - r.top);
-                String param = "" ;
-                if (heightDiff > 0 && (heightDiff + bottomPadding) > (h + bottomPadding) / 3) { // assume that this means that the keyboard is on
-                    param = "true";
-                } else {
-                    param = "false";
-                }
+                // View rootView = activityRootView.getRootView();
+                // int bottomPadding = 0;
+                // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                //     Point realSize = new Point();
+                //     display.getRealSize(realSize); // this method was added at JELLY_BEAN_MR1
+                //     int[] location = new int[2];
+                //     rootView.getLocationOnScreen(location);
+                //     bottomPadding = realSize.y - (location[1] + rootView.getHeight());
+                // }
+                // int heightDiff = rootView.getHeight() - (r.bottom - r.top);
+                // String param = "" ;
+                // if (heightDiff > 0 && (heightDiff + bottomPadding) > (h + bottomPadding) / 3) { // assume that this means that the keyboard is on
+                //     param = "true";
+                // } else {
+                //     param = "false";
+                // }
+
+                int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
                 if (IsInitialized()) {
-                    MyUnitySendMessage(gameObject, "SetKeyboardVisible", param);
+                    MyUnitySendMessage(gameObject, "SetKeyboardVisible", Integer.toString(heightDiff));
                 }
             }
         };
