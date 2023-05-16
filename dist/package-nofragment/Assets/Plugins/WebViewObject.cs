@@ -85,7 +85,7 @@ public class WebViewObject : MonoBehaviour
     AndroidJavaObject webView;
     
     bool mVisibility;
-    bool mIsKeyboardVisible;
+    int mKeyboardVisibleHeight;
     int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
@@ -97,7 +97,7 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == null)
             return;
-        if (!paused && mIsKeyboardVisible)
+        if (!paused && mKeyboardVisibleHeight > 0)
         {
             webView.Call("SetVisibility", false);
             mResumedTimestamp = Time.realtimeSinceStartup;
@@ -169,16 +169,17 @@ public class WebViewObject : MonoBehaviour
     }
 
     /// Called from Java native plugin to set when the keyboard is opened
-    public void SetKeyboardVisible(string pIsVisible)
+    public void SetKeyboardVisible(string keyboardVisibleHeight)
     {
         if (BottomAdjustmentDisabled())
         {
             return;
         }
-        bool isKeyboardVisible0 = mIsKeyboardVisible;
-        mIsKeyboardVisible = (pIsVisible == "true");
-        if (mIsKeyboardVisible != isKeyboardVisible0 || mIsKeyboardVisible)
+        var keyboardVisibleHeight0 = mKeyboardVisibleHeight;
+        var keyboardVisibleHeight1 = Int32.Parse(keyboardVisibleHeight);
+        if (keyboardVisibleHeight0 != keyboardVisibleHeight1)
         {
+            mKeyboardVisibleHeight = keyboardVisibleHeight1;
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
         }
     }
@@ -302,7 +303,7 @@ public class WebViewObject : MonoBehaviour
         {
             return bottom;
         }
-        else if (!mIsKeyboardVisible)
+        else if (mKeyboardVisibleHeight <= 0)
         {
             return bottom;
         }
@@ -348,7 +349,7 @@ public class WebViewObject : MonoBehaviour
         get
         {
 #if !UNITY_EDITOR && UNITY_ANDROID
-            return mIsKeyboardVisible;
+            return mKeyboardVisibleHeight > 0;
 #elif !UNITY_EDITOR && UNITY_IPHONE
             return TouchScreenKeyboard.visible;
 #else
