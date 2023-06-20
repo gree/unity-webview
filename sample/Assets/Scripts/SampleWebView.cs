@@ -40,6 +40,10 @@ public class SampleWebView : MonoBehaviour
                 Debug.Log(string.Format("CallFromJS[{0}]", msg));
                 status.text = msg;
                 status.GetComponent<Animation>().Play();
+                if (msg == "destroy")
+                {
+                    Destroy(webViewObject.gameObject);
+                }
             },
             err: (msg) =>
             {
