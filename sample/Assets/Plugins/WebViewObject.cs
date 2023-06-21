@@ -175,10 +175,12 @@ public class WebViewObject : MonoBehaviour
         {
             return;
         }
+        Debug.Log($"XXX {keyboardVisibleHeight}");
         var keyboardVisibleHeight0 = mKeyboardVisibleHeight;
         var keyboardVisibleHeight1 = Int32.Parse(keyboardVisibleHeight);
         if (keyboardVisibleHeight0 != keyboardVisibleHeight1)
         {
+            Debug.Log($"XXXX {keyboardVisibleHeight0} -> {keyboardVisibleHeight}");
             mKeyboardVisibleHeight = keyboardVisibleHeight1;
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
         }
@@ -319,6 +321,9 @@ public class WebViewObject : MonoBehaviour
                     keyboardHeight = mWindowVisibleDisplayFrameHeight - Rct.Call<int>("height");
                 }
             }
+            var s = (bottom > keyboardHeight) ? "bottom" : "keyboardHeight";
+            var h = (bottom > keyboardHeight) ? bottom : keyboardHeight;
+            Debug.Log($"XXXXX {s} {h}");
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
         }
     }
