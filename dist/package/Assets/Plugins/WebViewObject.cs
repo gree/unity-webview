@@ -211,7 +211,7 @@ public class WebViewObject : MonoBehaviour
                 grantedCount++;
                 if (grantedCount + deniedCount == permissions.Count)
                 {
-                    webView.Call("OnRequestFileChooserPermissionsResult", grantedCount == permissions.Count);
+                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
                 }
             };
             callbacks.PermissionDenied += (permission) =>
@@ -219,7 +219,7 @@ public class WebViewObject : MonoBehaviour
                 deniedCount++;
                 if (grantedCount + deniedCount == permissions.Count)
                 {
-                    webView.Call("OnRequestFileChooserPermissionsResult", grantedCount == permissions.Count);
+                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
                 }
             };
             callbacks.PermissionDeniedAndDontAskAgain += (permission) =>
@@ -227,7 +227,7 @@ public class WebViewObject : MonoBehaviour
                 deniedCount++;
                 if (grantedCount + deniedCount == permissions.Count)
                 {
-                    webView.Call("OnRequestFileChooserPermissionsResult", grantedCount == permissions.Count);
+                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
                 }
             };
             Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
@@ -237,7 +237,7 @@ public class WebViewObject : MonoBehaviour
         }
         else
         {
-            webView.Call("OnRequestFileChooserPermissionsResult", true);
+            StartCoroutine(CallOnRequestFileChooserPermissionsResult(true));
         }
     }
 
@@ -275,7 +275,7 @@ public class WebViewObject : MonoBehaviour
                 granted++;
             }
         }
-        webView.Call("OnRequestFileChooserPermissionsResult", granted == permissions.Length);
+        StartCoroutine(CallOnRequestFileChooserPermissionsResult(granted == permissions.Length));
     }
 
     void OnApplicationFocus(bool hasFocus)
@@ -296,6 +296,15 @@ public class WebViewObject : MonoBehaviour
         }
     }
 #endif
+
+    private IEnumerator CallOnRequestFileChooserPermissionsResult(bool granted)
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            yield return null;
+        }
+        webView.Call("OnRequestFileChooserPermissionsResult", granted);
+    }
 
     public int AdjustBottomMargin(int bottom)
     {
@@ -325,10 +334,14 @@ public class WebViewObject : MonoBehaviour
 
     private bool BottomAdjustmentDisabled()
     {
+#if UNITYWEBVIEW_ANDROID_FORCE_MARGIN_ADJUSTMENT_FOR_KEYBOARD
+        return false;
+#else
         return
             !Screen.fullScreen
             || ((Screen.autorotateToLandscapeLeft || Screen.autorotateToLandscapeRight)
                 && (Screen.autorotateToPortrait || Screen.autorotateToPortraitUpsideDown));
+#endif
     }
 #else
     IntPtr webView;
