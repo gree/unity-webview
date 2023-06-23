@@ -294,6 +294,10 @@ index a62c1ca..a5efe9f 100644
 
 By default, `navigator.onLine` doesn't work on Android WebView. Please define `UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE` to enable it. The plugin will then periodically check `Application.internetReachability` and call WebView's `setNetworkAvailable()` adequately.
 
+#### Margin adjustment for keyboard popup
+
+This plugin adjusts the bottom margin temporarily when the keyboard pops up to keep the focused input field displayed. This adjustment is however disabled for some cases (non-fullscreen mode or both portrait/landscape are enabled) to avoid odd behaviours (cf. https://github.com/gree/unity-webview/pull/809 ). Please define `UNITYWEBVIEW_ANDROID_FORCE_MARGIN_ADJUSTMENT_FOR_KEYBOARD` to force the margin adjustment even for these cases.
+
 #### How to build WebViewPlugin.jar
 
 The following steps are for Mac but you can follow similar ones for Windows.
