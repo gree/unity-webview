@@ -334,10 +334,14 @@ public class WebViewObject : MonoBehaviour
 
     private bool BottomAdjustmentDisabled()
     {
+#if UNITYWEBVIEW_ANDROID_FORCE_MARGIN_ADJUSTMENT_FOR_KEYBOARD
+        return false;
+#else
         return
             !Screen.fullScreen
             || ((Screen.autorotateToLandscapeLeft || Screen.autorotateToLandscapeRight)
                 && (Screen.autorotateToPortrait || Screen.autorotateToPortraitUpsideDown));
+#endif
     }
 #else
     IntPtr webView;
