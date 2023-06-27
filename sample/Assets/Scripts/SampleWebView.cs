@@ -24,6 +24,10 @@ using UnityEngine;
 using UnityEngine.Networking;
 #endif
 using UnityEngine.UI;
+#if !UNITY_EDITOR && UNITY_ANDROID
+using System.Collections.Generic;
+using UnityEngine.Android;
+#endif
 
 public class SampleWebView : MonoBehaviour
 {
@@ -33,6 +37,30 @@ public class SampleWebView : MonoBehaviour
 
     IEnumerator Start()
     {
+#if !UNITY_EDITOR && UNITY_ANDROID
+        {
+            var permissions = new List<string>(){
+                Permission.Camera,
+                Permission.Microphone,
+            };
+            var grantedCount = 0;
+            var deniedCount = 0;
+            var callbacks = new PermissionCallbacks();
+            callbacks.PermissionGranted += (permission) =>
+            {
+                grantedCount++;
+            };
+            callbacks.PermissionDenied += (permission) =>
+            {
+                deniedCount++;
+            };
+            callbacks.PermissionDeniedAndDontAskAgain += (permission) => deniedCount++;
+            Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
+            while (grantedCount + deniedCount < permissions.Count) {
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+#endif
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
         webViewObject.Init(
             cb: (msg) =>
@@ -133,8 +161,8 @@ public class SampleWebView : MonoBehaviour
         //webViewObject.SetAlertDialogEnabled(false);
 
         // cf. https://github.com/gree/unity-webview/pull/728
-        //webViewObject.SetCameraAccess(true);
-        //webViewObject.SetMicrophoneAccess(true);
+        webViewObject.SetCameraAccess(true);
+        webViewObject.SetMicrophoneAccess(true);
 
         // cf. https://github.com/gree/unity-webview/pull/550
         // introduced SetURLPattern(..., hookPattern). by KojiNakamaru · Pull Request #550 · gree/unity-webview
