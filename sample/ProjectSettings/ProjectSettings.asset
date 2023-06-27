@@ -695,7 +695,7 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
-    7: 
+    7: UNITYWEBVIEW_ANDROID_ENABLE_CAMERA;UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
   additionalCompilerArguments: {}
   platformArchitecture:
     iPhone: 1
