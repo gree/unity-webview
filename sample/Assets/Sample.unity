@@ -263,7 +263,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb516f7ac0cee4b0f8345a5a60de3f42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Url: sample.html
+  Url: https://webrtc.github.io/samples/
   status: {fileID: 123026521}
 --- !u!1 &1257165921
 GameObject:
