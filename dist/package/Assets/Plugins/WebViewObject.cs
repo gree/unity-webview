@@ -97,11 +97,11 @@ public class WebViewObject : MonoBehaviour
     {
         if (webView == null)
             return;
-        if (!paused && mKeyboardVisibleHeight > 0)
-        {
-            webView.Call("SetVisibility", false);
-            mResumedTimestamp = Time.realtimeSinceStartup;
-        }
+        // if (!paused && mKeyboardVisibleHeight > 0)
+        // {
+        //     webView.Call("SetVisibility", false);
+        //     mResumedTimestamp = Time.realtimeSinceStartup;
+        // }
         webView.Call("OnApplicationPause", paused);
     }
 
