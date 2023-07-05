@@ -110,6 +110,10 @@ public class SampleWebView : MonoBehaviour
 #else
                 var js = "";
 #endif
+                js += @"
+                    document.body.style.backgroundImage = 'url(moon.jpg)';
+                    document.body.style.backgroundSize = 'cover';
+                ";
                 webViewObject.EvaluateJS(js + @"Unity.call('ua=' + navigator.userAgent)");
             }
             //transparent: false,
