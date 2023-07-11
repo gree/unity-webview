@@ -193,7 +193,24 @@ window.Unity = { \
     head.appendChild(meta); \
 })(); \
 "
-          ];
+            ];
+    }
+    if (!separated) {
+        // define pseudo requestAnimationFrame.
+        str = [str stringByAppendingString:@"\
+(function() { \
+    var vsync = 1000 / 60; \
+    var t0 = window.performance.now(); \
+    window.requestAnimationFrame = function(callback, element) { \
+        var t1 = window.performance.now(); \
+        var duration = t1 - t0; \
+        var d = vsync - ((duration > vsync) ? duration % vsync : duration); \
+        var id = window.setTimeout(function() {t0 = window.performance.now(); callback(t1 + d);}, d); \
+        return id; \
+    }; \
+})(); \
+"
+            ];
     }
     WKUserScript *script
         = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
