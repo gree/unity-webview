@@ -1240,10 +1240,16 @@ public class CWebViewPlugin extends Fragment {
 
     public void AddCustomHeader(final String headerKey, final String headerValue)
     {
-        if (mCustomHeaders == null) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
-        mCustomHeaders.put(headerKey, headerValue);
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mCustomHeaders == null) {
+                return;
+            }
+            mCustomHeaders.put(headerKey, headerValue);
+        }});
     }
 
     public String GetCustomHeaderValue(final String headerKey)
@@ -1251,31 +1257,40 @@ public class CWebViewPlugin extends Fragment {
         if (mCustomHeaders == null) {
             return null;
         }
-
         if (!mCustomHeaders.containsKey(headerKey)) {
             return null;
         }
-        return this.mCustomHeaders.get(headerKey);
+        return mCustomHeaders.get(headerKey);
     }
 
     public void RemoveCustomHeader(final String headerKey)
     {
-        if (mCustomHeaders == null) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
-
-        if (this.mCustomHeaders.containsKey(headerKey)) {
-            this.mCustomHeaders.remove(headerKey);
-        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mCustomHeaders == null) {
+                return;
+            }
+            if (mCustomHeaders.containsKey(headerKey)) {
+                mCustomHeaders.remove(headerKey);
+            }
+        }});
     }
 
     public void ClearCustomHeader()
     {
-        if (mCustomHeaders == null) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
-
-        this.mCustomHeaders.clear();
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mCustomHeaders == null) {
+                return;
+            }
+            mCustomHeaders.clear();
+        }});
     }
 
     public void ClearCookies()
