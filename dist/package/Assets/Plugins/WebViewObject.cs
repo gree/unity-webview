@@ -517,6 +517,8 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_ClearCache(IntPtr instance, bool includeDiskFiles);
+    [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetSuspended(IntPtr instance, bool suspended);
 #elif UNITY_WEBGL
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_init(string name);
@@ -670,7 +672,10 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         //TODO: UNSUPPORTED
 #elif UNITY_IPHONE
-        //TODO: UNSUPPORTED
+        // NOTE: this suspends media playback only.
+        if (webView == null)
+            return;
+        _CWebViewPlugin_SetSuspended(webView, true);
 #elif UNITY_ANDROID
         if (webView == null)
             return;
@@ -687,7 +692,8 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         //TODO: UNSUPPORTED
 #elif UNITY_IPHONE
-        //TODO: UNSUPPORTED
+        // NOTE: this resumes media playback only.
+        _CWebViewPlugin_SetSuspended(webView, false);
 #elif UNITY_ANDROID
         if (webView == null)
             return;
