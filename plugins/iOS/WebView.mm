@@ -925,6 +925,16 @@ window.Unity = { \
     NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
     [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:types modifiedSince:date completionHandler:^{}];
 }
+
+- (void)setAllMediaPlaybackSuspended:(BOOL)suspended
+{
+    NSOperatingSystemVersion version = { 15, 0, 0 };
+    if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]) {
+        if ([webView isKindOfClass:[WKWebView class]]) {
+            [(WKWebView *)webView setAllMediaPlaybackSuspended:suspended completionHandler:nil];
+        }
+    }
+}
 @end
 
 extern "C" {
@@ -956,6 +966,7 @@ extern "C" {
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
     void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
     void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles);
+    void _CWebViewPlugin_SetSuspended(void *instance, BOOL suspended);
 }
 
 void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview, BOOL allowsBackForwardNavigationGestures, int radius)
@@ -1182,4 +1193,11 @@ void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles)
     [webViewPlugin clearCache:includeDiskFiles];
 }
 
+void _CWebViewPlugin_SetSuspended(void *instance, BOOL suspended)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setAllMediaPlaybackSuspended:suspended];
+}
 #endif // !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
