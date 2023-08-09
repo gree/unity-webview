@@ -1,12 +1,12 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 33
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 30
+        minSdkVersion 21
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
         consumerProguardFiles "consumer-rules.pro"
@@ -21,5 +21,7 @@ android {
 
 dependencies {
     compileOnly fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.core:core:1.6.0'
+    implementation 'androidx.core:core:1.6.1'
+    implementation 'androidx.activity:activity:1.7.2'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
 }
