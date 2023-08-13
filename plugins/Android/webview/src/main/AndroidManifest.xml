@@ -3,4 +3,15 @@
       package="net.gree.unitywebview"
       android:versionCode="1"
       android:versionName="1.0">
+    <application>
+        <provider
+        android:name="androidx.core.content.FileProvider"
+        android:authorities="${applicationId}.webview.fileprovider"
+        android:exported="false"
+        android:grantUriPermissions="true">
+        <meta-data
+            android:name="android.support.FILE_PROVIDER_PATHS"
+            android:resource="@xml/provider_paths" />
+        </provider>
+    </application>
 </manifest>

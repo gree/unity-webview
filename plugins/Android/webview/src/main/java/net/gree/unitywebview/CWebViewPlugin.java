@@ -791,7 +791,7 @@ public class CWebViewPlugin extends Fragment {
                         return null;
                     }
                     // for versions 6.0+ (23) we use the FileProvider to avoid runtime permissions
-                    String fileProviderAuthority = activity.getApplicationContext().getPackageName() + "WebView";
+                    String fileProviderAuthority = activity.getApplicationContext().getPackageName()  + "." + "webview.fileprovider";
                     return FileProvider.getUriForFile(activity.getApplicationContext(),
                             fileProviderAuthority,
                             capturedFile);
