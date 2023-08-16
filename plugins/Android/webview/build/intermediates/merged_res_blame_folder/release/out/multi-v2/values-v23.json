@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "net.gree.unitywebview-mergeReleaseResources-26:/values-v23/values-v23.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\nikst_icvfv1o\\.gradle\\caches\\transforms-3\\39a8c175b0918945060450d3d2ed8243\\transformed\\appcompat-1.6.1\\res\\values-v23\\values-v23.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,20,34,35,36,39,43,44,45,46",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,190,325,400,487,1225,1975,2094,2221,2443,2667,2782,2889,3002",
+                        "endLines": "2,3,4,5,19,33,34,35,38,42,43,44,45,49",
+                        "endColumns": "134,134,74,86,12,12,118,126,12,12,114,106,112,12",
+                        "endOffsets": "185,320,395,482,1220,1970,2089,2216,2438,2662,2777,2884,2997,3227"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "net.gree.unitywebview-merged_res-28:/values-v23/values-v23.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\nikst_icvfv1o\\.gradle\\caches\\transforms-3\\39a8c175b0918945060450d3d2ed8243\\transformed\\appcompat-1.6.1\\res\\values-v23\\values-v23.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,20,34,35,36,39,43,44,45,46",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,190,325,400,487,1225,1975,2094,2221,2443,2667,2782,2889,3002",
+                        "endLines": "2,3,4,5,19,33,34,35,38,42,43,44,45,49",
+                        "endColumns": "134,134,74,86,12,12,118,126,12,12,114,106,112,12",
+                        "endOffsets": "185,320,395,482,1220,1970,2089,2216,2438,2662,2777,2884,2997,3227"
+                    }
+                }
+            ]
+        }
+    ]
+}

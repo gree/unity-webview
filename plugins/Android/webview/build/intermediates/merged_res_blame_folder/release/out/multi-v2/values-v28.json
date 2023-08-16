@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "net.gree.unitywebview-merged_res-28:/values-v28/values-v28.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\nikst_icvfv1o\\.gradle\\caches\\transforms-3\\39a8c175b0918945060450d3d2ed8243\\transformed\\appcompat-1.6.1\\res\\values-v28\\values-v28.xml",
+                    "from": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,397",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,392,584"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "net.gree.unitywebview-mergeReleaseResources-26:/values-v28/values-v28.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\nikst_icvfv1o\\.gradle\\caches\\transforms-3\\39a8c175b0918945060450d3d2ed8243\\transformed\\appcompat-1.6.1\\res\\values-v28\\values-v28.xml",
+                    "from": {
+                        "startLines": "2,3,4,8",
+                        "startColumns": "4,4,4,4",
+                        "startOffsets": "55,130,217,397",
+                        "endLines": "2,3,7,11",
+                        "endColumns": "74,86,12,12",
+                        "endOffsets": "125,212,392,584"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,55 @@
+-- Merging decision tree log ---
+manifest
+ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:1-17:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:1-17:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:1-17:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:1-17:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:1-17:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:1-17:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:1-17:12
+	package
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:3:7-38
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+	android:versionName
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:5:7-32
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:2:11-69
+	android:versionCode
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:4:7-30
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+application
+ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:6:5-16:19
+provider#androidx.core.content.FileProvider
+ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:7:9-15:20
+	android:grantUriPermissions
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:11:9-43
+	android:authorities
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:9:9-73
+	android:exported
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:10:9-33
+	android:name
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:8:9-58
+meta-data#android.support.FILE_PROVIDER_PATHS
+ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:12:9-14:54
+	android:resource
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:14:13-51
+	android:name
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml:13:13-63
+uses-sdk
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+		ADDED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview\src\main\AndroidManifest.xml

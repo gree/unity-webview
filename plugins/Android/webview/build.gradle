@@ -1,12 +1,15 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 33
+    if (project.android.hasProperty("namespace")) {
+        namespace 'net.gree.unitywebview'
+    }
+    compileSdkVersion 34
     buildToolsVersion "30.0.3"
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         consumerProguardFiles "consumer-rules.pro"
@@ -21,7 +24,10 @@ android {
 
 dependencies {
     compileOnly fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.core:core:1.6.1'
+    implementation 'androidx.core:core:1.10.1'
     implementation 'androidx.activity:activity:1.7.2'
+    implementation 'androidx.fragment:fragment-ktx:1.6.1'
+    implementation 'androidx.fragment:fragment:1.6.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
+
 }

@@ -1,0 +1,37 @@
+-- Merging decision tree log ---
+manifest
+ADDED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:1-6:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:1-6:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:1-6:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:1-6:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:1-6:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:1-6:12
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:1-6:12
+	package
+		ADDED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:3:7-38
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+	android:versionName
+		ADDED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:5:7-32
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:2:11-69
+	android:versionCode
+		ADDED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml:4:7-30
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+uses-sdk
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+		ADDED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+		ADDED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml
+		INJECTED from F:\Works\unity-webview\plugins\Android\webview-nofragment\src\main\AndroidManifest.xml

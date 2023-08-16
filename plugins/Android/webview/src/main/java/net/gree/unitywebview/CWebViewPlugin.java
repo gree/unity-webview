@@ -21,18 +21,17 @@
 
 package net.gree.unitywebview;
 
-import android.Manifest;
+
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.Instrumentation;
 import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -67,9 +66,9 @@ import android.widget.FrameLayout;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 // import android.support.v4.app.ActivityCompat;
 
@@ -91,15 +90,11 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import androidx.activity.result.PickVisualMediaRequest;
+
 import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.unity3d.player.UnityPlayer;
-
-import androidx.activity.result.PickVisualMediaRequest;
-import androidx.activity.result.contract.ActivityResultContracts;
 
 
 class CWebViewPluginInterface {
@@ -178,6 +173,12 @@ public class CWebViewPlugin extends Fragment {
     private String mBasicAuthUserName;
     private String mBasicAuthPassword;
 
+    static final String LOG_TAG = "Webview";
+    final String DEFAULT_MIME_TYPES = "*/*";
+    @Nullable
+    private Uri imageOutputFileUri;
+    private static final int PICKER = 1;
+
     public void SaveDataURL(final String fileName, final String dataURL) {
         if (!dataURL.startsWith("data:")) {
             return;
@@ -239,30 +240,6 @@ public class CWebViewPlugin extends Fragment {
         }
     }
 
-    // public void SaveDataURL(final String fileName, final String dataURL) {
-    //     if (mBase64Data != null) {
-    //         return;
-    //     }
-    //     if (!dataURL.startsWith("data:")) {
-    //         return;
-    //     }
-    //     String tmp = dataURL.substring("data:".length());
-    //     int i = tmp.indexOf(";");
-    //     if (i < 0) {
-    //         return;
-    //     }
-    //     mBase64Data = tmp.substring(i + 1 + "base64,".length());
-    //     final String type = tmp.substring(0, i);
-    //     Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-    //     intent.addCategory(Intent.CATEGORY_OPENABLE);
-    //     intent.setType(type);
-    //     intent.putExtra(Intent.EXTRA_TITLE, fileName);
-    //     startActivityForResult(intent, OUTPUT_FILE_REQUEST_CODE);
-    // }
-
-    // cf. https://github.com/gree/unity-webview/issues/753
-    // cf. https://github.com/mixpanel/mixpanel-android/issues/400
-    // cf. https://github.com/mixpanel/mixpanel-android/commit/98bb530f9263f3bac0737971acc00dfef7ea4c35
     public static boolean isDestroyed(final Activity a) {
         if (a == null) {
             return true;
@@ -290,27 +267,25 @@ public class CWebViewPlugin extends Fragment {
             }
         }});
     }
+    /* @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+         Uri[] uri = null;
+         if (data.getData() != null) {
+             Log.d(LOG_TAG,"data:" + data.getDataString());
+             uri = new Uri[]{data.getData()};
+         } else if (imageOutputFileUri != null) {
+             Log.d(LOG_TAG,"image:" + data.getDataString());
+             uri = new Uri[]{imageOutputFileUri};
+         }
+         Log.d(LOG_TAG, "Uri111:" + uri[0].toString());
+         //mFilePathCallback.onReceiveValue(uri);
+         mFilePathCallback = null;
+         imageOutputFileUri = null;
+     }*/
+
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // if (requestCode == OUTPUT_FILE_REQUEST_CODE) {
-        //     String base64data = mBase64Data;
-        //     mBase64Data = null;
-        //     // Check that the response is a good one
-        //     if (resultCode == Activity.RESULT_OK) {
-        //         final Activity a = UnityPlayer.currentActivity;
-        //         final Uri uri = data.getData();
-        //         final byte[] bytes = Base64.decode(base64data, Base64.DEFAULT);
-        //         try (OutputStream out = getActivity().getContentResolver().openOutputStream(uri)) {
-        //             if (out != null) {
-        //                 out.write(bytes);
-        //             }
-        //         } catch(Exception e) {
-        //             e.printStackTrace();
-        //         }
-        //     }
-        //     return;
-        // }
         if (requestCode != INPUT_FILE_REQUEST_CODE) {
             super.onActivityResult(requestCode, resultCode, data);
             return;
@@ -324,15 +299,15 @@ public class CWebViewPlugin extends Fragment {
             // Check that the response is a good one
             if (resultCode == Activity.RESULT_OK) {
                 if (data == null) {
-                    if (mCameraPhotoUri != null) {
-                        results = new Uri[] { mCameraPhotoUri };
+                    if (imageOutputFileUri != null) {
+                        results = new Uri[] { imageOutputFileUri };
                     }
                 } else {
                     String dataString = data.getDataString();
                     // cf. https://www.petitmonte.com/java/android_webview_camera.html
                     if (dataString == null) {
-                        if (mCameraPhotoUri != null) {
-                            results = new Uri[] { mCameraPhotoUri };
+                        if (imageOutputFileUri != null) {
+                            results = new Uri[] { imageOutputFileUri };
                         }
                     } else {
                         results = new Uri[] { Uri.parse(dataString) };
@@ -400,6 +375,135 @@ public class CWebViewPlugin extends Fragment {
         return mWebView != null;
     }
 
+    public boolean startPickerIntent(final ValueCallback<Uri[]> callback, final String[] acceptTypes,
+                                     final boolean allowMultiple, final boolean captureEnabled) {
+        mFilePathCallback = callback;
+        ArrayList<Parcelable> extraIntents = new ArrayList<>();
+        Intent  fileSelectionIntent = getFileChooserIntent(acceptTypes, allowMultiple);
+        extraIntents.add(getPhotoIntent());
+        Intent pickerIntent = new Intent(Intent.ACTION_CHOOSER);
+        pickerIntent.putExtra(Intent.EXTRA_INTENT, fileSelectionIntent);
+        pickerIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Parcelable[]{}));
+        startActivityForResult(pickerIntent, PICKER);
+        return true;
+    }
+
+   /* ActivityResultLauncher<Intent> startActivityIntent = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<Instrumentation.ActivityResult>() {
+                @Override
+                public void onActivityResult(Instrumentation.ActivityResult result) {
+                    // Add same code that you want to add in onActivityResult method
+                }
+            });*/
+
+    private Intent getFileChooserIntent(String[] acceptTypes, boolean allowMultiple) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, getAcceptedMimeType(acceptTypes));
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple);
+        return intent;
+    }
+
+    private String[] getAcceptedMimeType(String[] types) {
+        if (isArrayEmpty(types)) {
+            return new String[]{DEFAULT_MIME_TYPES};
+        }
+        String[] mimeTypes = new String[types.length];
+        for (int i = 0; i < types.length; i++) {
+            String t = types[i];
+            if (t.matches("\\.\\w+")) {
+                String mimeType = getMimeTypeFromExtension(t.replace(".", ""));
+                mimeTypes[i] = mimeType;
+            } else {
+                mimeTypes[i] = t;
+            }
+        }
+        return mimeTypes;
+    }
+
+    private Boolean isArrayEmpty(String[] arr) {
+        return arr.length == 0 || (arr.length == 1 && arr[0].length() == 0);
+    }
+
+    private String getMimeTypeFromExtension(String extension) {
+        String type = null;
+        if (extension != null) {
+            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+        }
+        return type;
+    }
+
+    private Intent getPhotoIntent() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        imageOutputFileUri = getOutputUri(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageOutputFileUri);
+        return intent;
+    }
+
+    @Nullable
+    private Uri getOutputUri(String intentType) {
+        File capturedFile = null;
+        try {
+            capturedFile = getCapturedFile(intentType);
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Error occurred while creating the File", e);
+            e.printStackTrace();
+        }
+        if (capturedFile == null) {
+            return null;
+        }
+
+        // for versions below 6.0 (23) we use the old File creation & permissions model
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return Uri.fromFile(capturedFile);
+        }
+
+        Activity activity = getActivity();
+        if (activity == null) {
+            return null;
+        }
+        // for versions 6.0+ (23) we use the FileProvider to avoid runtime permissions
+        String fileProviderAuthority = activity.getApplicationContext().getPackageName() + ".unitywebview.fileprovider";
+        return FileProvider.getUriForFile(activity.getApplicationContext(),
+                fileProviderAuthority,
+                capturedFile);
+    }
+
+    @Nullable
+    private File getCapturedFile(String intentType) throws IOException {
+        String prefix = "";
+        String suffix = "";
+        String dir = "";
+
+        if (intentType.equals(MediaStore.ACTION_IMAGE_CAPTURE)) {
+            prefix = "image";
+            suffix = ".jpg";
+            dir = Environment.DIRECTORY_PICTURES;
+        } else if (intentType.equals(MediaStore.ACTION_VIDEO_CAPTURE)) {
+            prefix = "video";
+            suffix = ".mp4";
+            dir = Environment.DIRECTORY_MOVIES;
+        }
+
+        // for versions below 6.0 (23) we use the old File creation & permissions model
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            // only this Directory works on all tested Android versions
+            // ctx.getExternalFilesDir(dir) was failing on Android 5.0 (sdk 21)
+            File storageDir = Environment.getExternalStoragePublicDirectory(dir);
+            String filename = String.format("%s-%d%s", prefix, System.currentTimeMillis(), suffix);
+            return new File(storageDir, filename);
+        }
+
+        Activity activity = getActivity();
+        if (activity == null) {
+            return null;
+        }
+        File storageDir = activity.getApplicationContext().getExternalFilesDir(null);
+        return File.createTempFile(prefix, suffix, storageDir);
+    }
+
     public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
@@ -455,12 +559,10 @@ public class CWebViewPlugin extends Fragment {
             webView.setWebChromeClient(new WebChromeClient() {
                 // cf. https://stackoverflow.com/questions/40659198/how-to-access-the-camera-from-within-a-webview/47525818#47525818
                 // cf. https://github.com/googlesamples/android-PermissionRequest/blob/eff1d21f0b9c91d67c7f2a2303b591447e61e942/Application/src/main/java/com/example/android/permissionrequest/PermissionRequestFragment.java#L148-L161
-                private static final int PICKER = 1;
-                final String DEFAULT_MIME_TYPES = "*/*";
-                static final String LOG_TAG = "Webview";
 
-                @Nullable
-                private Uri imageOutputFileUri;
+
+
+
                 @Nullable
                 private Uri videoOutputFileUri;
                 @Override
@@ -575,268 +677,9 @@ public class CWebViewPlugin extends Fragment {
                     boolean captureEnabled = fileChooserParams.isCaptureEnabled();
                     return startPickerIntent(filePathCallback, acceptTypes, allowMultiple, captureEnabled);
                 }
-
-                public boolean startPickerIntent(final ValueCallback<Uri[]> callback, final String[] acceptTypes,
-                                                 final boolean allowMultiple, final boolean captureEnabled) {
-                    mFilePathCallback = callback;
-                    Activity activity = getActivity();
-                    Intent pickerIntent = null;
-                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
-                        pickerIntent =
-                                new ActivityResultContracts.PickVisualMedia()
-                                        .createIntent(
-                                                activity,
-                                                new PickVisualMediaRequest.Builder()
-                                                        .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
-                                                        .build());
-                    }else{
-                        boolean images = acceptsImages(acceptTypes);
-                        boolean video = acceptsVideo(acceptTypes);
-
-                        if (captureEnabled) {
-                            if (!needsCameraPermission()) {
-                                if (images) {
-                                    pickerIntent = getPhotoIntent();
-                                }
-                                else if (video) {
-                                    pickerIntent = getVideoIntent();
-                                }
-                            }
-                        }
-                        if (pickerIntent == null) {
-                            ArrayList<Parcelable> extraIntents = new ArrayList<>();
-                            if (!needsCameraPermission()) {
-                                if (images) {
-                                    extraIntents.add(getPhotoIntent());
-                                }
-                                if (video) {
-                                    extraIntents.add(getVideoIntent());
-                                }
-                            }
-
-                            Intent fileSelectionIntent = null;
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                                fileSelectionIntent = getFileChooserIntent(acceptTypes, allowMultiple);
-                            }
-
-                            pickerIntent = new Intent(Intent.ACTION_CHOOSER);
-                            pickerIntent.putExtra(Intent.EXTRA_INTENT, fileSelectionIntent);
-                            pickerIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, extraIntents.toArray(new Parcelable[]{}));
-                        }
-                    }
-
-                    if (activity != null && pickerIntent.resolveActivity(activity.getPackageManager()) != null) {
-                        activity.startActivityForResult(pickerIntent, PICKER);
-                    } else {
-                        Log.d(LOG_TAG, "there is no Activity to handle this Intent");
-                    }
-
-                    return true;
-                }
-
-                private Boolean acceptsImages(String types) {
-                    String mimeType = types;
-                    if (types.matches("\\.\\w+")) {
-                        mimeType = getMimeTypeFromExtension(types.replace(".", ""));
-                    }
-                    return mimeType.isEmpty() || mimeType.toLowerCase().contains("image");
-                }
-
-                private Boolean acceptsImages(String[] types) {
-                    String[] mimeTypes = getAcceptedMimeType(types);
-                    return acceptsAny(types) || arrayContainsString(mimeTypes, "image");
-                }
-
-                private Boolean acceptsVideo(String types) {
-                    String mimeType = types;
-                    if (types.matches("\\.\\w+")) {
-                        mimeType = getMimeTypeFromExtension(types.replace(".", ""));
-                    }
-                    return mimeType.isEmpty() || mimeType.toLowerCase().contains("video");
-                }
-
-                private Boolean acceptsVideo(String[] types) {
-                    String[] mimeTypes = getAcceptedMimeType(types);
-                    return acceptsAny(types) || arrayContainsString(mimeTypes, "video");
-                }
-
-                protected boolean needsCameraPermission() {
-                    boolean needed = false;
-
-                    Activity activity = getActivity();
-                    if (activity == null) {
-                        return true;
-                    }
-                    PackageManager packageManager = activity.getPackageManager();
-                    try {
-                        String[] requestedPermissions = packageManager.getPackageInfo(activity.getApplicationContext().getPackageName(), PackageManager.GET_PERMISSIONS).requestedPermissions;
-                        if (Arrays.asList(requestedPermissions).contains(Manifest.permission.CAMERA)
-                                && ContextCompat.checkSelfPermission(activity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                            needed = true;
-                        }
-                    } catch (PackageManager.NameNotFoundException e) {
-                        needed = true;
-                    }
-
-                    return needed;
-                }
-
-                private Intent getPhotoIntent() {
-                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    imageOutputFileUri = getOutputUri(MediaStore.ACTION_IMAGE_CAPTURE);
-                    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageOutputFileUri);
-                    return intent;
-                }
-
-                private Intent getVideoIntent() {
-                    Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-                    videoOutputFileUri = getOutputUri(MediaStore.ACTION_VIDEO_CAPTURE);
-                    intent.putExtra(MediaStore.EXTRA_OUTPUT, videoOutputFileUri);
-                    return intent;
-                }
-
-                private Intent getFileChooserIntent(String acceptTypes) {
-                    String _acceptTypes = acceptTypes;
-                    if (acceptTypes.isEmpty()) {
-                        _acceptTypes = DEFAULT_MIME_TYPES;
-                    }
-                    if (acceptTypes.matches("\\.\\w+")) {
-                        _acceptTypes = getMimeTypeFromExtension(acceptTypes.replace(".", ""));
-                    }
-                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType(_acceptTypes);
-                    return intent;
-                }
-
-                @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-                private Intent getFileChooserIntent(String[] acceptTypes, boolean allowMultiple) {
-                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    intent.setType("*/*");
-                    intent.putExtra(Intent.EXTRA_MIME_TYPES, getAcceptedMimeType(acceptTypes));
-                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple);
-                    return intent;
-                }
-
-                private String getMimeTypeFromExtension(String extension) {
-                    String type = null;
-                    if (extension != null) {
-                        type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-                    }
-                    return type;
-                }
-
-                private String[] getAcceptedMimeType(String[] types) {
-                    if (isArrayEmpty(types)) {
-                        return new String[]{DEFAULT_MIME_TYPES};
-                    }
-                    String[] mimeTypes = new String[types.length];
-                    for (int i = 0; i < types.length; i++) {
-                        String t = types[i];
-                        // convert file extensions to mime types
-                        if (t.matches("\\.\\w+")) {
-                            String mimeType = getMimeTypeFromExtension(t.replace(".", ""));
-                            mimeTypes[i] = mimeType;
-                        } else {
-                            mimeTypes[i] = t;
-                        }
-                    }
-                    return mimeTypes;
-                }
-
-                private Boolean acceptsAny(String[] types) {
-                    if (isArrayEmpty(types)) {
-                        return true;
-                    }
-
-                    for (String type : types) {
-                        if (type.equals("*/*")) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-
-                private Boolean arrayContainsString(String[] array, String pattern) {
-                    for (String content : array) {
-                        if (content != null && content.contains(pattern)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-                @Nullable
-                private Uri getOutputUri(String intentType) {
-                    File capturedFile = null;
-                    try {
-                        capturedFile = getCapturedFile(intentType);
-                    } catch (IOException e) {
-                        Log.e(LOG_TAG, "Error occurred while creating the File", e);
-                        e.printStackTrace();
-                    }
-                    if (capturedFile == null) {
-                        return null;
-                    }
-
-                    // for versions below 6.0 (23) we use the old File creation & permissions model
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                        return Uri.fromFile(capturedFile);
-                    }
-
-                    Activity activity = getActivity();
-                    if (activity == null) {
-                        return null;
-                    }
-                    // for versions 6.0+ (23) we use the FileProvider to avoid runtime permissions
-                    String fileProviderAuthority = activity.getApplicationContext().getPackageName()  + "." + "webview.fileprovider";
-                    return FileProvider.getUriForFile(activity.getApplicationContext(),
-                            fileProviderAuthority,
-                            capturedFile);
-                }
-
-                private Boolean isArrayEmpty(String[] arr) {
-                    // when our array returned from getAcceptTypes() has no values set from the webview
-                    // i.e. <input type="file" />, without any "accept" attr
-                    // will be an array with one empty string element, afaik
-                    return arr.length == 0 || (arr.length == 1 && arr[0].length() == 0);
-                }
-
-                @Nullable
-                private File getCapturedFile(String intentType) throws IOException {
-                    String prefix = "";
-                    String suffix = "";
-                    String dir = "";
-
-                    if (intentType.equals(MediaStore.ACTION_IMAGE_CAPTURE)) {
-                        prefix = "image";
-                        suffix = ".jpg";
-                        dir = Environment.DIRECTORY_PICTURES;
-                    } else if (intentType.equals(MediaStore.ACTION_VIDEO_CAPTURE)) {
-                        prefix = "video";
-                        suffix = ".mp4";
-                        dir = Environment.DIRECTORY_MOVIES;
-                    }
-
-                    // for versions below 6.0 (23) we use the old File creation & permissions model
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                        // only this Directory works on all tested Android versions
-                        // ctx.getExternalFilesDir(dir) was failing on Android 5.0 (sdk 21)
-                        File storageDir = Environment.getExternalStoragePublicDirectory(dir);
-                        String filename = String.format("%s-%d%s", prefix, System.currentTimeMillis(), suffix);
-                        return new File(storageDir, filename);
-                    }
-
-                    Activity activity = getActivity();
-                    if (activity == null) {
-                        return null;
-                    }
-                    File storageDir = activity.getApplicationContext().getExternalFilesDir(null);
-                    return File.createTempFile(prefix, suffix, storageDir);
-                }
             });
+
+
 
             mWebViewPlugin = new CWebViewPluginInterface(self, gameObject);
             webView.setWebViewClient(new WebViewClient() {

@@ -1,0 +1,38 @@
+[
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_btn_colored_borderless_text_material.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_btn_colored_borderless_text_material.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_tint_spinner.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_tint_spinner.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_btn_colored_text_material.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_btn_colored_text_material.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_tint_default.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_tint_default.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_tint_btn_checkable.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_tint_btn_checkable.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_tint_switch_track.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_tint_switch_track.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_tint_edittext.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_tint_edittext.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_tint_seek_thumb.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_tint_seek_thumb.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/color-v23/abc_color_highlight_material.xml",
+        "source": "net.gree.unitywebview-appcompat-1.6.1-9:/color-v23/abc_color_highlight_material.xml"
+    }
+]

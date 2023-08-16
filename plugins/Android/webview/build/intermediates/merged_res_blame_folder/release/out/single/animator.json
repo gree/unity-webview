@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/animator/fragment_open_exit.xml",
+        "source": "net.gree.unitywebview-fragment-1.6.1-4:/animator/fragment_open_exit.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/animator/fragment_open_enter.xml",
+        "source": "net.gree.unitywebview-fragment-1.6.1-4:/animator/fragment_open_enter.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/animator/fragment_fade_exit.xml",
+        "source": "net.gree.unitywebview-fragment-1.6.1-4:/animator/fragment_fade_exit.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/animator/fragment_fade_enter.xml",
+        "source": "net.gree.unitywebview-fragment-1.6.1-4:/animator/fragment_fade_enter.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/animator/fragment_close_exit.xml",
+        "source": "net.gree.unitywebview-fragment-1.6.1-4:/animator/fragment_close_exit.xml"
+    },
+    {
+        "merged": "net.gree.unitywebview-merged_res-28:/animator/fragment_close_enter.xml",
+        "source": "net.gree.unitywebview-fragment-1.6.1-4:/animator/fragment_close_enter.xml"
+    }
+]
