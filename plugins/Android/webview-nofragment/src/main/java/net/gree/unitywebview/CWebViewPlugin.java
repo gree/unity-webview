@@ -35,6 +35,7 @@ import android.os.Build;
 import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.webkit.GeolocationPermissions.Callback;
@@ -715,6 +716,9 @@ public class CWebViewPlugin {
                 mWebView.setVisibility(View.VISIBLE);
                 layout.requestFocus();
                 mWebView.requestFocus();
+                if (layout != null && layout.getParent() != null && layout.getParent().getParent() != null) {
+                    ((ViewGroup)layout.getParent().getParent()).requestLayout();
+                }
             } else {
                 mWebView.setVisibility(View.GONE);
             }
