@@ -2,14 +2,7 @@
     "name": "untiy-webview",
     "references": [],
     "optionalUnityReferences": [],
-    "includePlatforms": [
-        "Android",
-        "Editor",
-        "iOS",
-        "macOSStandalone",
-        "WebGL",
-        "WindowsStandalone64"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
