@@ -130,7 +130,7 @@ class CWebViewPluginInterface {
 }
 
 public class CWebViewPlugin extends Fragment {
-
+    private static boolean forceBringToFront;
     private static FrameLayout layout = null;
     private Queue<String> mMessages = new ArrayDeque<String>();
     private WebView mWebView;
@@ -1238,6 +1238,9 @@ public class CWebViewPlugin extends Fragment {
             } else {
                 mWebView.onResume();
                 mWebView.resumeTimers();
+                if (forceBringToFront && layout != null) {
+                    layout.bringToFront();
+                }
             }
         }});
     }
