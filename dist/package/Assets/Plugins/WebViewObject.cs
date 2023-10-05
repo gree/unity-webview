@@ -618,6 +618,9 @@ public class WebViewObject : MonoBehaviour
         webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures, radius);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
+#if UNITY_2022_1_OR_NEWER
+        webView.SetStatic<bool>("forceBringToFront", true);
+#endif
         webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
 
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
