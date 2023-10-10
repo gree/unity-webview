@@ -1255,7 +1255,7 @@ public class CWebViewPlugin extends Fragment {
                 mWebView.onResume();
                 mWebView.resumeTimers();
                 if (forceBringToFront && layout != null) {
-                    layout.bringToFront();
+                    //layout.bringToFront();
                 }
             }
         }});

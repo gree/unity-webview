@@ -898,7 +898,7 @@ public class CWebViewPlugin {
                 mWebView.onResume();
                 mWebView.resumeTimers();
                 if (forceBringToFront && layout != null) {
-                    layout.bringToFront();
+                    //layout.bringToFront();
                 }
             }
         }});
