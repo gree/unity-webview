@@ -659,6 +659,7 @@ window.Unity = { \
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if (![url hasPrefix:@"about:blank"]  // for loadHTML(), cf. #365
+               && ![url hasPrefix:@"about:srcdoc"] // for iframe srcdoc attribute
                && ![url hasPrefix:@"file:"]
                && ![url hasPrefix:@"http:"]
                && ![url hasPrefix:@"https:"]) {
