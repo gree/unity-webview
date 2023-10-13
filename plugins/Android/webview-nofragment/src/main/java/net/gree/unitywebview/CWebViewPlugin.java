@@ -556,6 +556,7 @@ public class CWebViewPlugin {
                     LayoutParams.MATCH_PARENT,
                     Gravity.NO_GRAVITY));
             mWebView = webView;
+            ((CUnityPlayerActivity)a).add(mWebView);
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();
@@ -604,6 +605,7 @@ public class CWebViewPlugin {
 
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
+        ((CUnityPlayerActivity)a).remove(mWebView);
         if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
