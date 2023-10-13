@@ -806,6 +806,7 @@ public class CWebViewPlugin extends Fragment {
                     LayoutParams.MATCH_PARENT,
                     Gravity.NO_GRAVITY));
             mWebView = webView;
+            ((CUnityPlayerActivity)a).add(mWebView);
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();
@@ -918,6 +919,7 @@ public class CWebViewPlugin extends Fragment {
         final Activity a = UnityPlayer.currentActivity;
         final CWebViewPlugin self = this;
         final WebView webView = mWebView;
+        ((CUnityPlayerActivity)a).remove(mWebView);
         mWebView = null;
         mMessages.clear();
         if (CWebViewPlugin.isDestroyed(a)) {
