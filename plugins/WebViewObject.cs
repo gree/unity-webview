@@ -568,7 +568,7 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void ClearMasks()
+    public static void ClearMasks()
     {
 #if !UNITY_EDITOR && UNITY_ANDROID
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
@@ -581,7 +581,7 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void AddMask(int x, int y, int w, int h)
+    public static void AddMask(int x, int y, int w, int h)
     {
 #if !UNITY_EDITOR && UNITY_ANDROID
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
