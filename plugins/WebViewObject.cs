@@ -188,13 +188,34 @@ public class WebViewObject : MonoBehaviour
     public void RequestFileChooserPermissions()
     {
         var permissions = new List<string>();
-        if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
+        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
         {
-            permissions.Add(Permission.ExternalStorageRead);
-        }
-        if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
-        {
-            permissions.Add(Permission.ExternalStorageWrite);
+            if (version.GetStatic<int>("SDK_INT") >= 33)
+            {
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_IMAGES"))
+                {
+                    permissions.Add("android.permission.READ_MEDIA_IMAGES");
+                }
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_VIDEO"))
+                {
+                    permissions.Add("android.permission.READ_MEDIA_VIDEO");
+                }
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_AUDIO"))
+                {
+                    permissions.Add("android.permission.READ_MEDIA_AUDIO");
+                }
+            }
+            else
+            {
+                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
+                {
+                    permissions.Add(Permission.ExternalStorageRead);
+                }
+                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
+                {
+                    permissions.Add(Permission.ExternalStorageWrite);
+                }
+            }
         }
         if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
         {
