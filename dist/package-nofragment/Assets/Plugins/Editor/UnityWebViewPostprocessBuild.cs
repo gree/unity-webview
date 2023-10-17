@@ -77,6 +77,7 @@ public class UnityWebViewPostprocessBuild
         }
         changed = (androidManifest.SetApplicationTheme("@style/UnityThemeSelector") || changed);
         changed = (androidManifest.SetActivityTheme("@style/UnityThemeSelector.Translucent") || changed);
+        changed = (androidManifest.SetExported(true) || changed);
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
         changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
@@ -431,6 +432,17 @@ internal class AndroidManifest : AndroidXmlDocument {
         return changed;
     }
 
+    // for api level 33
+    internal bool SetExported(bool enabled) {
+        bool changed = false;
+        var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity.GetAttribute("exported", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
+            activity.SetAttribute("exported", AndroidXmlNamespace, (enabled) ? "true" : "false");
+            changed = true;
+        }
+        return changed;
+    }
+
     internal bool SetHardwareAccelerated(bool enabled) {
         bool changed = false;
         var activity = GetActivityWithLaunchIntent() as XmlElement;
@@ -530,6 +542,25 @@ internal class AndroidManifest : AndroidXmlDocument {
 
     internal bool AddGallery() {
         bool changed = false;
+        // for api level 33
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.READ_MEDIA_IMAGES']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.READ_MEDIA_IMAGES"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.READ_MEDIA_VIDEO']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.READ_MEDIA_VIDEO"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.READ_MEDIA_AUDIO']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.READ_MEDIA_AUDIO"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
         // cf. https://developer.android.com/training/package-visibility/declaring
         if (SelectNodes("/manifest/queries", nsMgr).Count == 0) {
             var elem = CreateElement("queries");

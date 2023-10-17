@@ -188,13 +188,34 @@ public class WebViewObject : MonoBehaviour
     public void RequestFileChooserPermissions()
     {
         var permissions = new List<string>();
-        if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
+        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
         {
-            permissions.Add(Permission.ExternalStorageRead);
-        }
-        if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
-        {
-            permissions.Add(Permission.ExternalStorageWrite);
+            if (version.GetStatic<int>("SDK_INT") >= 33)
+            {
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_IMAGES"))
+                {
+                    permissions.Add("android.permission.READ_MEDIA_IMAGES");
+                }
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_VIDEO"))
+                {
+                    permissions.Add("android.permission.READ_MEDIA_VIDEO");
+                }
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_AUDIO"))
+                {
+                    permissions.Add("android.permission.READ_MEDIA_AUDIO");
+                }
+            }
+            else
+            {
+                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
+                {
+                    permissions.Add(Permission.ExternalStorageRead);
+                }
+                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
+                {
+                    permissions.Add(Permission.ExternalStorageWrite);
+                }
+            }
         }
         if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
         {
@@ -547,7 +568,7 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void ClearMasks()
+    public static void ClearMasks()
     {
 #if !UNITY_EDITOR && UNITY_ANDROID
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
@@ -560,7 +581,7 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void AddMask(int x, int y, int w, int h)
+    public static void AddMask(int x, int y, int w, int h)
     {
 #if !UNITY_EDITOR && UNITY_ANDROID
         using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
