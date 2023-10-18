@@ -343,7 +343,14 @@ void CWebViewPlugin_ClearMasks()
 
 void CWebViewPlugin_AddMask(int x, int y, int w, int h)
 {
-    [(UnityView *)UnityGetGLView() addMask:CGRectMake(x, y, x + w, y + h)];
+    UIView *view = UnityGetGLViewController().view;
+    CGFloat scale = 1.0f;
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0) {
+        scale = view.window.screen.nativeScale;
+    } else {
+        scale = view.contentScaleFactor;
+    }
+    [(UnityView *)UnityGetGLView() addMask:CGRectMake(x / scale, y / scale, w / scale, h / scale)];
 }
 ");
                 File.WriteAllText(path + "/Classes/UI/UnityView.mm", string.Join("\n", lines));
