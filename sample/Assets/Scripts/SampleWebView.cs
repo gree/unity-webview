@@ -68,49 +68,7 @@ public class SampleWebView : MonoBehaviour
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS
-                // NOTE: the following js definition is required only for UIWebView; if
-                // enabledWKWebView is true and runtime has WKWebView, Unity.call is defined
-                // directly by the native plugin.
-#if true
-                var js = @"
-                    if (!(window.webkit && window.webkit.messageHandlers)) {
-                        window.Unity = {
-                            call: function(msg) {
-                                window.location = 'unity:' + msg;
-                            }
-                        };
-                    }
-                ";
-#else
-                // NOTE: depending on the situation, you might prefer this 'iframe' approach.
-                // cf. https://github.com/gree/unity-webview/issues/189
-                var js = @"
-                    if (!(window.webkit && window.webkit.messageHandlers)) {
-                        window.Unity = {
-                            call: function(msg) {
-                                var iframe = document.createElement('IFRAME');
-                                iframe.setAttribute('src', 'unity:' + msg);
-                                document.documentElement.appendChild(iframe);
-                                iframe.parentNode.removeChild(iframe);
-                                iframe = null;
-                            }
-                        };
-                    }
-                ";
-#endif
-#elif UNITY_WEBPLAYER || UNITY_WEBGL
-                var js = @"
-                    window.Unity = {
-                        call:function(msg) {
-                            parent.unityWebView.sendMessage('WebViewObject', msg);
-                        }
-                    };
-                ";
-#else
-                var js = "";
-#endif
-                webViewObject.EvaluateJS(js + @"Unity.call('ua=' + navigator.userAgent)");
+                webViewObject.EvaluateJS("Unity.call('ua=' + navigator.userAgent)");
             }
             //transparent: false,
             //zoom: true,
