@@ -908,13 +908,13 @@ public class CWebViewPlugin extends Fragment {
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
         final CWebViewPlugin self = this;
-        final WebView webView = mWebView;
-        mWebView = null;
         mMessages.clear();
         if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
         a.runOnUiThread(new Runnable() {public void run() {
+            final WebView webView = mWebView;
+            mWebView = null;
             if (webView == null) {
                 return;
             }

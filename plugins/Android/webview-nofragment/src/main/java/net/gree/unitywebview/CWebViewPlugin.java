@@ -591,12 +591,12 @@ public class CWebViewPlugin {
 
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
-        final WebView webView = mWebView;
-        mWebView = null;
         if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
         a.runOnUiThread(new Runnable() {public void run() {
+            final WebView webView = mWebView;
+            mWebView = null;
             if (webView == null) {
                 return;
             }
