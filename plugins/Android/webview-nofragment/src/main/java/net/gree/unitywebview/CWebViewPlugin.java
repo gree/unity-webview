@@ -759,6 +759,9 @@ public class CWebViewPlugin {
                 if (layout != null && layout.getParent() != null && layout.getParent().getParent() != null) {
                     ((ViewGroup)layout.getParent().getParent()).requestLayout();
                 }
+                if (forceBringToFront && layout != null) {
+                    layout.bringToFront();
+                }
             } else {
                 mWebView.setVisibility(View.GONE);
             }
