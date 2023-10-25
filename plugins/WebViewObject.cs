@@ -59,6 +59,7 @@ public class WebViewObject : MonoBehaviour
     Callback onLoaded;
     Callback onHooked;
     Callback onCookies;
+    bool paused;
     bool visibility;
     bool alertDialogEnabled;
     bool scrollBounceEnabled;
@@ -95,6 +96,7 @@ public class WebViewObject : MonoBehaviour
     
     void OnApplicationPause(bool paused)
     {
+        this.paused = paused;
         if (webView == null)
             return;
         // if (!paused && mKeyboardVisibleHeight > 0)
@@ -107,6 +109,28 @@ public class WebViewObject : MonoBehaviour
 
     void Update()
     {
+        // NOTE:
+        //
+        // When OnApplicationPause(true) is called and the app is in closing, webView.Call(...)
+        // after that could cause crashes because underlying java instances were closed.
+        //
+        // This has not been cleary confirmed yet. However, as Update() is called once after
+        // OnApplicationPause(true), it is likely correct.
+        //
+        // Base on this assumption, we do nothing here if the app is paused.
+        //
+        // cf. https://github.com/gree/unity-webview/issues/991#issuecomment-1776628648
+        // cf. https://docs.unity3d.com/2020.3/Documentation/Manual/ExecutionOrder.html
+        //
+        // In between frames
+        //
+        // * OnApplicationPause: This is called at the end of the frame where the pause is detected,
+        //   effectively between the normal frame updates. One extra frame will be issued after
+        //   OnApplicationPause is called to allow the game to show graphics that indicate the
+        //   paused state.
+        //
+        if (paused)
+            return;
         if (webView == null)
             return;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
