@@ -111,6 +111,7 @@ public class SampleWebView : MonoBehaviour
                 var js = "";
 #endif
                 webViewObject.EvaluateJS(js + @"Unity.call('ua=' + navigator.userAgent)");
+                webViewObject.EvaluateJS("if (location) window.Unity.call('url:' + location.href);");
             }
             //transparent: false,
             //zoom: true,
