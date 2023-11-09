@@ -85,6 +85,8 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
     AndroidJavaObject webView;
     
+    static int sWindowVisibleDisplayFrameWidth;
+    static int sWindowVisibleDisplayFrameHeight;
     bool mVisibility;
     int mKeyboardVisibleHeight;
     int mWindowVisibleDisplayFrameHeight;
@@ -94,6 +96,28 @@ public class WebViewObject : MonoBehaviour
     NetworkReachability? androidNetworkReachability0 = null;
 #endif
     
+    [RuntimeInitializeOnLoadMethod]
+    static void OnRuntimeMethodLoad()
+    {
+        using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        {
+            AndroidJavaObject View = UnityClass.GetStatic<AndroidJavaObject>("currentActivity").Get<AndroidJavaObject>("mUnityPlayer").Call<AndroidJavaObject>("getView");
+            using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
+            {
+                View.Call("getWindowVisibleDisplayFrame", Rct);
+                sWindowVisibleDisplayFrameWidth = Rct.Call<int>("width");
+                sWindowVisibleDisplayFrameHeight = Rct.Call<int>("height");
+                if (sWindowVisibleDisplayFrameWidth > sWindowVisibleDisplayFrameHeight)
+                {
+                    // store values in portrait mode.
+                    var tmp = sWindowVisibleDisplayFrameWidth;
+                    sWindowVisibleDisplayFrameWidth = sWindowVisibleDisplayFrameHeight;
+                    sWindowVisibleDisplayFrameHeight = tmp;
+                }
+            }
+        }
+    }
+
     void OnApplicationPause(bool paused)
     {
         this.paused = paused;
@@ -133,6 +157,10 @@ public class WebViewObject : MonoBehaviour
             return;
         if (webView == null)
             return;
+        mWindowVisibleDisplayFrameHeight
+            = (Screen.width < Screen.height)
+            ? sWindowVisibleDisplayFrameHeight
+            : sWindowVisibleDisplayFrameWidth;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
         var t = Time.time;
         if (t - 1.0f >= androidNetworkReachabilityCheckT0)
@@ -667,16 +695,6 @@ public class WebViewObject : MonoBehaviour
         webView.SetStatic<bool>("forceBringToFront", true);
 #endif
         webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
-
-        using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-        {
-            AndroidJavaObject View = UnityClass.GetStatic<AndroidJavaObject>("currentActivity").Get<AndroidJavaObject>("mUnityPlayer").Call<AndroidJavaObject>("getView");
-            using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
-            {
-                View.Call("getWindowVisibleDisplayFrame", Rct);
-                mWindowVisibleDisplayFrameHeight = Rct.Call<int>("height");
-            }
-        }
 #else
         Debug.LogError("Webview is not supported on this platform.");
 #endif
