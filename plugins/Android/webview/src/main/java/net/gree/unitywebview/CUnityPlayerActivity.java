@@ -1,5 +1,6 @@
 package net.gree.unitywebview;
 
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,6 +15,13 @@ public class CUnityPlayerActivity
 {
     private List<WebView> _webViews = new ArrayList<WebView>();
     private List<Rect> _masks = new ArrayList<Rect>();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        getWindow().getDecorView().setBackgroundColor(Color.BLACK);
+    }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {

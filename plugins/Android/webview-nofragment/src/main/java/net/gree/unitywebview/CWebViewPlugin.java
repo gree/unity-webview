@@ -623,7 +623,7 @@ public class CWebViewPlugin {
             webView.stopLoading();
             if (mVideoView != null) {
                 layout.removeView(mVideoView);
-                layout.setBackgroundColor(0x00000000);
+                layout.setBackgroundColor(0xff000000);
                 mVideoView = null;
             }
             layout.removeView(webView);
