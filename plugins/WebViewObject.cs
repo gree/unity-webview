@@ -85,39 +85,14 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_ANDROID
     AndroidJavaObject webView;
     
-    static int sWindowVisibleDisplayFrameWidth;
-    static int sWindowVisibleDisplayFrameHeight;
     bool mVisibility;
     int mKeyboardVisibleHeight;
-    int mWindowVisibleDisplayFrameHeight;
     float mResumedTimestamp;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
     float androidNetworkReachabilityCheckT0 = -1.0f;
     NetworkReachability? androidNetworkReachability0 = null;
 #endif
     
-    [RuntimeInitializeOnLoadMethod]
-    static void OnRuntimeMethodLoad()
-    {
-        using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-        {
-            AndroidJavaObject View = UnityClass.GetStatic<AndroidJavaObject>("currentActivity").Get<AndroidJavaObject>("mUnityPlayer").Call<AndroidJavaObject>("getView");
-            using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
-            {
-                View.Call("getWindowVisibleDisplayFrame", Rct);
-                sWindowVisibleDisplayFrameWidth = Rct.Call<int>("width");
-                sWindowVisibleDisplayFrameHeight = Rct.Call<int>("height");
-                if (sWindowVisibleDisplayFrameWidth > sWindowVisibleDisplayFrameHeight)
-                {
-                    // store values in portrait mode.
-                    var tmp = sWindowVisibleDisplayFrameWidth;
-                    sWindowVisibleDisplayFrameWidth = sWindowVisibleDisplayFrameHeight;
-                    sWindowVisibleDisplayFrameHeight = tmp;
-                }
-            }
-        }
-    }
-
     void OnApplicationPause(bool paused)
     {
         this.paused = paused;
@@ -157,10 +132,6 @@ public class WebViewObject : MonoBehaviour
             return;
         if (webView == null)
             return;
-        mWindowVisibleDisplayFrameHeight
-            = (Screen.width < Screen.height)
-            ? sWindowVisibleDisplayFrameHeight
-            : sWindowVisibleDisplayFrameWidth;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
         var t = Time.time;
         if (t - 1.0f >= androidNetworkReachabilityCheckT0)
@@ -397,8 +368,11 @@ public class WebViewObject : MonoBehaviour
                 AndroidJavaObject View = UnityClass.GetStatic<AndroidJavaObject>("currentActivity").Get<AndroidJavaObject>("mUnityPlayer").Call<AndroidJavaObject>("getView");
                 using(AndroidJavaObject Rct = new AndroidJavaObject("android.graphics.Rect"))
                 {
+                    View.Call("getDrawingRect", Rct);
+                    int h0 = Rct.Call<int>("height");
                     View.Call("getWindowVisibleDisplayFrame", Rct);
-                    keyboardHeight = mWindowVisibleDisplayFrameHeight - Rct.Call<int>("height");
+                    int h1 = Rct.Call<int>("height");
+                    keyboardHeight = h0 - h1;
                 }
             }
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
