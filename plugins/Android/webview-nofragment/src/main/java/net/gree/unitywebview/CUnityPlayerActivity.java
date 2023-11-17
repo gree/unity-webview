@@ -1,12 +1,15 @@
 package net.gree.unitywebview;
 
+import android.app.Activity;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.webkit.WebView;
 import com.unity3d.player.*;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +23,19 @@ public class CUnityPlayerActivity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        getWindow().getDecorView().setBackgroundColor(Color.BLACK);
+        // getWindow().getDecorView().setBackgroundColor(Color.BLACK);
+        // cf. https://stackoverflow.com/questions/9812427/android-how-to-programmatically-make-an-activity-window-transluscent
+        // cf. https://github.com/ikew0ng/SwipeBackLayout/blob/e4ddae6d2b8af9b606493cba36faef8beba94be2/library/src/main/java/me/imid/swipebacklayout/lib/Utils.java
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            setTranslucent(false);
+        } else {
+            try {
+                Method method = Activity.class.getDeclaredMethod("convertFromTranslucent");
+                method.setAccessible(true);
+                method.invoke(this);
+            } catch (Throwable t) {
+            }
+        }
     }
 
     @Override
