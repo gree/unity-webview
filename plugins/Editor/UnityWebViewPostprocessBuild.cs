@@ -76,6 +76,7 @@ public class UnityWebViewPostprocessBuild
             }
         }
         changed = (androidManifest.SetExported(true) || changed);
+        changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
         changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
@@ -163,6 +164,7 @@ public class UnityWebViewPostprocessBuild
                     }
                 }
             }
+            changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
             changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
             changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
@@ -309,6 +311,16 @@ internal class AndroidManifest : AndroidXmlDocument {
         var activity = GetActivityWithLaunchIntent() as XmlElement;
         if (activity.GetAttribute("exported", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
             activity.SetAttribute("exported", AndroidXmlNamespace, (enabled) ? "true" : "false");
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool SetWindowSoftInputMode(string mode) {
+        bool changed = false;
+        var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity.GetAttribute("windowSoftInputMode", AndroidXmlNamespace) != mode) {
+            activity.SetAttribute("windowSoftInputMode", AndroidXmlNamespace, mode);
             changed = true;
         }
         return changed;
