@@ -154,7 +154,7 @@ public class WebViewObject : MonoBehaviour
         if (Screen.height != mLastScreenHeight)
         {
             mLastScreenHeight = Screen.height;
-            webViewObject.EvaluateJS("(function() {var e = document.activeElement; if (e != null && e.tagName.toLowerCase() != 'body') {e.blur(); e.focus();}})()");
+            webView.Call("EvaluateJS", "(function() {var e = document.activeElement; if (e != null && e.tagName.toLowerCase() != 'body') {e.blur(); e.focus();}})()");
         }
         for (;;) {
             if (webView == null)
