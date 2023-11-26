@@ -88,6 +88,7 @@ public class WebViewObject : MonoBehaviour
     bool mVisibility;
     int mKeyboardVisibleHeight;
     float mResumedTimestamp;
+    int mLastScreenHeight;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
     float androidNetworkReachabilityCheckT0 = -1.0f;
     NetworkReachability? androidNetworkReachability0 = null;
@@ -149,6 +150,11 @@ public class WebViewObject : MonoBehaviour
         {
             mResumedTimestamp = 0.0f;
             webView.Call("SetVisibility", mVisibility);
+        }
+        if (Screen.height != mLastScreenHeight)
+        {
+            mLastScreenHeight = Screen.height;
+            webViewObject.EvaluateJS("(function() {var e = document.activeElement; if (e != null && e.tagName.toLowerCase() != 'body') {e.blur(); e.focus();}})()");
         }
         for (;;) {
             if (webView == null)
