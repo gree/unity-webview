@@ -298,28 +298,23 @@ By default, `navigator.onLine` doesn't work on Android WebView. Please define `U
 
 This plugin adjusts the bottom margin temporarily when the keyboard pops up to keep the focused input field displayed. This adjustment is however disabled for some cases (non-fullscreen mode or both portrait/landscape are enabled) to avoid odd behaviours (cf. https://github.com/gree/unity-webview/pull/809 ). Please define `UNITYWEBVIEW_ANDROID_FORCE_MARGIN_ADJUSTMENT_FOR_KEYBOARD` to force the margin adjustment even for these cases.
 
-#### How to build WebViewPlugin.jar
+#### How to build WebViewPlugin-*.aar.tmpl
 
-The following steps are for Mac but you can follow similar ones for Windows.
+UnityWebViewPostprocessBuild.cs will select one of WebViewPlugin-*.aar.tmpl depending on EditorUserSettings.development. You can build these files as below:
 
-1. Place Unity 5.6.1f1 as `/Applications/Unity5.6.1f1` on osx or `\Program Files\Unity5.6.1f1\` on windows.
-2. Install [Android Studio](https://developer.android.com/studio/install).
-3. Open Android Studio and select "Configure/SDK Manager", select the followings with "Show Package Details",
-   and click OK.
-  * SDK Platforms
-    * Android 6.0 (Marshmallow)
-      * Android SDK Platform 23
-  * SDK Tools
-    * Android SDK Build Tools
-      * 28.0.2
-4. Open Terminal.app and perform the followings. You should find
-   `unity-webview/build/Packager/Assets/Plugins/Android/WebViewPlugin.jar` if successful.
+1. Install Unity 5.6.1f1 and 2019.4.40f1 (both with Android Build Support) by Unity Hub.
+2. Open Terminal, `cd plugins/Android`, and invoke `./install.sh`.
 
-```bash
-$ export ANDROID_HOME=~/Library/Android/sdk
-$ export PATH=$PATH:~/Library/Android/sdk/platform-tools/bin:~/Library/Android/sdk/tools:~/Library/Android/sdk/tools/bin
-$ cd unity-webview/plugins/Android
-$ ./install.sh
+If successful, you should find `build/Packager/Assets/Plugins/Android/WebViewPlugin-*.aar.tmpl`. install.sh has the following options:
+
+```
+Usage: ./install.sh [OPTIONS]
+
+Options:
+
+  --nofragment		build a nofragment variant.
+  --development		build a development variant.
+
 ```
 
 ### WebGL
