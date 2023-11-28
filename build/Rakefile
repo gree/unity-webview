@@ -49,11 +49,11 @@ desc "build"
 task :build do
   DSTDIR.each do |dir|
     sh "git clean -dxf ."
-    # for keeping meta files
-    if Dir.exists?('../dist/package')
-      sh "cd ../dist; git clean -dxf .; git checkout ."
-      sh "cp -a ../dist/package/* Packager"
-    end
+  end
+  # for keeping meta files
+  if Dir.exists?('../dist/package')
+    sh "cd ../dist/package; git clean -dxf .; git checkout ."
+    sh "cp -a ../dist/package/* Packager"
   end
   CNT.times do |i|
     SRCS[i].each do |src|
@@ -64,7 +64,8 @@ task :build do
   end
   ["Android"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
-      sh "git clean -dxf .; ./install.sh --unity /Applications/Unity5.6.1f1"
+      sh "git clean -dxf .; ./install.sh"
+      sh "git clean -dxf .; ./install.sh --development"
     end
   end
   ["Mac"].each do |t|
@@ -84,9 +85,30 @@ end
 
 desc "buildnofragment"
 task :buildnofragment do
+  DSTDIR.each do |dir|
+    sh "git clean -dxf ."
+  end
+  # for keeping meta files
+  if Dir.exists?('../dist/package-nofragment')
+    sh "cd ../dist/package-nofragment; git clean -dxf .; git checkout ."
+    sh "cp -a ../dist/package-nofragment/* Packager"
+  end
+  CNT.times do |i|
+    SRCS[i].each do |src|
+      dstdir = "#{DSTDIR[i]}/#{File.dirname(src)}"
+      FileUtils.mkdir_p dstdir
+      FileUtils.cp_r "#{SRCDIR[i]}/#{src}", dstdir, preserve:true
+    end
+  end
   ["Android"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
-      sh "git clean -dxf .; ./install-nofragment.sh --unity /Applications/Unity5.6.1f1"
+      sh "git clean -dxf .; ./install.sh --nofragment"
+      sh "git clean -dxf .; ./install.sh --nofragment --development"
+    end
+  end
+  ["Mac"].each do |t|
+    Dir.chdir("#{SRCDIR[0]}/#{t}") do
+      sh "./install.sh"
     end
   end
   sh "sed -i '' -e 's/private static bool nofragment = false/private static bool nofragment = true/' Packager/Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs"

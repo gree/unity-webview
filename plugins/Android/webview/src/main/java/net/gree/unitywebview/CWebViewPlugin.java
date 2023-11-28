@@ -29,7 +29,9 @@ import android.content.ContentValues;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+//#if UNITYWEBVIEW_DEVELOPMENT
 import android.content.pm.ApplicationInfo;
+//#endif
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
@@ -418,6 +420,7 @@ public class CWebViewPlugin extends Fragment {
             mCustomHeaders = new Hashtable<String, String>();
 
             final WebView webView = (radius > 0) ? new RoundedWebView(a, radius) : new WebView(a);
+//#if UNITYWEBVIEW_DEVELOPMENT
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     ApplicationInfo ai = a.getPackageManager().getApplicationInfo(a.getPackageName(), 0);
@@ -427,6 +430,7 @@ public class CWebViewPlugin extends Fragment {
                 } catch (Exception ex) {
                 }
             }
+//#endif
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
