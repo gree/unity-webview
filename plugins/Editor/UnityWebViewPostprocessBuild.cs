@@ -8,12 +8,15 @@ using System.Text;
 using System.Xml;
 using System;
 using UnityEditor.Android;
+#if UNITY_2018_1_OR_NEWER
+using UnityEditor.Build;
+#endif
 using UnityEditor.Callbacks;
 using UnityEditor;
 using UnityEngine;
 
 #if UNITY_2018_1_OR_NEWER
-public class UnityWebViewPostprocessBuild : IPostGenerateGradleAndroidProject
+public class UnityWebViewPostprocessBuild : IPreprocessBuild, IPostGenerateGradleAndroidProject
 #else
 public class UnityWebViewPostprocessBuild
 #endif
@@ -25,6 +28,20 @@ public class UnityWebViewPostprocessBuild
     //// cf. https://github.com/Over17/UnityAndroidManifestCallback
 
 #if UNITY_2018_1_OR_NEWER
+    public void OnPreprocessBuild(BuildTarget buildTarget, string path) {
+        if (buildTarget == BuildTarget.Android) {
+            var dev = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
+            var rel = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
+            if (!File.Exists(dev) || !File.Exists(rel)) {
+                dev = "Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
+                rel = "Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
+            }
+            var src = (EditorUserBuildSettings.development) ? dev : rel;
+            Directory.CreateDirectory("Temp/StagingArea/aar");
+            File.Copy(src, "Temp/StagingArea/aar/WebViewPlugin.aar");
+        }
+    }
+
     public void OnPostGenerateGradleAndroidProject(string basePath) {
         var changed = false;
         var androidManifest = new AndroidManifest(GetManifestPath(basePath));
@@ -141,6 +158,19 @@ public class UnityWebViewPostprocessBuild
                 }
             }
             var changed = false;
+            if (EditorUserBuildSettings.development) {
+                if (!File.Exists("Assets/Plugins/Android/WebView.aar")
+                    || !File.ReadAllBytes("Assets/Plugins/Android/WebView.aar").SequenceEqual(File.ReadAllBytes("Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl"))) {
+                    File.Copy("Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl", "Assets/Plugins/Android/WebView.aar");
+                    changed = true;
+                }
+            } else {
+                if (!File.Exists("Assets/Plugins/Android/WebView.aar")
+                    || !File.ReadAllBytes("Assets/Plugins/Android/WebView.aar").SequenceEqual(File.ReadAllBytes("Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl"))) {
+                    File.Copy("Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl", "Assets/Plugins/Android/WebView.aar");
+                    changed = true;
+                }
+            }
             var androidManifest = new AndroidManifest(manifest);
             if (!nofragment) {
                 changed = (androidManifest.AddFileProvider("Assets/Plugins/Android") || changed);
@@ -148,7 +178,6 @@ public class UnityWebViewPostprocessBuild
                 var found = false;
                 foreach (var file in files) {
                     if (Regex.IsMatch(file, @"^Assets/Plugins/Android/(androidx\.core\.)?core-.*.aar$")) {
-                        Debug.LogError("XXX");
                         found = true;
                         break;
                     }
@@ -181,7 +210,7 @@ public class UnityWebViewPostprocessBuild
 #endif
             if (changed) {
                 androidManifest.Save();
-                Debug.LogError("unitywebview: adjusted AndroidManifest.xml. Please rebuild the app.");
+                Debug.LogError("unitywebview: adjusted AndroidManifest.xml and/or WebView.aar. Please rebuild the app.");
             }
         }
 #endif
