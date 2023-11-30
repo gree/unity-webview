@@ -275,6 +275,20 @@ public class UnityWebViewPostprocessBuild
             }
             File.WriteAllText(projPath, dst);
 
+            // Classes/UI/UnityAppController+ViewHandling.mm
+            {
+                var text = File.ReadAllText(path + "/Classes/UI/UnityAppController+ViewHandling.mm");
+                text = text.Replace(
+                    @"
+    _rootController.view = _rootView = _unityView;
+",
+                    @"
+    UIView *view = [[UIView alloc] initWithFrame:controller.view.bounds];
+    [view addSubview:_unityView];
+    _rootController.view = _rootView = view;
+");
+                File.WriteAllText(path + "/Classes/UI/UnityAppController+ViewHandling.mm", text);
+            }
             // Classes/UI/UnityView.h
             {
                 var lines0 = File.ReadAllText(path + "/Classes/UI/UnityView.h").Split('\n');
