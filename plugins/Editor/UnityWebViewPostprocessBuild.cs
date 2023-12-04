@@ -284,6 +284,7 @@ public class UnityWebViewPostprocessBuild
 ",
                     @"
     UIView *view = [[UIView alloc] initWithFrame:controller.view.bounds];
+    view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [view addSubview:_unityView];
     _rootController.view = _rootView = view;
 ");
