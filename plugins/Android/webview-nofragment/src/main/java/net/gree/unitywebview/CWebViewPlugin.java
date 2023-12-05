@@ -104,8 +104,8 @@ public class CWebViewPlugin {
     private static boolean forceBringToFront;
     private static FrameLayout layout = null;
     private Queue<String> mMessages = new ArrayDeque<String>();
-    private WebView mWebView;
-    private View mVideoView;
+    WebView mWebView;
+    View mVideoView;
     private OnGlobalLayoutListener mGlobalLayoutListener;
     private CWebViewPluginInterface mWebViewPlugin;
     private int progress;
@@ -556,7 +556,7 @@ public class CWebViewPlugin {
                     LayoutParams.MATCH_PARENT,
                     Gravity.NO_GRAVITY));
             mWebView = webView;
-            ((CUnityPlayerActivity)a).add(mWebView);
+            ((CUnityPlayerActivity)a).add(self);
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();
@@ -605,7 +605,7 @@ public class CWebViewPlugin {
 
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
-        ((CUnityPlayerActivity)a).remove(mWebView);
+        ((CUnityPlayerActivity)a).remove(this);
         if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }

@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
 import android.webkit.WebView;
 import com.unity3d.player.*;
 import java.lang.reflect.Method;
@@ -16,7 +17,7 @@ import java.util.List;
 public class CUnityPlayerActivity
     extends UnityPlayerActivity
 {
-    private List<WebView> _webViews = new ArrayList<WebView>();
+    private List<CWebViewPlugin> _webViewPlugins = new ArrayList<CWebViewPlugin>();
     private List<Rect> _masks = new ArrayList<Rect>();
 
     @Override
@@ -51,22 +52,23 @@ public class CUnityPlayerActivity
                 }
             }
         }
-        for (WebView webView : _webViews) {
+        for (CWebViewPlugin webViewPlugin : _webViewPlugins) {
             // cf. https://stackoverflow.com/questions/17845545/custom-viewgroup-dispatchtouchevent-doesnt-work-correctly/17845670#17845670
             MotionEvent cp = MotionEvent.obtain(event);
-            cp.offsetLocation(-webView.getLeft(), -webView.getTop());
-            webView.dispatchTouchEvent(cp);
+            View view = (webViewPlugin.mVideoView != null) ? webViewPlugin.mVideoView : webViewPlugin.mWebView;
+            cp.offsetLocation(-view.getLeft(), -view.getTop());
+            view.dispatchTouchEvent(cp);
             cp.recycle();
         }
         return ret;
     }
 
-    void add(WebView webView) {
-        _webViews.add(webView);
+    void add(CWebViewPlugin webViewPlugin) {
+        _webViewPlugins.add(webViewPlugin);
     }
 
-    void remove(WebView webView) {
-        _webViews.remove(webView);
+    void remove(CWebViewPlugin webViewPlugin) {
+        _webViewPlugins.remove(webViewPlugin);
     }
 
     public void clearMasks() {
