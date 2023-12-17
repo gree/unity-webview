@@ -1,6 +1,7 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
     <title>Unity WebView</title>
     <script src="sample.js"></script>
     <!-- geolocation example
@@ -20,17 +21,9 @@
   <body>
     <h1>Hello Unity WebView!</h1>
     <hr/>
-    <p><a href="https://google.com">https://google.com</a> (for testing go/back buttons)</p>
-    <p><a href="http://httpbin.org/headers">http://httpbin.org/headers</a> (for testing custom headers.)</p>
+    <p><a href="sample2.html">sample2</a>
     <p><img id="img" src="sample.jpg"/> (local image)</p>
-    <p><a href="javascript:void(0)" onclick="testSaveDataURL();">Test saveDataURL</a> (experimental, only for Android/iOS)</p>
-    <hr/>
     <div id="msg">[]</div>
     <p><a href="javascript:void(0)" onclick="Unity.call('anchor');">[Send Message!]</a></p>
-    <form method="get" action="form">
-      <input id="input1" type="text" value="hoge" name="msg"/>
-      <input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/><br/>
-      <input type="file" name="datafile"/>
-    </form>
   </body>
 </html>

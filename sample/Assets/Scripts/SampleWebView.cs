@@ -154,13 +154,14 @@ public class SampleWebView : MonoBehaviour
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
         } else {
-            var exts = new string[]{
-                ".jpg",
-                ".js",
-                ".html"  // should be last
+            var files = new string[]{
+                "sample.jpg",
+                "sample.js",
+                "sample.html",
+                "sample2.html",
             };
-            foreach (var ext in exts) {
-                var url = Url.Replace(".html", ext);
+            foreach (var file in files) {
+                var url = file;
                 var src = System.IO.Path.Combine(Application.streamingAssetsPath, url);
                 var dst = System.IO.Path.Combine(Application.temporaryCachePath, url);
                 byte[] result = null;
@@ -179,11 +180,8 @@ public class SampleWebView : MonoBehaviour
                     result = System.IO.File.ReadAllBytes(src);
                 }
                 System.IO.File.WriteAllBytes(dst, result);
-                if (ext == ".html") {
-                    webViewObject.LoadURL("file://" + dst.Replace(" ", "%20"));
-                    break;
-                }
             }
+            webViewObject.LoadURL("file://" + System.IO.Path.Combine(Application.temporaryCachePath, "sample.html").Replace(" ", "%20"));
         }
 #else
         if (Url.StartsWith("http")) {
