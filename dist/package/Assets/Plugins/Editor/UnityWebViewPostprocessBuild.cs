@@ -37,8 +37,10 @@ public class UnityWebViewPostprocessBuild
                 rel = "Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
             }
             var src = (EditorUserBuildSettings.development) ? dev : rel;
-            Directory.CreateDirectory("Temp/StagingArea/aar");
-            File.Copy(src, "Temp/StagingArea/aar/WebViewPlugin.aar");
+            //Directory.CreateDirectory("Temp/StagingArea/aar");
+            //File.Copy(src, "Temp/StagingArea/aar/WebViewPlugin.aar");
+            Directory.CreateDirectory("Assets/Plugins/Android");
+            File.Copy(src, "Assets/Plugins/Android/WebViewPlugin.aar");
         }
     }
 
@@ -150,7 +152,17 @@ public class UnityWebViewPostprocessBuild
 
     [PostProcessBuild(100)]
     public static void OnPostprocessBuild(BuildTarget buildTarget, string path) {
-#if !UNITY_2018_1_OR_NEWER
+#if UNITY_2018_1_OR_NEWER
+        try {
+            File.Delete("Assets/Plugins/Android/WebViewPlugin.aar");
+            File.Delete("Assets/Plugins/Android/WebViewPlugin.aar.meta");
+            Directory.Delete("Assets/Plugins/Android");
+            File.Delete("Assets/Plugins/Android.meta");
+            Directory.Delete("Assets/Plugins");
+            File.Delete("Assets/Plugins.meta");
+        } catch (Exception) {
+        }
+#else
         if (buildTarget == BuildTarget.Android) {
             string manifest = Path.Combine(Application.dataPath, "Plugins/Android/AndroidManifest.xml");
             if (!File.Exists(manifest)) {
