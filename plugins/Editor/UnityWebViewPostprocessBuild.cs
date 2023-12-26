@@ -95,6 +95,8 @@ public class UnityWebViewPostprocessBuild
             }
         }
         changed = (androidManifest.SetExported(true) || changed);
+        changed = (androidManifest.SetApplicationTheme("@style/UnityThemeSelector") || changed);
+        changed = (androidManifest.SetActivityTheme("@style/UnityThemeSelector.Translucent") || changed);
         changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
@@ -107,6 +109,9 @@ public class UnityWebViewPostprocessBuild
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
         changed = (androidManifest.AddMicrophone() || changed);
 #endif
+//#if UNITY_5_6_0 || UNITY_5_6_1
+        changed = (androidManifest.SetActivityName("net.gree.unitywebview.CUnityPlayerActivity") || changed);
+//#endif
         if (changed) {
             androidManifest.Save();
             Debug.Log("unitywebview: adjusted AndroidManifest.xml.");
@@ -217,9 +222,9 @@ public class UnityWebViewPostprocessBuild
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
             changed = (androidManifest.AddMicrophone() || changed);
 #endif
-#if UNITY_5_6_0 || UNITY_5_6_1
+//#if UNITY_5_6_0 || UNITY_5_6_1
             changed = (androidManifest.SetActivityName("net.gree.unitywebview.CUnityPlayerActivity") || changed);
-#endif
+//#endif
             if (changed) {
                 androidManifest.Save();
                 Debug.LogError("unitywebview: adjusted AndroidManifest.xml and/or WebView.aar. Please rebuild the app.");
@@ -281,6 +286,133 @@ public class UnityWebViewPostprocessBuild
                 dst = (string)method.Invoke(proj, null);
             }
             File.WriteAllText(projPath, dst);
+
+            // Classes/UI/UnityAppController+ViewHandling.mm
+            {
+                var text = File.ReadAllText(path + "/Classes/UI/UnityAppController+ViewHandling.mm");
+                text = text.Replace(
+                    @"
+    _rootController.view = _rootView = _unityView;
+",
+                    @"
+    UIView *view = [[UIView alloc] initWithFrame:controller.view.bounds];
+    view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [view addSubview:_unityView];
+    _rootController.view = _rootView = view;
+");
+                File.WriteAllText(path + "/Classes/UI/UnityAppController+ViewHandling.mm", text);
+            }
+            // Classes/UI/UnityView.h
+            {
+                var lines0 = File.ReadAllText(path + "/Classes/UI/UnityView.h").Split('\n');
+                var lines = new List<string>();
+                var phase = 0;
+                foreach (var line in lines0) {
+                    switch (phase) {
+                    case 0:
+                        lines.Add(line);
+                        if (line.StartsWith("@interface UnityView : UnityRenderingView")) {
+                            phase++;
+                        }
+                        break;
+                    case 1:
+                        lines.Add(line);
+                        if (line.StartsWith("}")) {
+                            phase++;
+                            lines.Add("");
+                            lines.Add("- (void)clearMasks;");
+                            lines.Add("- (void)addMask:(CGRect)r;");
+                        }
+                        break;
+                    default:
+                        lines.Add(line);
+                        break;
+                    }
+                }
+                File.WriteAllText(path + "/Classes/UI/UnityView.h", string.Join("\n", lines));
+            }
+            // Classes/UI/UnityView.mm
+            {
+                var lines0 = File.ReadAllText(path + "/Classes/UI/UnityView.mm").Split('\n');
+                var lines = new List<string>();
+                var phase = 0;
+                foreach (var line in lines0) {
+                    switch (phase) {
+                    case 0:
+                        lines.Add(line);
+                        if (line.StartsWith("@implementation UnityView")) {
+                            phase++;
+                        }
+                        break;
+                    case 1:
+                        if (line.StartsWith("}")) {
+                            phase++;
+                            lines.Add("    NSMutableArray<NSValue *> *_masks;");
+                            lines.Add(line);
+                            lines.Add(@"
+- (void)clearMasks
+{
+    if (_masks == nil) {
+        _masks = [[NSMutableArray<NSValue *> alloc] init];
+    }
+    [_masks removeAllObjects];
+}
+
+- (void)addMask:(CGRect)r
+{
+    if (_masks == nil) {
+        _masks = [[NSMutableArray<NSValue *> alloc] init];
+    }
+    [_masks addObject:[NSValue valueWithCGRect:r]];
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    //CGRect mask = CGRectMake(0, 0, 1334, 100);
+    //return CGRectContainsPoint(mask, point);
+    for (NSValue *v in _masks) {
+        if (CGRectContainsPoint([v CGRectValue], point)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+");
+                        } else {
+                            lines.Add(line);
+                        }
+                        break;
+                    default:
+                        lines.Add(line);
+                        break;
+                    }
+                }
+                lines.Add(@"
+extern ""C"" {
+    UIView *UnityGetGLView();
+    void CWebViewPlugin_ClearMasks();
+    void CWebViewPlugin_AddMask(int x, int y, int w, int h);
+}
+
+void CWebViewPlugin_ClearMasks()
+{
+    [(UnityView *)UnityGetGLView() clearMasks];
+}
+
+void CWebViewPlugin_AddMask(int x, int y, int w, int h)
+{
+    UIView *view = UnityGetGLViewController().view;
+    CGFloat scale = 1.0f;
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0) {
+        scale = view.window.screen.nativeScale;
+    } else {
+        scale = view.contentScaleFactor;
+    }
+    [(UnityView *)UnityGetGLView() addMask:CGRectMake(x / scale, y / scale, w / scale, h / scale)];
+}
+");
+                File.WriteAllText(path + "/Classes/UI/UnityView.mm", string.Join("\n", lines));
+            }
         }
     }
 }
@@ -352,6 +484,25 @@ internal class AndroidManifest : AndroidXmlDocument {
         var activity = GetActivityWithLaunchIntent() as XmlElement;
         if (activity.GetAttribute("exported", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
             activity.SetAttribute("exported", AndroidXmlNamespace, (enabled) ? "true" : "false");
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool SetApplicationTheme(string theme) {
+        bool changed = false;
+        if (ApplicationElement.GetAttribute("theme", AndroidXmlNamespace) != theme) {
+            ApplicationElement.SetAttribute("theme", AndroidXmlNamespace, theme);
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool SetActivityTheme(string theme) {
+        bool changed = false;
+        var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity.GetAttribute("theme", AndroidXmlNamespace) != theme) {
+            activity.SetAttribute("theme", AndroidXmlNamespace, theme);
             changed = true;
         }
         return changed;
