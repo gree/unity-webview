@@ -21,7 +21,7 @@ import com.unity3d.player.*;
 public class CUnityPlayerActivity extends Activity implements IUnityPlayerLifecycleEvents
 {
     public static CUnityPlayerActivity GlobalUnityActivity = null;
-    protected CUnityPlayer mUnityPlayer; // don't change the name of this variable; referenced from native code
+    protected UnityPlayer mUnityPlayer; // don't change the name of this variable; referenced from native code
 
     // Override this in your custom UnityPlayerActivity to tweak the command line arguments passed to the Unity Android Player
     // The command line arguments are passed as a string, separated by spaces
@@ -56,7 +56,7 @@ public class CUnityPlayerActivity extends Activity implements IUnityPlayerLifecy
         String cmdLine = updateUnityCommandLineArguments(getIntent().getStringExtra("unity"));
         getIntent().putExtra("unity", cmdLine);
 
-        mUnityPlayer = new CUnityPlayer(this);
+        mUnityPlayer = new UnityPlayer(this);
         CUnityPlayerActivity.GlobalUnityActivity = this;
 
         setContentView(mUnityPlayer);
