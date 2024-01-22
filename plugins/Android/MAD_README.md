@@ -2,6 +2,10 @@
 
 (This setup file is for building on mac, I've run it and committed the changes)
 
+## Recording of the process:
+https://sites.google.com/slatescience.com/knowledgebase/product/applications/unity/webview
+
+
 ## Creating new Plugin
 This is a custom unity webview fork to allow pausing and resuming unity while the WebView is running. 
 (**Notice:** all of our unique implementation is in `webviewObject.cs`, `CUnityPlayerActivity.java`, and `CWebViewPlugin.java` under `plugins/Android/webview/src/main/java/net/gree/unitywebview`)
@@ -28,7 +32,7 @@ If not working, you need to install the sdk tool follow this guide https://devel
 3. You need to remove old assembly (will appear grey) and reimport new assembly (from `Vendors`) in `AssetsAssembly`.
 4. Now you can take `WebViewPlugin.aar` and `core-1.6.0.aar.tmpl` that were created in previous section and paste them in `Vendors/unity-webview/dist/package/Assets/Plugins/Android`.
 5. You can modify WebViewObject.cs as you like.
-6. If you add more changes to `CUnityPlayerActivity` or `CWebViewPlugin` rebuild plugin and redo step 4.
+6. If you add more changes to `CUnityPlayerActivity` or `CWebViewPlugin` Build the project, rebuild plugin and redo step 4.
  
 
 ## Deploying new Plugin in git
