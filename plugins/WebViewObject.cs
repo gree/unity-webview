@@ -827,6 +827,19 @@ public class WebViewObject : MonoBehaviour
             float h = (float)Screen.height;
             int iw = Display.main.systemWidth;
             int ih = Display.main.systemHeight;
+            if (!Screen.fullScreen)
+            {
+                using (var unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var activity = unityClass.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var player = activity.Get<AndroidJavaObject>("mUnityPlayer"))
+                using (var view = player.Call<AndroidJavaObject>("getView"))
+                using (var rect = new AndroidJavaObject("android.graphics.Rect"))
+                {
+                    view.Call("getDrawingRect", rect);
+                    iw = rect.Call<int>("width");
+                    ih = rect.Call<int>("height");
+                }
+            }
             ml = left / w * iw;
             mt = top / h * ih;
             mr = right / w * iw;
