@@ -825,8 +825,8 @@ public class WebViewObject : MonoBehaviour
         {
             float w = (float)Screen.width;
             float h = (float)Screen.height;
-            int iw = Screen.currentResolution.width;
-            int ih = Screen.currentResolution.height;
+            int iw = Display.main.systemWidth;
+            int ih = Display.main.systemHeight;
             ml = left / w * iw;
             mt = top / h * ih;
             mr = right / w * iw;
