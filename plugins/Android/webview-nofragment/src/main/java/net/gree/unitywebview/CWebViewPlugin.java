@@ -359,7 +359,7 @@ public class CWebViewPlugin {
                 }
 
                 @Override
-                public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest requst) {
+                public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                     if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
                         return super.shouldInterceptRequest(view, request);
                     }
