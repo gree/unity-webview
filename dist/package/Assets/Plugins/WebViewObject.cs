@@ -889,6 +889,10 @@ public class WebViewObject : MonoBehaviour
 
     public void SetVisibility(bool v)
     {
+        if (GetVisibility() && !v)
+        {
+            EvaluateJS("if (document && document.activeElement) document.activeElement.blur();");
+        }
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_setVisibility(name, v);
