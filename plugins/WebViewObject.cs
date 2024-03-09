@@ -1524,7 +1524,8 @@ public class WebViewObject : MonoBehaviour
                 var w = _CWebViewPlugin_BitmapWidth(webView);
                 var h = _CWebViewPlugin_BitmapHeight(webView);
                 if (texture == null || texture.width != w || texture.height != h) {
-                    texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true);
+                    bool isLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                    texture = new Texture2D(w, h, TextureFormat.RGBA32, false, !isLinearSpace);
                     texture.filterMode = FilterMode.Bilinear;
                     texture.wrapMode = TextureWrapMode.Clamp;
                     textureDataBuffer = new byte[w * h * 4];
@@ -1595,7 +1596,7 @@ public class WebViewObject : MonoBehaviour
                         new Vector3(0, Screen.height, 0),
                         Quaternion.identity,
                         new Vector3(1, -1, 1));
-                GUI.DrawTexture(rect, texture);
+                Graphics.DrawTexture(rect, texture);
                 GUI.matrix = m;
             }
             break;
