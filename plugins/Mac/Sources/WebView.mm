@@ -808,12 +808,12 @@ window.Unity = { \
 {
     if (webView == nil)
         return;
-    @synchronized(self) {
-        if (inRendering)
-            return;
-        inRendering = YES;
-    }
     if (refreshBitmap) {
+        @synchronized(self) {
+            if (inRendering)
+                return;
+            inRendering = YES;
+        }
         // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
         // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
         NSRect rect = webView.frame;
