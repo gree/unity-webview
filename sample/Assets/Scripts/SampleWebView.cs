@@ -52,6 +52,10 @@ public class SampleWebView : MonoBehaviour
                 Debug.Log(string.Format("CallOnHttpError[{0}]", msg));
                 status.text = msg;
                 status.GetComponent<Animation>().Play();
+                if (msg == "404")
+                {
+                    Destroy(webViewObject.gameObject);
+                }
             },
             started: (msg) =>
             {
