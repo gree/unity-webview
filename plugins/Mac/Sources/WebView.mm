@@ -195,23 +195,6 @@ window.Unity = { \
 "
             ];
     }
-    if (!separated) {
-        // define pseudo requestAnimationFrame.
-        str = [str stringByAppendingString:@"\
-(function() { \
-    var vsync = 1000 / 60; \
-    var t0 = window.performance.now(); \
-    window.requestAnimationFrame = function(callback, element) { \
-        var t1 = window.performance.now(); \
-        var duration = t1 - t0; \
-        var d = vsync - ((duration > vsync) ? duration % vsync : duration); \
-        var id = window.setTimeout(function() {t0 = window.performance.now(); callback(t1 + d);}, d); \
-        return id; \
-    }; \
-})(); \
-"
-            ];
-    }
     WKUserScript *script
         = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
     [controller addUserScript:script];
@@ -239,16 +222,22 @@ window.Unity = { \
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
-    if (separated) {
-        window = [[NSWindow alloc] initWithContentRect:frame
-                                             styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
-                                               backing:NSBackingStoreBuffered
-                                                 defer:NO];
-        [window setContentView:webView];
-        [window orderFront:NSApp];
-        [window setDelegate:self];
-        windowController = [[NSWindowController alloc] initWithWindow:window];
+    window = [[NSWindow alloc] initWithContentRect:frame
+                                         styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
+                                           backing:NSBackingStoreBuffered
+                                             defer:NO];
+    [window setContentView:webView];
+    [window orderFront:NSApp];
+    [window setDelegate:self];
+    window.titleVisibility = NSWindowTitleHidden;
+    window.titlebarAppearsTransparent = YES;
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    if (!separated) {
+        window.movable = NO;
+        [window setFrameOrigin:NSMakePoint(-30000, -30000)];
+        //[window setLevel:NSSubmenuWindowLevel];
     }
+    windowController = [[NSWindowController alloc] initWithWindow:window];
     return self;
 }
 
@@ -835,14 +824,7 @@ window.Unity = { \
             bitmap = bitmaps[0];
         }
         NSBitmapImageRep *bitmap1 = (bitmap == bitmaps[0]) ? bitmaps[1] : bitmaps[0];
-        if (window != nil) {
-            memset([bitmap1 bitmapData], 128, [bitmap1 bytesPerRow] * [bitmap1 pixelsHigh]);
-            @synchronized(self) {
-                bitmap = bitmap1;
-                needsDisplay = YES;
-                inRendering = NO;
-            }
-        } else {
+        {
             [self runBlock:^{
                     [self->webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
                                                completionHandler:^(NSImage *nsImg, NSError *err) {
