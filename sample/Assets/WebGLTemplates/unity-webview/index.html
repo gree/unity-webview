@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Unity Web Player</title>
+
+		<link rel="shortcut icon" href="TemplateData/favicon.ico">
+		<link rel="stylesheet" href="TemplateData/style.css">
+		<script src="TemplateData/UnityProgress.js"></script>
+		<script src="Build/UnityLoader.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+		<script>
+			var unityInstance = UnityLoader.instantiate("gameContainer", "%UNITY_WEBGL_BUILD_URL%", {onProgress: UnityProgress});
+		</script>
+	</head>
+	<body>
+		<div class="content">
+			<div class="webgl-content" id="unityPlayer">
+				<div id="gameContainer" style="width: 960px; height: 600px"></div>
+				<div class="footer">
+					<div class="webgl-logo"></div>
+					<div class="fullscreen" onclick="document.getElementById('gameContainer').requestFullscreen()"></div>
+					<div class="title">Title</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- unity_webview -->
+		<script type="text/javascript" src="unity-webview.js"></script>
+	</body>
+</html>
