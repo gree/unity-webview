@@ -34,6 +34,9 @@ public class SampleWebView : MonoBehaviour
     IEnumerator Start()
     {
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        webViewObject.canvas = GameObject.Find("Canvas");
+#endif
         webViewObject.Init(
             cb: (msg) =>
             {

@@ -30,7 +30,9 @@ using UnityEngine.Networking;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
 using System.IO;
 using System.Text.RegularExpressions;
+using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 #endif
 #if UNITY_ANDROID
 using UnityEngine.Android;
@@ -74,6 +76,8 @@ public class WebViewObject : MonoBehaviour
     float mMarginBottomComputed;
     bool mMarginRelativeComputed;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+    public GameObject canvas;
+    Image bg;
     IntPtr webView;
     Rect rect;
     Texture2D texture;
@@ -880,6 +884,7 @@ public class WebViewObject : MonoBehaviour
         int height = (int)(Screen.height - (mb + mt));
         _CWebViewPlugin_SetRect(webView, width, height);
         rect = new Rect(left, bottom, width, height);
+        UpdateBGTransform();
 #elif UNITY_IPHONE
         _CWebViewPlugin_SetMargins(webView, ml, mt, mr, mb, r);
 #elif UNITY_ANDROID
@@ -1477,8 +1482,22 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    void Start()
+    {
+        if (canvas != null)
+        {
+            var g = new GameObject(gameObject.name + "BG");
+            g.transform.parent = canvas.transform;
+            bg = g.AddComponent<Image>();
+            UpdateBGTransform();
+        }
+    }
+
     void Update()
     {
+        if (bg != null) {
+            bg.transform.SetAsLastSibling();
+        }
         if (hasFocus) {
             inputString += Input.inputString;
         }
@@ -1538,6 +1557,18 @@ public class WebViewObject : MonoBehaviour
                 texture.LoadRawTextureData(textureDataBuffer);
                 texture.Apply();
             }
+        }
+    }
+
+    void UpdateBGTransform()
+    {
+        if (bg != null) {
+            bg.rectTransform.anchorMin = Vector2.zero;
+            bg.rectTransform.anchorMax = Vector2.zero;
+            bg.rectTransform.pivot = Vector2.zero;
+            bg.rectTransform.position = rect.min;
+            bg.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rect.size.x);
+            bg.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rect.size.y);
         }
     }
 
