@@ -698,6 +698,9 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        if (bg != null) {
+            Destroy(bg.gameObject);
+        }
         if (webView == IntPtr.Zero)
             return;
         _CWebViewPlugin_Destroy(webView);
@@ -894,6 +897,10 @@ public class WebViewObject : MonoBehaviour
 
     public void SetVisibility(bool v)
     {
+        if (bg != null)
+        {
+            bg.gameObject.active = v;
+        }
         if (GetVisibility() && !v)
         {
             EvaluateJS("if (document && document.activeElement) document.activeElement.blur();");
