@@ -897,10 +897,12 @@ public class WebViewObject : MonoBehaviour
 
     public void SetVisibility(bool v)
     {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (bg != null)
         {
             bg.gameObject.active = v;
         }
+#endif
         if (GetVisibility() && !v)
         {
             EvaluateJS("if (document && document.activeElement) document.activeElement.blur();");
