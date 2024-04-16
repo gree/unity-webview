@@ -27,6 +27,23 @@
 #import <unistd.h>
 #include <unordered_map>
 
+// cf. https://stackoverflow.com/questions/6303377/nswindow-set-frame-higher-than-screen/6303578#6303578
+@interface CNSWindow : NSWindow
+
+- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen *)screen;
+
+@end
+
+@implementation CNSWindow : NSWindow
+
+- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen *)screen;
+{
+    //return the unaltered frame, or do some other interesting things
+    return frameRect;
+}
+
+@end
+
 // cf. https://stackoverflow.com/questions/26383031/wkwebview-causes-my-view-controller-to-leak/33365424#33365424
 @interface WeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
 
@@ -222,10 +239,11 @@ window.Unity = { \
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
-    window = [[NSWindow alloc] initWithContentRect:frame
-                                         styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
-                                           backing:NSBackingStoreBuffered
-                                             defer:NO];
+    window = [[((!separated) ? CNSWindow.class : NSWindow.class) alloc]
+                 initWithContentRect:frame
+                           styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
+                             backing:NSBackingStoreBuffered
+                               defer:NO];
     [window setContentView:webView];
     [window orderFront:NSApp];
     [window setDelegate:self];
@@ -234,7 +252,7 @@ window.Unity = { \
     window.styleMask |= NSWindowStyleMaskFullSizeContentView;
     if (!separated) {
         window.movable = NO;
-        [window setFrameOrigin:NSMakePoint(-30000, -30000)];
+        [window setFrameOrigin:NSMakePoint(-10000, -10000)];
         //[window setLevel:NSSubmenuWindowLevel];
     }
     windowController = [[NSWindowController alloc] initWithWindow:window];
