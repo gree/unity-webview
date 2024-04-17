@@ -480,7 +480,7 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SendKeyEvent(IntPtr instance, int x, int y, string keyChars, ushort keyCode, int keyState);
     [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_Update(IntPtr instance, bool refreshBitmap);
+    private static extern void _CWebViewPlugin_Update(IntPtr instance, bool refreshBitmap, int devicePixelRatio);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapWidth(IntPtr instance);
     [DllImport("WebView")]
@@ -1546,7 +1546,7 @@ public class WebViewObject : MonoBehaviour
         if (webView == IntPtr.Zero || !visibility)
             return;
         bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
-        _CWebViewPlugin_Update(webView, refreshBitmap);
+        _CWebViewPlugin_Update(webView, refreshBitmap, devicePixelRatio);
         if (refreshBitmap) {
             {
                 var w = _CWebViewPlugin_BitmapWidth(webView);
@@ -1582,6 +1582,7 @@ public class WebViewObject : MonoBehaviour
     }
 
     public int bitmapRefreshCycle = 1;
+    public int devicePixelRatio = 1;
 
     void OnGUI()
     {
