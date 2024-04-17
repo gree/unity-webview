@@ -89,6 +89,7 @@ static BOOL s_useMetal;
     NSRegularExpression *denyRegex;
     NSRegularExpression *hookRegex;
     BOOL inRendering;
+    int devicePixelRatio0;
 }
 @end
 
@@ -811,7 +812,7 @@ window.Unity = { \
         }];
 }
 
-- (void)update:(BOOL)refreshBitmap
+- (void)update:(BOOL)refreshBitmap with:(int)devicePixelRatio
 {
     if (webView == nil)
         return;
@@ -821,22 +822,28 @@ window.Unity = { \
                 return;
             inRendering = YES;
         }
+        if (devicePixelRatio < 1)
+            devicePixelRatio = 1;
+        else if (devicePixelRatio > 2)
+            devicePixelRatio = 2;
         // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
         // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
         NSRect rect = webView.frame;
-        if (bitmaps[0] == nil || bitmaps[1] == nil) {
+        if (bitmaps[0] == nil || bitmaps[1] == nil || devicePixelRatio0 != devicePixelRatio) {
+            webView.pageZoom = devicePixelRatio;
+            devicePixelRatio0 = devicePixelRatio;
             for (int i = 0; i < 2; i++) {
                 bitmaps[i]
                     = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nil
-                                                              pixelsWide:rect.size.width
-                                                              pixelsHigh:rect.size.height
+                                                              pixelsWide:(rect.size.width * devicePixelRatio)
+                                                              pixelsHigh:(rect.size.height * devicePixelRatio)
                                                            bitsPerSample:8
                                                          samplesPerPixel:4
                                                                 hasAlpha:YES
                                                                 isPlanar:NO
                                                           colorSpaceName:NSCalibratedRGBColorSpace
                                                             bitmapFormat:0
-                                                             bytesPerRow:(4 * rect.size.width)
+                                                             bytesPerRow:(4 * rect.size.width * devicePixelRatio)
                                                             bitsPerPixel:32];
             }
             bitmap = bitmaps[0];
@@ -844,7 +851,10 @@ window.Unity = { \
         NSBitmapImageRep *bitmap1 = (bitmap == bitmaps[0]) ? bitmaps[1] : bitmaps[0];
         {
             [self runBlock:^{
-                    [self->webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
+                    WKSnapshotConfiguration *config = [WKSnapshotConfiguration new];
+                    config.rect = rect;
+                    config.snapshotWidth = @(rect.size.width * devicePixelRatio);
+                    [self->webView takeSnapshotWithConfiguration:config
                                                completionHandler:^(NSImage *nsImg, NSError *err) {
                             if (err == nil) {
                                 NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap1];
@@ -981,7 +991,7 @@ extern "C" {
     void _CWebViewPlugin_Reload(void *instance);
     void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState);
     void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, unsigned short keyCode, int keyState);
-    void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap);
+    void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap, int devicePixelRatio);
     int _CWebViewPlugin_BitmapWidth(void *instance);
     int _CWebViewPlugin_BitmapHeight(void *instance);
     void _CWebViewPlugin_Render(void *instance, void *textureBuffer);
@@ -1111,10 +1121,10 @@ void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, 
     [webViewPlugin sendKeyEvent:x y:y keyChars:keyChars keyCode:keyCode keyState:keyState];
 }
 
-void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap)
+void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap, int devicePixelRatio)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin update:refreshBitmap];
+    [webViewPlugin update:refreshBitmap with:devicePixelRatio];
 }
 
 int _CWebViewPlugin_BitmapWidth(void *instance)

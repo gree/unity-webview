@@ -130,6 +130,7 @@ public class SampleWebView : MonoBehaviour
             );
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
+        webViewObject.devicePixelRatio = 1;  // 1 or 2
 #endif
         // cf. https://github.com/gree/unity-webview/pull/512
         // Added alertDialogEnabled flag to enable/disable alert/confirm/prompt dialogs. by KojiNakamaru · Pull Request #512 · gree/unity-webview
