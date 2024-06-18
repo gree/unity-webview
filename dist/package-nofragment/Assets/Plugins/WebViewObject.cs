@@ -379,11 +379,13 @@ public class WebViewObject : MonoBehaviour
             using (var view = player.Call<AndroidJavaObject>("getView"))
             using (var rect = new AndroidJavaObject("android.graphics.Rect"))
             {
-                view.Call("getDrawingRect", rect);
-                int h0 = rect.Call<int>("height");
-                view.Call("getWindowVisibleDisplayFrame", rect);
-                int h1 = rect.Call<int>("height");
-                keyboardHeight = h0 - h1;
+                if (view.Call<bool>("getGlobalVisibleRect", rect))
+                {
+                    int h0 = rect.Get<int>("bottom");
+                    view.Call("getWindowVisibleDisplayFrame", rect);
+                    int h1 = rect.Get<int>("bottom");
+                    keyboardHeight = h0 - h1;
+                }
             }
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
         }
