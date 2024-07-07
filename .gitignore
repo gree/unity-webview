@@ -11,3 +11,4 @@ plugins/Android/.gradle
 plugins/Android/**/build
 plugins/Android/**/libs
 !plugins/Android/**/libs/.gitkeep
+plugins/Android/.idea
