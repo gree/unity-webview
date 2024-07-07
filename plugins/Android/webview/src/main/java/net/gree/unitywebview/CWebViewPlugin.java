@@ -133,6 +133,7 @@ class CWebViewPluginInterface {
 }
 
 public class CWebViewPlugin extends Fragment {
+    private static final String TAG = "CWebViewPlugin";
     private static boolean forceBringToFront;
     private static FrameLayout layout = null;
     private Queue<String> mMessages = new ArrayDeque<String>();
@@ -390,10 +391,15 @@ public class CWebViewPlugin extends Fragment {
 
     public void enableWebViewDebugging(boolean enabled) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            try {
-                mWebView.setWebContentsDebuggingEnabled(enabled);
-            } catch (Exception ex) {
-            }
+            final Activity a = UnityPlayer.currentActivity;
+            final boolean debugEnabled = enabled;
+            a.runOnUiThread(new Runnable() {public void run() {
+                try {
+                    mWebView.setWebContentsDebuggingEnabled(debugEnabled);
+                } catch (Exception ex) {
+                    android.util.Log.e(TAG, "enableWebViewDebugging failed with exception", ex);
+                }
+            }});
         }
     }
 
