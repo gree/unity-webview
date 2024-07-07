@@ -184,6 +184,15 @@ public class CWebViewPlugin {
         return mWebView != null;
     }
 
+    public void enableWebViewDebugging(boolean enabled) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            try {
+                mWebView.setWebContentsDebuggingEnabled(enabled);
+            } catch (Exception ex) {
+            }
+        }
+    }
+
     public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;

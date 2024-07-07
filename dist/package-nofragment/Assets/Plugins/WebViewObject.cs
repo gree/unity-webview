@@ -956,6 +956,16 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public void EnableWebviewDebugging(bool enabled) {
+#if UNITY_ANDROID
+      if (webView == null)
+        return;
+      webView.Call("enableWebViewDebugging", enabled);
+#else
+      Debug.Log($"Not implemented on {Application.platform}");
+#endif
+    }
+
     public void SetInteractionEnabled(bool enabled)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
