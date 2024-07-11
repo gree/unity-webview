@@ -38,9 +38,9 @@ public class UnityWebViewPostprocessBuild
             }
             var src = (EditorUserBuildSettings.development) ? dev : rel;
             //Directory.CreateDirectory("Temp/StagingArea/aar");
-            //File.Copy(src, "Temp/StagingArea/aar/WebViewPlugin.aar");
+            //File.Copy(src, "Temp/StagingArea/aar/WebViewPlugin.aar", true);
             Directory.CreateDirectory("Assets/Plugins/Android");
-            File.Copy(src, "Assets/Plugins/Android/WebViewPlugin.aar");
+            File.Copy(src, "Assets/Plugins/Android/WebViewPlugin.aar", true);
         }
     }
 
@@ -171,20 +171,20 @@ public class UnityWebViewPostprocessBuild
                     Debug.LogError("unitywebview: cannot find both Assets/Plugins/Android/AndroidManifest.xml and Temp/StagingArea/AndroidManifest-main.xml. please build the app to generate Assets/Plugins/Android/AndroidManifest.xml and then rebuild it again.");
                     return;
                 } else {
-                    File.Copy(manifest0, manifest);
+                    File.Copy(manifest0, manifest, true);
                 }
             }
             var changed = false;
             if (EditorUserBuildSettings.development) {
                 if (!File.Exists("Assets/Plugins/Android/WebView.aar")
                     || !File.ReadAllBytes("Assets/Plugins/Android/WebView.aar").SequenceEqual(File.ReadAllBytes("Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl"))) {
-                    File.Copy("Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl", "Assets/Plugins/Android/WebView.aar");
+                    File.Copy("Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl", "Assets/Plugins/Android/WebView.aar", true);
                     changed = true;
                 }
             } else {
                 if (!File.Exists("Assets/Plugins/Android/WebView.aar")
                     || !File.ReadAllBytes("Assets/Plugins/Android/WebView.aar").SequenceEqual(File.ReadAllBytes("Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl"))) {
-                    File.Copy("Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl", "Assets/Plugins/Android/WebView.aar");
+                    File.Copy("Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl", "Assets/Plugins/Android/WebView.aar", true);
                     changed = true;
                 }
             }
@@ -204,7 +204,7 @@ public class UnityWebViewPostprocessBuild
                         var match = Regex.Match(file, @"^Assets/Plugins/Android/(core.*.aar).tmpl$");
                         if (match.Success) {
                             var name = match.Groups[1].Value;
-                            File.Copy(file, "Assets/Plugins/Android/" + name);
+                            File.Copy(file, "Assets/Plugins/Android/" + name, true);
                             break;
                         }
                     }

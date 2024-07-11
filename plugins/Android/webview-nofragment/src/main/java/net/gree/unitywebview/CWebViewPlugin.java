@@ -65,6 +65,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
@@ -354,7 +355,18 @@ public class CWebViewPlugin {
                     if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
                         return super.shouldInterceptRequest(view, url);
                     }
+                    return shouldInterceptRequest(view, url, null);
+                }
 
+                @Override
+                public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                    if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
+                        return super.shouldInterceptRequest(view, request);
+                    }
+                    return shouldInterceptRequest(view, request.getUrl().toString(), request.getRequestHeaders());
+                }
+
+                public WebResourceResponse shouldInterceptRequest(WebView view, final String url, Map<String, String> headers) {
                     try {
                         HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
                         urlCon.setInstanceFollowRedirects(false);
@@ -375,6 +387,11 @@ public class CWebViewPlugin {
                             }
                         }
 
+                        if (headers != null) {
+                            for (Map.Entry<String, String> entry: headers.entrySet()) {
+                                urlCon.setRequestProperty(entry.getKey(), entry.getValue());
+                            }
+                        }
                         for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
                             urlCon.setRequestProperty(entry.getKey(), entry.getValue());
                         }

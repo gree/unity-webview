@@ -30,7 +30,9 @@ using UnityEngine.Networking;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
 using System.IO;
 using System.Text.RegularExpressions;
+using UnityEngine.EventSystems;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 #endif
 #if UNITY_ANDROID
 using UnityEngine.Android;
@@ -74,6 +76,8 @@ public class WebViewObject : MonoBehaviour
     float mMarginBottomComputed;
     bool mMarginRelativeComputed;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+    public GameObject canvas;
+    Image bg;
     IntPtr webView;
     Rect rect;
     Texture2D texture;
@@ -375,11 +379,13 @@ public class WebViewObject : MonoBehaviour
             using (var view = player.Call<AndroidJavaObject>("getView"))
             using (var rect = new AndroidJavaObject("android.graphics.Rect"))
             {
-                view.Call("getDrawingRect", rect);
-                int h0 = rect.Call<int>("height");
-                view.Call("getWindowVisibleDisplayFrame", rect);
-                int h1 = rect.Call<int>("height");
-                keyboardHeight = h0 - h1;
+                if (view.Call<bool>("getGlobalVisibleRect", rect))
+                {
+                    int h0 = rect.Get<int>("bottom");
+                    view.Call("getWindowVisibleDisplayFrame", rect);
+                    int h1 = rect.Get<int>("bottom");
+                    keyboardHeight = h0 - h1;
+                }
             }
             return (bottom > keyboardHeight) ? bottom : keyboardHeight;
         }
@@ -476,7 +482,7 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SendKeyEvent(IntPtr instance, int x, int y, string keyChars, ushort keyCode, int keyState);
     [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_Update(IntPtr instance, bool refreshBitmap);
+    private static extern void _CWebViewPlugin_Update(IntPtr instance, bool refreshBitmap, int devicePixelRatio);
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapWidth(IntPtr instance);
     [DllImport("WebView")]
@@ -724,6 +730,9 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        if (bg != null) {
+            Destroy(bg.gameObject);
+        }
         if (webView == IntPtr.Zero)
             return;
         _CWebViewPlugin_Destroy(webView);
@@ -855,8 +864,21 @@ public class WebViewObject : MonoBehaviour
         {
             float w = (float)Screen.width;
             float h = (float)Screen.height;
-            int iw = Screen.currentResolution.width;
-            int ih = Screen.currentResolution.height;
+            int iw = Display.main.systemWidth;
+            int ih = Display.main.systemHeight;
+            if (!Screen.fullScreen)
+            {
+                using (var unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var activity = unityClass.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var player = activity.Get<AndroidJavaObject>("mUnityPlayer"))
+                using (var view = player.Call<AndroidJavaObject>("getView"))
+                using (var rect = new AndroidJavaObject("android.graphics.Rect"))
+                {
+                    view.Call("getDrawingRect", rect);
+                    iw = rect.Call<int>("width");
+                    ih = rect.Call<int>("height");
+                }
+            }
             ml = left / w * iw;
             mt = top / h * ih;
             mr = right / w * iw;
@@ -897,6 +919,7 @@ public class WebViewObject : MonoBehaviour
         int height = (int)(Screen.height - (mb + mt));
         _CWebViewPlugin_SetRect(webView, width, height);
         rect = new Rect(left, bottom, width, height);
+        UpdateBGTransform();
 #elif UNITY_IPHONE
         _CWebViewPlugin_SetMargins(webView, ml, mt, mr, mb, r);
 #elif UNITY_ANDROID
@@ -906,6 +929,16 @@ public class WebViewObject : MonoBehaviour
 
     public void SetVisibility(bool v)
     {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        if (bg != null)
+        {
+            bg.gameObject.active = v;
+        }
+#endif
+        if (GetVisibility() && !v)
+        {
+            EvaluateJS("if (document && document.activeElement) document.activeElement.blur();");
+        }
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_setVisibility(name, v);
@@ -1490,8 +1523,22 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    void Start()
+    {
+        if (canvas != null)
+        {
+            var g = new GameObject(gameObject.name + "BG");
+            g.transform.parent = canvas.transform;
+            bg = g.AddComponent<Image>();
+            UpdateBGTransform();
+        }
+    }
+
     void Update()
     {
+        if (bg != null) {
+            bg.transform.SetAsLastSibling();
+        }
         if (hasFocus) {
             inputString += Input.inputString;
         }
@@ -1531,13 +1578,14 @@ public class WebViewObject : MonoBehaviour
         if (webView == IntPtr.Zero || !visibility)
             return;
         bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
-        _CWebViewPlugin_Update(webView, refreshBitmap);
+        _CWebViewPlugin_Update(webView, refreshBitmap, devicePixelRatio);
         if (refreshBitmap) {
             {
                 var w = _CWebViewPlugin_BitmapWidth(webView);
                 var h = _CWebViewPlugin_BitmapHeight(webView);
                 if (texture == null || texture.width != w || texture.height != h) {
-                    texture = new Texture2D(w, h, TextureFormat.RGBA32, false, true);
+                    bool isLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                    texture = new Texture2D(w, h, TextureFormat.RGBA32, false, !isLinearSpace);
                     texture.filterMode = FilterMode.Bilinear;
                     texture.wrapMode = TextureWrapMode.Clamp;
                     textureDataBuffer = new byte[w * h * 4];
@@ -1553,7 +1601,20 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+    void UpdateBGTransform()
+    {
+        if (bg != null) {
+            bg.rectTransform.anchorMin = Vector2.zero;
+            bg.rectTransform.anchorMax = Vector2.zero;
+            bg.rectTransform.pivot = Vector2.zero;
+            bg.rectTransform.position = rect.min;
+            bg.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rect.size.x);
+            bg.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rect.size.y);
+        }
+    }
+
     public int bitmapRefreshCycle = 1;
+    public int devicePixelRatio = 1;
 
     void OnGUI()
     {
@@ -1608,7 +1669,7 @@ public class WebViewObject : MonoBehaviour
                         new Vector3(0, Screen.height, 0),
                         Quaternion.identity,
                         new Vector3(1, -1, 1));
-                GUI.DrawTexture(rect, texture);
+                Graphics.DrawTexture(rect, texture);
                 GUI.matrix = m;
             }
             break;

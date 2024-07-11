@@ -27,6 +27,23 @@
 #import <unistd.h>
 #include <unordered_map>
 
+// cf. https://stackoverflow.com/questions/6303377/nswindow-set-frame-higher-than-screen/6303578#6303578
+@interface CNSWindow : NSWindow
+
+- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen *)screen;
+
+@end
+
+@implementation CNSWindow : NSWindow
+
+- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen *)screen;
+{
+    //return the unaltered frame, or do some other interesting things
+    return frameRect;
+}
+
+@end
+
 // cf. https://stackoverflow.com/questions/26383031/wkwebview-causes-my-view-controller-to-leak/33365424#33365424
 @interface WeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
 
@@ -72,6 +89,7 @@ static BOOL s_useMetal;
     NSRegularExpression *denyRegex;
     NSRegularExpression *hookRegex;
     BOOL inRendering;
+    int devicePixelRatio0;
 }
 @end
 
@@ -195,23 +213,6 @@ window.Unity = { \
 "
             ];
     }
-    if (!separated) {
-        // define pseudo requestAnimationFrame.
-        str = [str stringByAppendingString:@"\
-(function() { \
-    var vsync = 1000 / 60; \
-    var t0 = window.performance.now(); \
-    window.requestAnimationFrame = function(callback, element) { \
-        var t1 = window.performance.now(); \
-        var duration = t1 - t0; \
-        var d = vsync - ((duration > vsync) ? duration % vsync : duration); \
-        var id = window.setTimeout(function() {t0 = window.performance.now(); callback(t1 + d);}, d); \
-        return id; \
-    }; \
-})(); \
-"
-            ];
-    }
     WKUserScript *script
         = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
     [controller addUserScript:script];
@@ -239,16 +240,23 @@ window.Unity = { \
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
-    if (separated) {
-        window = [[NSWindow alloc] initWithContentRect:frame
-                                             styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
-                                               backing:NSBackingStoreBuffered
-                                                 defer:NO];
-        [window setContentView:webView];
-        [window orderFront:NSApp];
-        [window setDelegate:self];
-        windowController = [[NSWindowController alloc] initWithWindow:window];
+    window = [[((!separated) ? CNSWindow.class : NSWindow.class) alloc]
+                 initWithContentRect:frame
+                           styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
+                             backing:NSBackingStoreBuffered
+                               defer:NO];
+    [window setContentView:webView];
+    [window orderFront:NSApp];
+    [window setDelegate:self];
+    window.titleVisibility = NSWindowTitleHidden;
+    window.titlebarAppearsTransparent = YES;
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    if (!separated) {
+        window.movable = NO;
+        [window setFrameOrigin:NSMakePoint(-10000, -10000)];
+        //[window setLevel:NSSubmenuWindowLevel];
     }
+    windowController = [[NSWindowController alloc] initWithWindow:window];
     return self;
 }
 
@@ -804,47 +812,49 @@ window.Unity = { \
         }];
 }
 
-- (void)update:(BOOL)refreshBitmap
+- (void)update:(BOOL)refreshBitmap with:(int)devicePixelRatio
 {
     if (webView == nil)
         return;
-    @synchronized(self) {
-        if (inRendering)
-            return;
-        inRendering = YES;
-    }
     if (refreshBitmap) {
+        @synchronized(self) {
+            if (inRendering)
+                return;
+            inRendering = YES;
+        }
+        if (devicePixelRatio < 1)
+            devicePixelRatio = 1;
+        else if (devicePixelRatio > 2)
+            devicePixelRatio = 2;
         // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
         // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
         NSRect rect = webView.frame;
-        if (bitmaps[0] == nil || bitmaps[1] == nil) {
+        if (bitmaps[0] == nil || bitmaps[1] == nil || devicePixelRatio0 != devicePixelRatio) {
+            webView.pageZoom = devicePixelRatio;
+            devicePixelRatio0 = devicePixelRatio;
             for (int i = 0; i < 2; i++) {
                 bitmaps[i]
                     = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nil
-                                                              pixelsWide:rect.size.width
-                                                              pixelsHigh:rect.size.height
+                                                              pixelsWide:(rect.size.width * devicePixelRatio)
+                                                              pixelsHigh:(rect.size.height * devicePixelRatio)
                                                            bitsPerSample:8
                                                          samplesPerPixel:4
                                                                 hasAlpha:YES
                                                                 isPlanar:NO
                                                           colorSpaceName:NSCalibratedRGBColorSpace
                                                             bitmapFormat:0
-                                                             bytesPerRow:(4 * rect.size.width)
+                                                             bytesPerRow:(4 * rect.size.width * devicePixelRatio)
                                                             bitsPerPixel:32];
             }
             bitmap = bitmaps[0];
         }
         NSBitmapImageRep *bitmap1 = (bitmap == bitmaps[0]) ? bitmaps[1] : bitmaps[0];
-        if (window != nil) {
-            memset([bitmap1 bitmapData], 128, [bitmap1 bytesPerRow] * [bitmap1 pixelsHigh]);
-            @synchronized(self) {
-                bitmap = bitmap1;
-                needsDisplay = YES;
-                inRendering = NO;
-            }
-        } else {
+        {
             [self runBlock:^{
-                    [self->webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
+                    WKSnapshotConfiguration *config = [WKSnapshotConfiguration new];
+                    config.rect = rect;
+                    config.snapshotWidth = @(rect.size.width * devicePixelRatio);
+                    [self->webView takeSnapshotWithConfiguration:config
                                                completionHandler:^(NSImage *nsImg, NSError *err) {
                             if (err == nil) {
                                 NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap1];
@@ -981,7 +991,7 @@ extern "C" {
     void _CWebViewPlugin_Reload(void *instance);
     void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState);
     void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, unsigned short keyCode, int keyState);
-    void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap);
+    void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap, int devicePixelRatio);
     int _CWebViewPlugin_BitmapWidth(void *instance);
     int _CWebViewPlugin_BitmapHeight(void *instance);
     void _CWebViewPlugin_Render(void *instance, void *textureBuffer);
@@ -1111,10 +1121,10 @@ void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, 
     [webViewPlugin sendKeyEvent:x y:y keyChars:keyChars keyCode:keyCode keyState:keyState];
 }
 
-void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap)
+void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap, int devicePixelRatio)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin update:refreshBitmap];
+    [webViewPlugin update:refreshBitmap with:devicePixelRatio];
 }
 
 int _CWebViewPlugin_BitmapWidth(void *instance)
