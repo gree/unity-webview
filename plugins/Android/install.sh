@@ -70,15 +70,15 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# emit CWebViewPlugin.java for release by default
-sed '/^\/\/#if UNITYWEBVIEW_DEVELOPMENT$/,/^\/\/#endif$/d' < $tmp/CWebViewPlugin.java > "${TARGET}/src/main/java/net/gree/unitywebview/CWebViewPlugin.java"
+# emit CWebViewPlugin.java
 case $MODE in
 'Release')
     dst=${DEST_DIR}/WebViewPlugin-release.aar.tmpl
-    cp -a $tmp/CWebViewPlugin.java "${TARGET}/src/main/java/net/gree/unitywebview/CWebViewPlugin.java"
+    sed '/^\/\/#if UNITYWEBVIEW_DEVELOPMENT$/,/^\/\/#endif$/d' < $tmp/CWebViewPlugin.java > "${TARGET}/src/main/java/net/gree/unitywebview/CWebViewPlugin.java"
     ;;
 *)
     dst=${DEST_DIR}/WebViewPlugin-development.aar.tmpl
+    cp -a $tmp/CWebViewPlugin.java "${TARGET}/src/main/java/net/gree/unitywebview/CWebViewPlugin.java"
     ;;
 esac
 
