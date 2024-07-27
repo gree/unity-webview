@@ -30,6 +30,7 @@ public class SampleWebView : MonoBehaviour
     public string Url;
     public Text status;
     WebViewObject webViewObject;
+    static int angle;
 
     IEnumerator Start()
     {
@@ -38,6 +39,7 @@ public class SampleWebView : MonoBehaviour
         webViewObject.canvas = GameObject.Find("Canvas");
 #endif
         webViewObject.Init(
+            angle: (angle += 90),
             cb: (msg) =>
             {
                 Debug.Log(string.Format("CallFromJS[{0}]", msg));
@@ -150,7 +152,7 @@ public class SampleWebView : MonoBehaviour
 
         //webViewObject.SetScrollbarsVisibility(true);
 
-        webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
+        webViewObject.SetMargins(100, 100, 600, 400);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
         webViewObject.SetVisibility(true);
 
