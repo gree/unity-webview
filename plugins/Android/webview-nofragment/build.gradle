@@ -21,4 +21,5 @@ android {
 
 dependencies {
     compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.github.rongi:rotate-layout:v3.0.0'
 }

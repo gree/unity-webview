@@ -91,6 +91,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.unity3d.player.UnityPlayer;
+import com.github.rongi.rotate_layout.layout.RotateLayout;
 
 class CWebViewPluginInterface {
     private CWebViewPlugin mPlugin;
@@ -388,7 +389,7 @@ public class CWebViewPlugin extends Fragment {
         return mWebView != null;
     }
 
-    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
+    public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius, final int angle) {
         final CWebViewPlugin self = this;
         final Activity a = UnityPlayer.currentActivity;
         instanceCount++;
@@ -811,12 +812,20 @@ public class CWebViewPlugin extends Fragment {
                 layout.setFocusable(true);
                 layout.setFocusableInTouchMode(true);
             }
+            RotateLayout rotateLayout = new RotateLayout(a);
             layout.addView(
+                rotateLayout,
+                new FrameLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT,
+                    LayoutParams.MATCH_PARENT,
+                    Gravity.NO_GRAVITY));
+            rotateLayout.addView(
                 webView,
                 new FrameLayout.LayoutParams(
                     LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT,
                     Gravity.NO_GRAVITY));
+            rotateLayout.setAngle(angle);
             mWebView = webView;
         }});
 
@@ -950,7 +959,9 @@ public class CWebViewPlugin extends Fragment {
                 layout.setBackgroundColor(0x00000000);
                 mVideoView = null;
             }
-            layout.removeView(webView);
+            RotateLayout rotateLayout = (RotateLayout)webView.getParent();
+            rotateLayout.removeView(webView);
+            layout.removeView(rotateLayout);
             webView.destroy();
 
             if (mPaused) {
@@ -1092,7 +1103,7 @@ public class CWebViewPlugin extends Fragment {
             if (mWebView == null) {
                 return;
             }
-            mWebView.setLayoutParams(params);
+            ((RotateLayout)mWebView.getParent()).setLayoutParams(params);
         }});
     }
 

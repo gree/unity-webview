@@ -625,7 +625,9 @@ public class WebViewObject : MonoBehaviour
         bool wkAllowsLinkPreview = true,
         bool wkAllowsBackForwardNavigationGestures = true,
         // editor
-        bool separated = false)
+        bool separated = false,
+        // android
+        int angle = 0)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
@@ -683,7 +685,7 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_2021_1_OR_NEWER
         webView.SetStatic<bool>("forceBringToFront", true);
 #endif
-        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
+        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius, angle);
 #else
         Debug.LogError("Webview is not supported on this platform.");
 #endif
