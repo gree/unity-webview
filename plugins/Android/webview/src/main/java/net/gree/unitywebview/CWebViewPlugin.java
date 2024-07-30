@@ -395,7 +395,7 @@ public class CWebViewPlugin extends Fragment {
             final boolean debugEnabled = enabled;
             a.runOnUiThread(new Runnable() {public void run() {
                 try {
-                    mWebView.setWebContentsDebuggingEnabled(debugEnabled);
+                    WebView.setWebContentsDebuggingEnabled(debugEnabled);
                 } catch (Exception ex) {
                     android.util.Log.e(TAG, "enableWebViewDebugging failed with exception", ex);
                 }
