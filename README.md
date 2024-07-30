@@ -30,7 +30,7 @@ the following entry in your `Packages/manifest.json`:
 {
   "dependencies": {
     ...
-    "net.gree.unity-webview": "https://github.com/gree/unity-webview.git?path=/dist/package",
+    "com.airconsole.unity-webview": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package",
     ...
   }
 }
@@ -42,7 +42,7 @@ or the following for selecting the variant without Fragment:
 {
   "dependencies": {
     ...
-    "net.gree.unity-webview": "https://github.com/gree/unity-webview.git?path=/dist/package-nofragment",
+    "com.airconsole.unity-webview": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment",
     ...
   }
 }
@@ -252,13 +252,13 @@ index a62c1ca..a5efe9f 100644
 +#if !UNITY_EDITOR && UNITY_ANDROID
 +using UnityEngine.Android;
 +#endif
- 
+
  public class SampleWebView : MonoBehaviour
  {
 @@ -31,8 +34,29 @@ public class SampleWebView : MonoBehaviour
      public GUIText status;
      WebViewObject webViewObject;
- 
+
 +#if !UNITY_EDITOR && UNITY_ANDROID
 +    bool inRequestingCameraPermission;
 +
@@ -277,7 +277,7 @@ index a62c1ca..a5efe9f 100644
 +        {
 +            inRequestingCameraPermission = true;
 +            Permission.RequestUserPermission(Permission.Camera);
-+        }        
++        }
 +        while (inRequestingCameraPermission) {
 +            yield return new WaitForSeconds(0.5f);
 +        }
@@ -321,7 +321,7 @@ Options:
 
 *NOTE: for Unity 2020.1.0f1 or newer, please use `unity-webview-2020` instead of `unity-webview` below.*
 
-After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy 
+After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy
 `WebGLTemplates/Default/TemplateData` from your Unity installation to `Assets/WebGLTemplates/unity-webview`. If you utilize Unity 2018.4.13f1 for example,
 
 ```bash
