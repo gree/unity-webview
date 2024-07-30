@@ -1,4 +1,6 @@
 #!/bin/bash
+# Ensures that the AAR are installed into the correct place for DIST directly.
+
 set -euo pipefail
 
 # directories
@@ -19,7 +21,8 @@ MINGW64_NT*)
     UNITY='/c/PROGRA~1/Unity/Hub/Editor/2019.4.40f1/Editor/Data'
     ;;
 esac
-DEST_DIR='../../build/Packager/Assets/Plugins/Android'
+DEST_DIR='../../dist/package/Assets/Plugins/Android'
+# DEST_DIR='../../build/Packager/Assets/Plugins/Android'
 
 if [ ! -d "$JAVA_HOME" ]
 then
@@ -40,6 +43,7 @@ do
     case $OPT in
     '--nofragment')
         TARGET="webview-nofragment"
+        DEST_DIR='../../dist/package-nofragment/Assets/Plugins/Android'
         ;;
     '--development')
         MODE="Development"
