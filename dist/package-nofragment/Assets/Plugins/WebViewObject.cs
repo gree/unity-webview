@@ -1,15 +1,15 @@
 /*
  * Copyright (C) 2011 Keijiro Takahashi
  * Copyright (C) 2012 GREE, Inc.
- * 
+ *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the authors be held liable for any damages
  * arising from the use of this software.
- * 
+ *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
  * freely, subject to the following restrictions:
- * 
+ *
  * 1. The origin of this software must not be misrepresented; you must not
  *    claim that you wrote the original software. If you use this software
  *    in a product, an acknowledgment in the product documentation would be
@@ -88,7 +88,7 @@ public class WebViewObject : MonoBehaviour
     IntPtr webView;
 #elif UNITY_ANDROID
     AndroidJavaObject webView;
-    
+
     bool mVisibility;
     int mKeyboardVisibleHeight;
     float mResumedTimestamp;
@@ -97,7 +97,7 @@ public class WebViewObject : MonoBehaviour
     float androidNetworkReachabilityCheckT0 = -1.0f;
     NetworkReachability? androidNetworkReachability0 = null;
 #endif
-    
+
     void OnApplicationPause(bool paused)
     {
         this.paused = paused;
@@ -216,7 +216,7 @@ public class WebViewObject : MonoBehaviour
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
         }
     }
-    
+
     /// Called from Java native plugin to request permissions for the file chooser.
     public void RequestFileChooserPermissions()
     {
@@ -956,6 +956,18 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public void EnableWebviewDebugging(bool enabled) {
+#if UNITY_ANDROID && !(UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX)
+        if (webView == null) {
+            return;
+        }
+
+        webView.Call("enableWebViewDebugging", enabled);
+#else
+        Debug.Log($"EnableWebviewDebugging({enabled}) not implemented on {Application.platform}");
+#endif
+    }
+
     public void SetInteractionEnabled(bool enabled)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
@@ -1337,7 +1349,7 @@ public class WebViewObject : MonoBehaviour
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return null;
-        return _CWebViewPlugin_GetCustomHeaderValue(webView, headerKey);  
+        return _CWebViewPlugin_GetCustomHeaderValue(webView, headerKey);
 #elif UNITY_ANDROID
         if (webView == null)
             return null;

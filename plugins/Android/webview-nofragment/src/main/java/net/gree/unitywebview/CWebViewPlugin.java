@@ -102,6 +102,7 @@ class CWebViewPluginInterface {
 }
 
 public class CWebViewPlugin {
+    private static final String TAG = "CWebViewPlugin";
     private static boolean forceBringToFront;
     private static FrameLayout layout = null;
     private Queue<String> mMessages = new ArrayDeque<String>();
@@ -182,6 +183,20 @@ public class CWebViewPlugin {
 
     public boolean IsInitialized() {
         return mWebView != null;
+    }
+
+    public void enableWebViewDebugging(boolean enabled) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            final Activity a = UnityPlayer.currentActivity;
+            final boolean debugEnabled = enabled;
+            a.runOnUiThread(new Runnable() {public void run() {
+                try {
+                    WebView.setWebContentsDebuggingEnabled(debugEnabled);
+                } catch (Exception ex) {
+                    android.util.Log.e(TAG, "enableWebViewDebugging failed with exception", ex);
+                }
+            }});
+        }
     }
 
     public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {

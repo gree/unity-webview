@@ -30,8 +30,8 @@ public class UnityWebViewPostprocessBuild
 #if UNITY_2018_1_OR_NEWER
     public void OnPreprocessBuild(BuildTarget buildTarget, string path) {
         if (buildTarget == BuildTarget.Android) {
-            var dev = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
-            var rel = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
+            var dev = "Packages/com.airconsole.unity-webview/Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
+            var rel = "Packages/com.airconsole.unity-webview/Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
             if (!File.Exists(dev) || !File.Exists(rel)) {
                 dev = "Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
                 rel = "Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
