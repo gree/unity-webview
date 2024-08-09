@@ -1484,6 +1484,21 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    public void SetMixedContentMode(int mode)  // 0: MIXED_CONTENT_ALWAYS_ALLOW, 1: MIXED_CONTENT_NEVER_ALLOW, 2: MIXED_CONTENT_COMPATIBILITY_MODE
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+#elif UNITY_IPHONE && !UNITY_EDITOR
+        //TODO: UNSUPPORTED
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("SetMixedContentMode", mode);
+#endif
+    }
+
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     void OnApplicationFocus(bool focus)
     {
