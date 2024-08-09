@@ -1422,4 +1422,20 @@ public class CWebViewPlugin extends Fragment {
             mWebView.getSettings().setTextZoom(textZoom);
         }});
     }
+
+    public void SetMixedContentMode(final int mode)
+    {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mWebView.getSettings().setMixedContentMode(mode);
+            }
+        }});
+    }
 }
