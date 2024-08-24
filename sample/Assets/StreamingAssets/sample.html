@@ -3,6 +3,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Unity WebView</title>
     <script src="sample.js"></script>
+    <script>
+      window.addEventListener(
+          'message',
+          function(event) {
+              eval(event.data);
+          },
+          false);
+    </script>
     <!-- geolocation example
     <script>
       window.addEventListener(

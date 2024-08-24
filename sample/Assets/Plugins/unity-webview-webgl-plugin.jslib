@@ -24,6 +24,11 @@ mergeInto(LibraryManager.library, {
 		unityWebView.evaluateJS(stringify(name), stringify(js));
 	},
 
+	_gree_unity_webview_postMessage: function(name, msg) {
+		var stringify = (UTF8ToString === undefined) ? Pointer_stringify : UTF8ToString;
+		unityWebView.postMessage(stringify(name), stringify(msg));
+	},
+
 	_gree_unity_webview_destroy: function(name) {
 		var stringify = (UTF8ToString === undefined) ? Pointer_stringify : UTF8ToString;
 		unityWebView.destroy(stringify(name));
