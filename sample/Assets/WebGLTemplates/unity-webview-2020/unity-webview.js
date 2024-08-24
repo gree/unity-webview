@@ -94,6 +94,17 @@ var unityWebView =
         }
     },
 
+    postMessage: function (name, msg) {
+        $iframe = this.iframe(name);
+        if ($iframe.attr('loaded') === 'true') {
+            $iframe[0].contentWindow.postMessage(msg);
+        } else {
+            $iframe.on('load', function(){
+                $(this)[0].contentWindow.postMessage(msg);
+            });
+        }
+    },
+
     destroy: function (name) {
         this.iframe(name).parent().parent().remove();
     },
