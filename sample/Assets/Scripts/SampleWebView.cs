@@ -106,7 +106,8 @@ public class SampleWebView : MonoBehaviour
                 var js = @"
                     window.Unity = {
                         call:function(msg) {
-                            parent.unityWebView.sendMessage('WebViewObject', msg);
+                            //parent.unityWebView.sendMessage('WebViewObject', msg);
+                            parent.postMessage(msg, '*');
                         }
                     };
                 ";

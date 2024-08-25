@@ -590,6 +590,8 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_evaluateJS(string name, string js);
     [DllImport("__Internal")]
+    private static extern void _gree_unity_webview_postMessage(string name, string msg);
+    [DllImport("__Internal")]
     private static extern void _gree_unity_webview_destroy(string name);
 #endif
 
@@ -1114,7 +1116,8 @@ public class WebViewObject : MonoBehaviour
     {
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
-        _gree_unity_webview_evaluateJS(name, js);
+        //_gree_unity_webview_evaluateJS(name, js);
+        _gree_unity_webview_postMessage(name, js);
 #endif
 #elif UNITY_WEBPLAYER
         Application.ExternalCall("unityWebView.evaluateJS", name, js);
