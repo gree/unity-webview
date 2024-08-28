@@ -53,13 +53,14 @@ var unityWebView =
 
     setMargins: function (name, left, top, right, bottom) {
         var container = $('#gameContainer');
-        var width = container.width();
-        var height = container.height();
+        var r = window.devicePixelRatio;
+        var w0 = container.width() * r;
+        var h0 = container.height() * r;
 
-        var lp = left / width * 100;
-        var tp = top / height * 100;
-        var wp = (width - left - right) / width * 100;
-        var hp = (height - top - bottom) / height * 100;
+        var lp = left / w0 * 100;
+        var tp = top / h0 * 100;
+        var wp = (w0 - left - right) / w0 * 100;
+        var hp = (h0 - top - bottom) / h0 * 100;
 
         this.iframe(name)
             .css('left', lp + '%')

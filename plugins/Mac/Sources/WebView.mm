@@ -27,10 +27,54 @@
 #import <unistd.h>
 #include <unordered_map>
 
+// cf. https://stackoverflow.com/questions/6303377/nswindow-set-frame-higher-than-screen/6303578#6303578
+@interface CNSWindow : NSWindow
+
+- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen *)screen;
+
+@end
+
+@implementation CNSWindow : NSWindow
+
+- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen *)screen;
+{
+    //return the unaltered frame, or do some other interesting things
+    return frameRect;
+}
+
+@end
+
+// cf. https://stackoverflow.com/questions/26383031/wkwebview-causes-my-view-controller-to-leak/33365424#33365424
+@interface WeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
+
+@property (nonatomic, weak) id<WKScriptMessageHandler> scriptDelegate;
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate;
+
+@end
+
+@implementation WeakScriptMessageDelegate
+
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate
+{
+    self = [super init];
+    if (self) {
+        _scriptDelegate = scriptDelegate;
+    }
+    return self;
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    [self.scriptDelegate userContentController:userContentController didReceiveScriptMessage:message];
+}
+
+@end
+
 static BOOL s_inEditor;
 static BOOL s_useMetal;
 
-@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler>
+@interface CWebViewPlugin : NSObject<WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler, NSWindowDelegate>
 {
     NSWindow *window;
     NSWindowController *windowController;
@@ -45,6 +89,7 @@ static BOOL s_useMetal;
     NSRegularExpression *denyRegex;
     NSRegularExpression *hookRegex;
     BOOL inRendering;
+    int devicePixelRatio0;
 }
 @end
 
@@ -145,11 +190,16 @@ static std::unordered_map<int, int> _nskey2cgkey{
     WKPreferences *preferences = [[WKPreferences alloc] init];
     preferences.javaScriptEnabled = true;
     preferences.plugInsEnabled = true;
-    [controller addScriptMessageHandler:self name:@"unityControl"];
+    [controller addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:@"unityControl"];
+    NSString *str = @"\
+window.Unity = { \
+    call: function(msg) { \
+        window.webkit.messageHandlers.unityControl.postMessage(msg); \
+    } \
+}; \
+";
     if (!zoom) {
-        WKUserScript *script
-            = [[WKUserScript alloc]
-                      initWithSource:@"\
+        str = [str stringByAppendingString:@"\
 (function() { \
     var meta = document.querySelector('meta[name=viewport]'); \
     if (meta == null) { \
@@ -161,10 +211,11 @@ static std::unordered_map<int, int> _nskey2cgkey{
     head.appendChild(meta); \
 })(); \
 "
-                       injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
-                    forMainFrameOnly:YES];
-        [controller addUserScript:script];
+            ];
     }
+    WKUserScript *script
+        = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
+    [controller addUserScript:script];
     configuration.userContentController = controller;
     configuration.processPool = _sharedProcessPool;
     // configuration.preferences = preferences;
@@ -189,15 +240,23 @@ static std::unordered_map<int, int> _nskey2cgkey{
     if (ua != NULL && strcmp(ua, "") != 0) {
         [webView setCustomUserAgent:[NSString stringWithUTF8String:ua]];
     }
-    if (separated) {
-        window = [[NSWindow alloc] initWithContentRect:frame
-                                             styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
-                                               backing:NSBackingStoreBuffered
-                                                 defer:NO];
-        [window setContentView:webView];
-        [window orderFront:NSApp];
-        windowController = [[NSWindowController alloc] initWithWindow:window];
+    window = [[((!separated) ? CNSWindow.class : NSWindow.class) alloc]
+                 initWithContentRect:frame
+                           styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable
+                             backing:NSBackingStoreBuffered
+                               defer:NO];
+    [window setContentView:webView];
+    [window orderFront:NSApp];
+    [window setDelegate:self];
+    window.titleVisibility = NSWindowTitleHidden;
+    window.titlebarAppearsTransparent = YES;
+    window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    if (!separated) {
+        window.movable = NO;
+        [window setFrameOrigin:NSMakePoint(-10000, -10000)];
+        //[window setLevel:NSSubmenuWindowLevel];
     }
+    windowController = [[NSWindowController alloc] initWithWindow:window];
     return self;
 }
 
@@ -211,6 +270,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
             // [webView setPolicyDelegate:nil];
             webView0.UIDelegate = nil;
             webView0.navigationDelegate = nil;
+            [((WKWebView *)webView0).configuration.userContentController removeScriptMessageHandlerForName:@"unityControl"];
             [webView0 stopLoading];
             [webView0 removeObserver:self forKeyPath:@"loading"];
         }
@@ -265,6 +325,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
     NSOperatingSystemVersion version = { 10, 11, 0 };
     if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]) {
+        // cf. https://stackoverflow.com/questions/46465070/how-to-delete-cookies-from-wkhttpcookiestore/47928399#47928399
         NSSet *websiteDataTypes = [WKWebsiteDataStore allWebsiteDataTypes];
         NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
         [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:websiteDataTypes
@@ -278,57 +339,92 @@ static std::unordered_map<int, int> _nskey2cgkey{
     [CWebViewPlugin resetSharedProcessPool];
 }
 
-+ (const char *)getCookies:(const char *)url
+- (void)getCookies:(const char *)url
 {
-    [CWebViewPlugin resetSharedProcessPool];
-
-    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-    [formatter setDateFormat:@"EEE, dd MMM yyyy HH:mm:ss zzz"];
-    NSMutableString *result = [NSMutableString string];
-    NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-    if (cookieStorage == nil) {
-        // cf. https://stackoverflow.com/questions/33876295/nshttpcookiestorage-sharedhttpcookiestorage-comes-up-empty-in-10-11
-        cookieStorage = [NSHTTPCookieStorage sharedCookieStorageForGroupContainerIdentifier:@"Cookies"];
+    NSOperatingSystemVersion version = { 10, 11, 0 };
+    if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]) {
+        NSURL *nsurl = [NSURL URLWithString:[[NSString alloc] initWithUTF8String:url]];
+        WKHTTPCookieStore *cookieStore = WKWebsiteDataStore.defaultDataStore.httpCookieStore;
+        [cookieStore
+            getAllCookies:^(NSArray<NSHTTPCookie *> *array) {
+                NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+                formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+                [formatter setDateFormat:@"EEE, dd MMM yyyy HH:mm:ss zzz"];
+                NSMutableString *result = [NSMutableString string];
+                [array enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+                        if ([cookie.domain isEqualToString:nsurl.host]) {
+                            [result appendString:[NSString stringWithFormat:@"%@=%@", cookie.name, cookie.value]];
+                            if ([cookie.domain length] > 0) {
+                                [result appendString:[NSString stringWithFormat:@"; "]];
+                                [result appendString:[NSString stringWithFormat:@"Domain=%@", cookie.domain]];
+                            }
+                            if ([cookie.path length] > 0) {
+                                [result appendString:[NSString stringWithFormat:@"; "]];
+                                [result appendString:[NSString stringWithFormat:@"Path=%@", cookie.path]];
+                            }
+                            if (cookie.expiresDate != nil) {
+                                [result appendString:[NSString stringWithFormat:@"; "]];
+                                [result appendString:[NSString stringWithFormat:@"Expires=%@", [formatter stringFromDate:cookie.expiresDate]]];
+                            }
+                            [result appendString:[NSString stringWithFormat:@"; "]];
+                            [result appendString:[NSString stringWithFormat:@"Version=%zd", cookie.version]];
+                            [result appendString:[NSString stringWithFormat:@"\n"]];
+                        }
+                    }];
+                [self addMessage:[NSString stringWithFormat:@"CallOnCookies:%@",result]];
+            }];
+    } else {
+        [CWebViewPlugin resetSharedProcessPool];
+        NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+        formatter.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+        [formatter setDateFormat:@"EEE, dd MMM yyyy HH:mm:ss zzz"];
+        NSMutableString *result = [NSMutableString string];
+        NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        if (cookieStorage == nil) {
+            // cf. https://stackoverflow.com/questions/33876295/nshttpcookiestorage-sharedhttpcookiestorage-comes-up-empty-in-10-11
+            cookieStorage = [NSHTTPCookieStorage sharedCookieStorageForGroupContainerIdentifier:@"Cookies"];
+        }
+        [[cookieStorage cookiesForURL:[NSURL URLWithString:[[NSString alloc] initWithUTF8String:url]]]
+            enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+                [result appendString:[NSString stringWithFormat:@"%@=%@", cookie.name, cookie.value]];
+                if ([cookie.domain length] > 0) {
+                    [result appendString:[NSString stringWithFormat:@"; "]];
+                    [result appendString:[NSString stringWithFormat:@"Domain=%@", cookie.domain]];
+                }
+                if ([cookie.path length] > 0) {
+                    [result appendString:[NSString stringWithFormat:@"; "]];
+                    [result appendString:[NSString stringWithFormat:@"Path=%@", cookie.path]];
+                }
+                if (cookie.expiresDate != nil) {
+                    [result appendString:[NSString stringWithFormat:@"; "]];
+                    [result appendString:[NSString stringWithFormat:@"Expires=%@", [formatter stringFromDate:cookie.expiresDate]]];
+                }
+                [result appendString:[NSString stringWithFormat:@"; "]];
+                [result appendString:[NSString stringWithFormat:@"Version=%zd", cookie.version]];
+                [result appendString:[NSString stringWithFormat:@"\n"]];
+            }];
+        [self addMessage:[NSString stringWithFormat:@"CallOnCookies:%@",result]];
     }
-    [[cookieStorage cookiesForURL:[NSURL URLWithString:[[NSString alloc] initWithUTF8String:url]]]
-        enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
-            [result appendString:[NSString stringWithFormat:@"%@=%@", cookie.name, cookie.value]];
-            if ([cookie.domain length] > 0) {
-                [result appendString:[NSString stringWithFormat:@"; "]];
-                [result appendString:[NSString stringWithFormat:@"Domain=%@", cookie.domain]];
-            }
-            if ([cookie.path length] > 0) {
-                [result appendString:[NSString stringWithFormat:@"; "]];
-                [result appendString:[NSString stringWithFormat:@"Path=%@", cookie.path]];
-            }
-            if (cookie.expiresDate != nil) {
-                [result appendString:[NSString stringWithFormat:@"; "]];
-                [result appendString:[NSString stringWithFormat:@"Expires=%@", [formatter stringFromDate:cookie.expiresDate]]];
-            }
-            [result appendString:[NSString stringWithFormat:@"; "]];
-            [result appendString:[NSString stringWithFormat:@"Version=%zd", cookie.version]];
-            [result appendString:[NSString stringWithFormat:@"\n"]];
-        }];
-    const char *s = [result UTF8String];
-    char *r = (char *)malloc(strlen(s) + 1);
-    strcpy(r, s);
-    return r;
 }
 
 - (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView
 {
-    [self addMessage:[NSString stringWithFormat:@"E%@",@"webViewWebContentProcessDidTerminate"]];
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",@"webViewWebContentProcessDidTerminate"]];
+}
+
+- (void)windowWillClose:(NSNotification *)notification
+{
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",@"windowWillClose"]];
 }
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",[error description]]];
 }
 
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error
 {
-    [self addMessage:[NSString stringWithFormat:@"E%@",[error description]]];
+    [self addMessage:[NSString stringWithFormat:@"CallOnError:%@",[error description]]];
 }
 
 - (void)webView:(WKWebView *)wkWebView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
@@ -352,10 +448,10 @@ static std::unordered_map<int, int> _nskey2cgkey{
         [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:url]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if ([url hasPrefix:@"unity:"]) {
-        [self addMessage:[NSString stringWithFormat:@"J%@",[url substringFromIndex:6]]];
+        [self addMessage:[NSString stringWithFormat:@"CallFromJS:%@",[url substringFromIndex:6]]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if (hookRegex != nil && [hookRegex firstMatchInString:url options:0 range:NSMakeRange(0, url.length)]) {
-        [self addMessage:[NSString stringWithFormat:@"H%@",url]];
+        [self addMessage:[NSString stringWithFormat:@"CallOnHooked:%@",url]];
         decisionHandler(WKNavigationActionPolicyCancel);
     } else if (navigationAction.navigationType == WKNavigationTypeLinkActivated
                && (!navigationAction.targetFrame || !navigationAction.targetFrame.isMainFrame)) {
@@ -371,9 +467,22 @@ static std::unordered_map<int, int> _nskey2cgkey{
                 return;
             }
         }
-        [self addMessage:[NSString stringWithFormat:@"S%@",url]];
+        [self addMessage:[NSString stringWithFormat:@"CallOnStarted:%@",url]];
         decisionHandler(WKNavigationActionPolicyAllow);
     }
+}
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+
+    if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
+
+        NSHTTPURLResponse * response = (NSHTTPURLResponse *)navigationResponse.response;
+        if (response.statusCode >= 400) {
+            [self addMessage:[NSString stringWithFormat:@"CallOnHttpError:%ld",(long)response.statusCode]];
+        }
+
+    }
+    decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
 - (void)userContentController:(WKUserContentController *)userContentController
@@ -381,7 +490,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
     // Log out the message received
     NSLog(@"Received event %@", message.body);
-    [self addMessage:[NSString stringWithFormat:@"J%@",message.body]];
+    [self addMessage:[NSString stringWithFormat:@"CallFromJS:%@",message.body]];
 
     /*
     // Then pull something from the device using the message body
@@ -403,7 +512,7 @@ static std::unordered_map<int, int> _nskey2cgkey{
 
     if ([keyPath isEqualToString:@"loading"] && [[change objectForKey:NSKeyValueChangeNewKey] intValue] == 0
         && [webView URL] != nil) {
-        [self addMessage:[NSString stringWithFormat:@"L%s",[[[webView URL] absoluteString] UTF8String]]];
+        [self addMessage:[NSString stringWithFormat:@"CallOnLoaded:%@",[[webView URL] absoluteString]]];
     }
 }
 
@@ -703,47 +812,49 @@ static std::unordered_map<int, int> _nskey2cgkey{
         }];
 }
 
-- (void)update:(BOOL)refreshBitmap
+- (void)update:(BOOL)refreshBitmap with:(int)devicePixelRatio
 {
     if (webView == nil)
         return;
-    @synchronized(self) {
-        if (inRendering)
-            return;
-        inRendering = YES;
-    }
     if (refreshBitmap) {
+        @synchronized(self) {
+            if (inRendering)
+                return;
+            inRendering = YES;
+        }
+        if (devicePixelRatio < 1)
+            devicePixelRatio = 1;
+        else if (devicePixelRatio > 2)
+            devicePixelRatio = 2;
         // [webView cacheDisplayInRect:webView.frame toBitmapImageRep:bitmap];
         // bitmap = [webView bitmapImageRepForCachingDisplayInRect:webView.frame];
         NSRect rect = webView.frame;
-        if (bitmaps[0] == nil || bitmaps[1] == nil) {
+        if (bitmaps[0] == nil || bitmaps[1] == nil || devicePixelRatio0 != devicePixelRatio) {
+            webView.pageZoom = devicePixelRatio;
+            devicePixelRatio0 = devicePixelRatio;
             for (int i = 0; i < 2; i++) {
                 bitmaps[i]
                     = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nil
-                                                              pixelsWide:rect.size.width
-                                                              pixelsHigh:rect.size.height
+                                                              pixelsWide:(rect.size.width * devicePixelRatio)
+                                                              pixelsHigh:(rect.size.height * devicePixelRatio)
                                                            bitsPerSample:8
                                                          samplesPerPixel:4
                                                                 hasAlpha:YES
                                                                 isPlanar:NO
                                                           colorSpaceName:NSCalibratedRGBColorSpace
                                                             bitmapFormat:0
-                                                             bytesPerRow:(4 * rect.size.width)
+                                                             bytesPerRow:(4 * rect.size.width * devicePixelRatio)
                                                             bitsPerPixel:32];
             }
             bitmap = bitmaps[0];
         }
         NSBitmapImageRep *bitmap1 = (bitmap == bitmaps[0]) ? bitmaps[1] : bitmaps[0];
-        if (window != nil) {
-            memset([bitmap1 bitmapData], 128, [bitmap1 bytesPerRow] * [bitmap1 pixelsHigh]);
-            @synchronized(self) {
-                bitmap = bitmap1;
-                needsDisplay = YES;
-                inRendering = NO;
-            }
-        } else {
+        {
             [self runBlock:^{
-                    [self->webView takeSnapshotWithConfiguration:[WKSnapshotConfiguration new]
+                    WKSnapshotConfiguration *config = [WKSnapshotConfiguration new];
+                    config.rect = rect;
+                    config.snapshotWidth = @(rect.size.width * devicePixelRatio);
+                    [self->webView takeSnapshotWithConfiguration:config
                                                completionHandler:^(NSImage *nsImg, NSError *err) {
                             if (err == nil) {
                                 NSGraphicsContext *ctx = [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap1];
@@ -880,7 +991,7 @@ extern "C" {
     void _CWebViewPlugin_Reload(void *instance);
     void _CWebViewPlugin_SendMouseEvent(void *instance, int x, int y, float deltaY, int mouseState);
     void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, unsigned short keyCode, int keyState);
-    void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap);
+    void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap, int devicePixelRatio);
     int _CWebViewPlugin_BitmapWidth(void *instance);
     int _CWebViewPlugin_BitmapHeight(void *instance);
     void _CWebViewPlugin_Render(void *instance, void *textureBuffer);
@@ -890,7 +1001,7 @@ extern "C" {
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCookies();
     void _CWebViewPlugin_SaveCookies();
-    const char *_CWebViewPlugin_GetCookies(const char *url);
+    void _CWebViewPlugin_GetCookies(void *instance, const char *url);
     const char *_CWebViewPlugin_GetMessage(void *instance);
 #ifdef __cplusplus
 }
@@ -1010,10 +1121,10 @@ void _CWebViewPlugin_SendKeyEvent(void *instance, int x, int y, char *keyChars, 
     [webViewPlugin sendKeyEvent:x y:y keyChars:keyChars keyCode:keyCode keyState:keyState];
 }
 
-void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap)
+void _CWebViewPlugin_Update(void *instance, BOOL refreshBitmap, int devicePixelRatio)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
-    [webViewPlugin update:refreshBitmap];
+    [webViewPlugin update:refreshBitmap with:devicePixelRatio];
 }
 
 int _CWebViewPlugin_BitmapWidth(void *instance)
@@ -1068,9 +1179,10 @@ void _CWebViewPlugin_SaveCookies()
     [CWebViewPlugin saveCookies];
 }
 
-const char *_CWebViewPlugin_GetCookies(const char *url)
+void _CWebViewPlugin_GetCookies(void *instance, const char *url)
 {
-    return [CWebViewPlugin getCookies:url];
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin getCookies:url];
 }
 
 const char *_CWebViewPlugin_GetMessage(void *instance)
