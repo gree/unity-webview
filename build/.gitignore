@@ -1,2 +1,6 @@
 Packager/Assets/Plugins
 Packager/Library
+
+#MATIFIC SPECIFIC
+#include compiled android plugin
+!Packager/Assets/Plugins/Android
