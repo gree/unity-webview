@@ -55,5 +55,5 @@ You can install and update the appropriate Android SDKs directly into your Unity
    
    change the hash to the new commit, like so:
    > "net.gree.unity-webview": "https://github.com/SlateScience/unity-webview.git?path=/dist/package#[NEW_HASH]",
-
-4. Unity will reimport the package and update the plugin files.
+6. *Be sure to commit the relevant changes in `Packages/packages-lock.json`* as well.
+7. Unity will reimport the package and update the plugin files.
