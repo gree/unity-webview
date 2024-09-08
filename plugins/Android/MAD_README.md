@@ -45,9 +45,10 @@ You can install and update the appropriate Android SDKs directly into your Unity
 
 ## Deploying new Plugin in git
 1. The `.tmpl` files for `WebViewPlugin` and `core-*` are already in the repo.
-2. After running `install.sh` and recompiling, copy the rebuilt plugin files to dist\package\Assets\Plugins\Android (overwrite the existing files)
-3. Push the update to the repo.s
-3. In your SlateApps's branch - edit `Packages/manifest.json` and replace the current hash with that of your latest commit.
+2. After running `install.sh` and recompiling, 
+3. Copy `WebViewPlugin-*.aar.tmpl` and `core-1.6.0.aar.tmpl` from `build/Packager/Assets/Plugins/Android` to `dist/package/Assets/Plugins/Android`
+4. Push updated files from previous step to git 
+5. In your SlateApps's branch - edit `Packages/manifest.json` and replace the current hash with that of your latest commit.
    
    e.g., on the appropriate package line:
    > "net.gree.unity-webview": "https://github.com/SlateScience/unity-webview.git?path=/dist/package#ab84fb0517eb7b3a113465a23ed28fdb5ce92446",
