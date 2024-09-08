@@ -29,7 +29,6 @@ fi
 # options
 TARGET="webview"
 MODE="Release"
-SCRIPTING_BACKEND="mono"
 UNITY="2022.3.32f1"
 for OPT in $*
 do
@@ -105,6 +104,7 @@ esac
 #    rm -f ${TARGET}/src/main/java/net/gree/unitywebview/CUnityPlayer*.java
 #    ;;
 #esac
+#END MATIFIC SPECIFIC
 
 pushd $CWD
 
