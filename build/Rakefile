@@ -20,7 +20,7 @@
 
 require 'fileutils'
 
-UNITY="/Applications/UnityCurrent/Unity.app/Contents"
+UNITY="/Applications/Unity/Hub/Editor/2019.4.40f1/Unity.app/Contents/MacOS/Unity"
 
 CNT = 2
 SRCDIR = Array.new(CNT);
@@ -49,11 +49,11 @@ desc "build"
 task :build do
   DSTDIR.each do |dir|
     sh "git clean -dxf ."
-    # for keeping meta files
-    if Dir.exists?('../dist/package')
-      sh "cd ../dist; git clean -dxf .; git checkout ."
-      sh "cp -a ../dist/package/* Packager"
-    end
+  end
+  # for keeping meta files
+  if Dir.exists?('../dist/package')
+    sh "cd ../dist/package; git clean -dxf .; git checkout ."
+    sh "cp -a ../dist/package/* Packager"
   end
   CNT.times do |i|
     SRCS[i].each do |src|
@@ -64,7 +64,8 @@ task :build do
   end
   ["Android"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
-      sh "git clean -dxf .; ./install.sh --unity /Applications/Unity5.6.1f1"
+      sh "git clean -dxf .; ./install.sh"
+      sh "git clean -dxf .; ./install.sh --development"
     end
   end
   ["Mac"].each do |t|
@@ -76,7 +77,7 @@ end
 
 desc "pack"
 task :pack do
-  sh "#{UNITY}/MacOS/Unity -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export -logFile LOG"
+  sh "#{UNITY} -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export -logFile LOG"
   FileUtils.mv "Packager/unity-webview.unitypackage", "../dist"
   sh "(cd Packager; rm -f ../../dist/unity-webview.zip; zip -qr9 ../../dist/unity-webview.zip `find Assets/Plugins -type f` `find Assets/WebGLTemplates -type f` `find Assets/WebPlayerTemplates -type f`)"
   sh "(cd ../dist/package; rm -rf Assets; unzip -q ../unity-webview.zip; git checkout Assets/Plugins.meta; git checkout Assets/WebGLTemplates.meta; git checkout Assets/WebPlayerTemplates.meta)"
@@ -84,9 +85,30 @@ end
 
 desc "buildnofragment"
 task :buildnofragment do
+  DSTDIR.each do |dir|
+    sh "git clean -dxf ."
+  end
+  # for keeping meta files
+  if Dir.exists?('../dist/package-nofragment')
+    sh "cd ../dist/package-nofragment; git clean -dxf .; git checkout ."
+    sh "cp -a ../dist/package-nofragment/* Packager"
+  end
+  CNT.times do |i|
+    SRCS[i].each do |src|
+      dstdir = "#{DSTDIR[i]}/#{File.dirname(src)}"
+      FileUtils.mkdir_p dstdir
+      FileUtils.cp_r "#{SRCDIR[i]}/#{src}", dstdir, preserve:true
+    end
+  end
   ["Android"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
-      sh "git clean -dxf .; ./install-nofragment.sh --unity /Applications/Unity5.6.1f1"
+      sh "git clean -dxf .; ./install.sh --nofragment"
+      sh "git clean -dxf .; ./install.sh --nofragment --development"
+    end
+  end
+  ["Mac"].each do |t|
+    Dir.chdir("#{SRCDIR[0]}/#{t}") do
+      sh "./install.sh"
     end
   end
   sh "sed -i '' -e 's/private static bool nofragment = false/private static bool nofragment = true/' Packager/Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs"
@@ -94,7 +116,7 @@ end
 
 desc "packnofragment"
 task :packnofragment do
-  sh "#{UNITY}/MacOS/Unity -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export -logFile LOG"
+  sh "#{UNITY} -projectPath `pwd`/Packager -batchmode -quit -executeMethod Packager.Export -logFile LOG"
   FileUtils.mv "Packager/unity-webview.unitypackage", "../dist/unity-webview-nofragment.unitypackage"
   sh "(cd Packager; rm -f ../../dist/unity-webview-nofragment.zip; zip -qr9 ../../dist/unity-webview-nofragment.zip `find Assets/Plugins -type f` `find Assets/WebGLTemplates -type f` `find Assets/WebPlayerTemplates -type f`)"
   sh "(cd ../dist/package-nofragment; rm -rf Assets; unzip -q ../unity-webview-nofragment.zip; git checkout Assets/Plugins.meta; git checkout Assets/WebGLTemplates.meta; git checkout Assets/WebPlayerTemplates.meta)"

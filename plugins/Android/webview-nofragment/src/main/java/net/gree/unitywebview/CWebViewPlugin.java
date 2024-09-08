@@ -25,7 +25,9 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+//#if UNITYWEBVIEW_DEVELOPMENT
 import android.content.pm.ApplicationInfo;
+//#endif
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
@@ -37,6 +39,7 @@ import android.util.Base64;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.webkit.GeolocationPermissions.Callback;
@@ -62,6 +65,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
@@ -98,6 +102,7 @@ class CWebViewPluginInterface {
 }
 
 public class CWebViewPlugin {
+    private static boolean forceBringToFront;
     private static FrameLayout layout = null;
     private Queue<String> mMessages = new ArrayDeque<String>();
     private WebView mWebView;
@@ -195,6 +200,7 @@ public class CWebViewPlugin {
             mCustomHeaders = new Hashtable<String, String>();
 
             final WebView webView = (radius > 0) ? new RoundedWebView(a, radius) : new WebView(a);
+//#if UNITYWEBVIEW_DEVELOPMENT
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     ApplicationInfo ai = a.getPackageManager().getApplicationInfo(a.getPackageName(), 0);
@@ -204,6 +210,7 @@ public class CWebViewPlugin {
                 } catch (Exception ex) {
                 }
             }
+//#endif
             webView.setVisibility(View.GONE);
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
@@ -348,7 +355,18 @@ public class CWebViewPlugin {
                     if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
                         return super.shouldInterceptRequest(view, url);
                     }
+                    return shouldInterceptRequest(view, url, null);
+                }
 
+                @Override
+                public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                    if (mCustomHeaders == null || mCustomHeaders.isEmpty()) {
+                        return super.shouldInterceptRequest(view, request);
+                    }
+                    return shouldInterceptRequest(view, request.getUrl().toString(), request.getRequestHeaders());
+                }
+
+                public WebResourceResponse shouldInterceptRequest(WebView view, final String url, Map<String, String> headers) {
                     try {
                         HttpURLConnection urlCon = (HttpURLConnection) (new URL(url)).openConnection();
                         urlCon.setInstanceFollowRedirects(false);
@@ -363,12 +381,17 @@ public class CWebViewPlugin {
 
                         if (Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT != Build.VERSION_CODES.KITKAT_WATCH) {
                             // cf. https://issuetracker.google.com/issues/36989494
-                            String cookies = GetCookies(url);
+                            String cookies = CookieManager.getInstance().getCookie(url);
                             if (cookies != null && !cookies.isEmpty()) {
                                 urlCon.addRequestProperty("Cookie", cookies);
                             }
                         }
 
+                        if (headers != null) {
+                            for (Map.Entry<String, String> entry: headers.entrySet()) {
+                                urlCon.setRequestProperty(entry.getKey(), entry.getValue());
+                            }
+                        }
                         for (HashMap.Entry<String, String> entry: mCustomHeaders.entrySet()) {
                             urlCon.setRequestProperty(entry.getKey(), entry.getValue());
                         }
@@ -561,24 +584,26 @@ public class CWebViewPlugin {
                     h = display.getHeight();
                 }
 
-                View rootView = activityRootView.getRootView();
-                int bottomPadding = 0;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                    Point realSize = new Point();
-                    display.getRealSize(realSize); // this method was added at JELLY_BEAN_MR1
-                    int[] location = new int[2];
-                    rootView.getLocationOnScreen(location);
-                    bottomPadding = realSize.y - (location[1] + rootView.getHeight());
-                }
-                int heightDiff = rootView.getHeight() - (r.bottom - r.top);
-                String param = "" ;
-                if (heightDiff > 0 && (heightDiff + bottomPadding) > (h + bottomPadding) / 3) { // assume that this means that the keyboard is on
-                    param = "true";
-                } else {
-                    param = "false";
-                }
+                // View rootView = activityRootView.getRootView();
+                // int bottomPadding = 0;
+                // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                //     Point realSize = new Point();
+                //     display.getRealSize(realSize); // this method was added at JELLY_BEAN_MR1
+                //     int[] location = new int[2];
+                //     rootView.getLocationOnScreen(location);
+                //     bottomPadding = realSize.y - (location[1] + rootView.getHeight());
+                // }
+                // int heightDiff = rootView.getHeight() - (r.bottom - r.top);
+                // String param = "" ;
+                // if (heightDiff > 0 && (heightDiff + bottomPadding) > (h + bottomPadding) / 3) { // assume that this means that the keyboard is on
+                //     param = "true";
+                // } else {
+                //     param = "false";
+                // }
+
+                int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
                 if (IsInitialized()) {
-                    MyUnitySendMessage(gameObject, "SetKeyboardVisible", param);
+                    MyUnitySendMessage(gameObject, "SetKeyboardVisible", Integer.toString(heightDiff));
                 }
             }
         };
@@ -587,12 +612,12 @@ public class CWebViewPlugin {
 
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
-        final WebView webView = mWebView;
-        mWebView = null;
         if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
         a.runOnUiThread(new Runnable() {public void run() {
+            final WebView webView = mWebView;
+            mWebView = null;
             if (webView == null) {
                 return;
             }
@@ -752,6 +777,12 @@ public class CWebViewPlugin {
                 mWebView.setVisibility(View.VISIBLE);
                 layout.requestFocus();
                 mWebView.requestFocus();
+                if (layout != null && layout.getParent() != null && layout.getParent().getParent() != null) {
+                    ((ViewGroup)layout.getParent().getParent()).requestLayout();
+                }
+                if (forceBringToFront && layout != null) {
+                    layout.bringToFront();
+                }
             } else {
                 mWebView.setVisibility(View.GONE);
             }
@@ -874,16 +905,25 @@ public class CWebViewPlugin {
             } else {
                 mWebView.onResume();
                 mWebView.resumeTimers();
+                if (forceBringToFront && layout != null) {
+                    layout.bringToFront();
+                }
             }
         }});
     }
 
     public void AddCustomHeader(final String headerKey, final String headerValue)
     {
-        if (mCustomHeaders == null) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
-        mCustomHeaders.put(headerKey, headerValue);
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mCustomHeaders == null) {
+                return;
+            }
+            mCustomHeaders.put(headerKey, headerValue);
+        }});
     }
 
     public String GetCustomHeaderValue(final String headerKey)
@@ -891,31 +931,40 @@ public class CWebViewPlugin {
         if (mCustomHeaders == null) {
             return null;
         }
-
         if (!mCustomHeaders.containsKey(headerKey)) {
             return null;
         }
-        return this.mCustomHeaders.get(headerKey);
+        return mCustomHeaders.get(headerKey);
     }
 
     public void RemoveCustomHeader(final String headerKey)
     {
-        if (mCustomHeaders == null) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
-
-        if (this.mCustomHeaders.containsKey(headerKey)) {
-            this.mCustomHeaders.remove(headerKey);
-        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mCustomHeaders == null) {
+                return;
+            }
+            if (mCustomHeaders.containsKey(headerKey)) {
+                mCustomHeaders.remove(headerKey);
+            }
+        }});
     }
 
     public void ClearCustomHeader()
     {
-        if (mCustomHeaders == null) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
             return;
         }
-
-        this.mCustomHeaders.clear();
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mCustomHeaders == null) {
+                return;
+            }
+            mCustomHeaders.clear();
+        }});
     }
 
     public void ClearCookies()
@@ -950,10 +999,10 @@ public class CWebViewPlugin {
         }
     }
 
-    public String GetCookies(String url)
+    public void GetCookies(String url)
     {
         CookieManager cookieManager = CookieManager.getInstance();
-        return cookieManager.getCookie(url);
+        mWebViewPlugin.call("CallOnCookies", cookieManager.getCookie(url));
     }
 
     public void SetCookies(String url, List<String> setCookieHeaders)
@@ -1011,6 +1060,22 @@ public class CWebViewPlugin {
                 return;
             }
             mWebView.getSettings().setTextZoom(textZoom);
+        }});
+    }
+
+    public void SetMixedContentMode(final int mode)
+    {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            if (mWebView == null) {
+                return;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                mWebView.getSettings().setMixedContentMode(mode);
+            }
         }});
     }
 }

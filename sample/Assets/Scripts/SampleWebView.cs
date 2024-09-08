@@ -34,6 +34,9 @@ public class SampleWebView : MonoBehaviour
     IEnumerator Start()
     {
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        webViewObject.canvas = GameObject.Find("Canvas");
+#endif
         webViewObject.Init(
             cb: (msg) =>
             {
@@ -61,59 +64,56 @@ public class SampleWebView : MonoBehaviour
             {
                 Debug.Log(string.Format("CallOnHooked[{0}]", msg));
             },
+            cookies: (msg) =>
+            {
+                Debug.Log(string.Format("CallOnCookies[{0}]", msg));
+            },
             ld: (msg) =>
             {
                 Debug.Log(string.Format("CallOnLoaded[{0}]", msg));
-#if UNITY_EDITOR_OSX || (!UNITY_ANDROID && !UNITY_WEBPLAYER && !UNITY_WEBGL)
-                // NOTE: depending on the situation, you might prefer
-                // the 'iframe' approach.
-                // cf. https://github.com/gree/unity-webview/issues/189
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS
+                // NOTE: the following js definition is required only for UIWebView; if
+                // enabledWKWebView is true and runtime has WKWebView, Unity.call is defined
+                // directly by the native plugin.
 #if true
-                webViewObject.EvaluateJS(@"
-                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
-                    window.Unity = {
-                      call: function(msg) {
-                        window.webkit.messageHandlers.unityControl.postMessage(msg);
-                      }
+                var js = @"
+                    if (!(window.webkit && window.webkit.messageHandlers)) {
+                        window.Unity = {
+                            call: function(msg) {
+                                window.location = 'unity:' + msg;
+                            }
+                        };
                     }
-                  } else {
-                    window.Unity = {
-                      call: function(msg) {
-                        window.location = 'unity:' + msg;
-                      }
-                    }
-                  }
-                ");
+                ";
 #else
-                webViewObject.EvaluateJS(@"
-                  if (window && window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.unityControl) {
-                    window.Unity = {
-                      call: function(msg) {
-                        window.webkit.messageHandlers.unityControl.postMessage(msg);
-                      }
+                // NOTE: depending on the situation, you might prefer this 'iframe' approach.
+                // cf. https://github.com/gree/unity-webview/issues/189
+                var js = @"
+                    if (!(window.webkit && window.webkit.messageHandlers)) {
+                        window.Unity = {
+                            call: function(msg) {
+                                var iframe = document.createElement('IFRAME');
+                                iframe.setAttribute('src', 'unity:' + msg);
+                                document.documentElement.appendChild(iframe);
+                                iframe.parentNode.removeChild(iframe);
+                                iframe = null;
+                            }
+                        };
                     }
-                  } else {
-                    window.Unity = {
-                      call: function(msg) {
-                        var iframe = document.createElement('IFRAME');
-                        iframe.setAttribute('src', 'unity:' + msg);
-                        document.documentElement.appendChild(iframe);
-                        iframe.parentNode.removeChild(iframe);
-                        iframe = null;
-                      }
-                    }
-                  }
-                ");
+                ";
 #endif
 #elif UNITY_WEBPLAYER || UNITY_WEBGL
-                webViewObject.EvaluateJS(
-                    "window.Unity = {" +
-                    "   call:function(msg) {" +
-                    "       parent.unityWebView.sendMessage('WebViewObject', msg)" +
-                    "   }" +
-                    "};");
+                var js = @"
+                    window.Unity = {
+                        call:function(msg) {
+                            parent.unityWebView.sendMessage('WebViewObject', msg);
+                        }
+                    };
+                ";
+#else
+                var js = "";
 #endif
-                webViewObject.EvaluateJS(@"Unity.call('ua=' + navigator.userAgent)");
+                webViewObject.EvaluateJS(js + @"Unity.call('ua=' + navigator.userAgent)");
             }
             //transparent: false,
             //zoom: true,
@@ -130,6 +130,7 @@ public class SampleWebView : MonoBehaviour
             );
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
+        webViewObject.devicePixelRatio = 1;  // 1 or 2
 #endif
         // cf. https://github.com/gree/unity-webview/pull/512
         // Added alertDialogEnabled flag to enable/disable alert/confirm/prompt dialogs. by KojiNakamaru · Pull Request #512 · gree/unity-webview
@@ -151,6 +152,7 @@ public class SampleWebView : MonoBehaviour
 
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
+        //webViewObject.SetMixedContentMode(2);  // android only. 0: MIXED_CONTENT_ALWAYS_ALLOW, 1: MIXED_CONTENT_NEVER_ALLOW, 2: MIXED_CONTENT_COMPATIBILITY_MODE
         webViewObject.SetVisibility(true);
 
 #if !UNITY_WEBPLAYER && !UNITY_WEBGL
@@ -165,7 +167,7 @@ public class SampleWebView : MonoBehaviour
             foreach (var ext in exts) {
                 var url = Url.Replace(".html", ext);
                 var src = System.IO.Path.Combine(Application.streamingAssetsPath, url);
-                var dst = System.IO.Path.Combine(Application.persistentDataPath, url);
+                var dst = System.IO.Path.Combine(Application.temporaryCachePath, url);
                 byte[] result = null;
                 if (src.Contains("://")) {  // for Android
 #if UNITY_2018_4_OR_NEWER
@@ -202,26 +204,26 @@ public class SampleWebView : MonoBehaviour
     {
         var x = 10;
 
-        GUI.enabled = webViewObject.CanGoBack();
+        GUI.enabled = (webViewObject == null) ? false : webViewObject.CanGoBack();
         if (GUI.Button(new Rect(x, 10, 80, 80), "<")) {
-            webViewObject.GoBack();
+            webViewObject?.GoBack();
         }
         GUI.enabled = true;
         x += 90;
 
-        GUI.enabled = webViewObject.CanGoForward();
+        GUI.enabled = (webViewObject == null) ? false : webViewObject.CanGoForward();
         if (GUI.Button(new Rect(x, 10, 80, 80), ">")) {
-            webViewObject.GoForward();
+            webViewObject?.GoForward();
         }
         GUI.enabled = true;
         x += 90;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "r")) {
-            webViewObject.Reload();
+            webViewObject?.Reload();
         }
         x += 90;
 
-        GUI.TextField(new Rect(x, 10, 180, 80), "" + webViewObject.Progress());
+        GUI.TextField(new Rect(x, 10, 180, 80), "" + ((webViewObject == null) ? 0 : webViewObject.Progress()));
         x += 190;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "*")) {
@@ -235,22 +237,22 @@ public class SampleWebView : MonoBehaviour
         x += 90;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "c")) {
-            Debug.Log(webViewObject.GetCookies(Url));
+            webViewObject?.GetCookies(Url);
         }
         x += 90;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "x")) {
-            webViewObject.ClearCookies();
+            webViewObject?.ClearCookies();
         }
         x += 90;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "D")) {
-            webViewObject.SetInteractionEnabled(false);
+            webViewObject?.SetInteractionEnabled(false);
         }
         x += 90;
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "E")) {
-            webViewObject.SetInteractionEnabled(true);
+            webViewObject?.SetInteractionEnabled(true);
         }
         x += 90;
     }

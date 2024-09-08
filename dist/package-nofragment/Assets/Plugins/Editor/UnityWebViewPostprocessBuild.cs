@@ -8,12 +8,15 @@ using System.Text;
 using System.Xml;
 using System;
 using UnityEditor.Android;
+#if UNITY_2018_1_OR_NEWER
+using UnityEditor.Build;
+#endif
 using UnityEditor.Callbacks;
 using UnityEditor;
 using UnityEngine;
 
 #if UNITY_2018_1_OR_NEWER
-public class UnityWebViewPostprocessBuild : IPostGenerateGradleAndroidProject
+public class UnityWebViewPostprocessBuild : IPreprocessBuild, IPostGenerateGradleAndroidProject
 #else
 public class UnityWebViewPostprocessBuild
 #endif
@@ -25,6 +28,22 @@ public class UnityWebViewPostprocessBuild
     //// cf. https://github.com/Over17/UnityAndroidManifestCallback
 
 #if UNITY_2018_1_OR_NEWER
+    public void OnPreprocessBuild(BuildTarget buildTarget, string path) {
+        if (buildTarget == BuildTarget.Android) {
+            var dev = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
+            var rel = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
+            if (!File.Exists(dev) || !File.Exists(rel)) {
+                dev = "Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
+                rel = "Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
+            }
+            var src = (EditorUserBuildSettings.development) ? dev : rel;
+            //Directory.CreateDirectory("Temp/StagingArea/aar");
+            //File.Copy(src, "Temp/StagingArea/aar/WebViewPlugin.aar", true);
+            Directory.CreateDirectory("Assets/Plugins/Android");
+            File.Copy(src, "Assets/Plugins/Android/WebViewPlugin.aar", true);
+        }
+    }
+
     public void OnPostGenerateGradleAndroidProject(string basePath) {
         var changed = false;
         var androidManifest = new AndroidManifest(GetManifestPath(basePath));
@@ -75,12 +94,15 @@ public class UnityWebViewPostprocessBuild
                 }
             }
         }
+        changed = (androidManifest.SetExported(true) || changed);
+        changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
         changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
         changed = (androidManifest.AddCamera() || changed);
+        changed = (androidManifest.AddGallery() || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
         changed = (androidManifest.AddMicrophone() || changed);
@@ -125,7 +147,17 @@ public class UnityWebViewPostprocessBuild
 
     [PostProcessBuild(100)]
     public static void OnPostprocessBuild(BuildTarget buildTarget, string path) {
-#if !UNITY_2018_1_OR_NEWER
+#if UNITY_2018_1_OR_NEWER
+        try {
+            File.Delete("Assets/Plugins/Android/WebViewPlugin.aar");
+            File.Delete("Assets/Plugins/Android/WebViewPlugin.aar.meta");
+            Directory.Delete("Assets/Plugins/Android");
+            File.Delete("Assets/Plugins/Android.meta");
+            Directory.Delete("Assets/Plugins");
+            File.Delete("Assets/Plugins.meta");
+        } catch (Exception) {
+        }
+#else
         if (buildTarget == BuildTarget.Android) {
             string manifest = Path.Combine(Application.dataPath, "Plugins/Android/AndroidManifest.xml");
             if (!File.Exists(manifest)) {
@@ -134,10 +166,23 @@ public class UnityWebViewPostprocessBuild
                     Debug.LogError("unitywebview: cannot find both Assets/Plugins/Android/AndroidManifest.xml and Temp/StagingArea/AndroidManifest-main.xml. please build the app to generate Assets/Plugins/Android/AndroidManifest.xml and then rebuild it again.");
                     return;
                 } else {
-                    File.Copy(manifest0, manifest);
+                    File.Copy(manifest0, manifest, true);
                 }
             }
             var changed = false;
+            if (EditorUserBuildSettings.development) {
+                if (!File.Exists("Assets/Plugins/Android/WebView.aar")
+                    || !File.ReadAllBytes("Assets/Plugins/Android/WebView.aar").SequenceEqual(File.ReadAllBytes("Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl"))) {
+                    File.Copy("Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl", "Assets/Plugins/Android/WebView.aar", true);
+                    changed = true;
+                }
+            } else {
+                if (!File.Exists("Assets/Plugins/Android/WebView.aar")
+                    || !File.ReadAllBytes("Assets/Plugins/Android/WebView.aar").SequenceEqual(File.ReadAllBytes("Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl"))) {
+                    File.Copy("Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl", "Assets/Plugins/Android/WebView.aar", true);
+                    changed = true;
+                }
+            }
             var androidManifest = new AndroidManifest(manifest);
             if (!nofragment) {
                 changed = (androidManifest.AddFileProvider("Assets/Plugins/Android") || changed);
@@ -145,7 +190,6 @@ public class UnityWebViewPostprocessBuild
                 var found = false;
                 foreach (var file in files) {
                     if (Regex.IsMatch(file, @"^Assets/Plugins/Android/(androidx\.core\.)?core-.*.aar$")) {
-                        Debug.LogError("XXX");
                         found = true;
                         break;
                     }
@@ -155,18 +199,20 @@ public class UnityWebViewPostprocessBuild
                         var match = Regex.Match(file, @"^Assets/Plugins/Android/(core.*.aar).tmpl$");
                         if (match.Success) {
                             var name = match.Groups[1].Value;
-                            File.Copy(file, "Assets/Plugins/Android/" + name);
+                            File.Copy(file, "Assets/Plugins/Android/" + name, true);
                             break;
                         }
                     }
                 }
             }
+            changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
             changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
             changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
             changed = (androidManifest.AddCamera() || changed);
+            changed = (androidManifest.AddGallery() || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
             changed = (androidManifest.AddMicrophone() || changed);
@@ -176,7 +222,7 @@ public class UnityWebViewPostprocessBuild
 #endif
             if (changed) {
                 androidManifest.Save();
-                Debug.LogError("unitywebview: adjusted AndroidManifest.xml. Please rebuild the app.");
+                Debug.LogError("unitywebview: adjusted AndroidManifest.xml and/or WebView.aar. Please rebuild the app.");
             }
         }
 #endif
@@ -215,13 +261,19 @@ public class UnityWebViewPostprocessBuild
                 var method = type.GetMethod("AddFrameworkToProject");
                 method.Invoke(proj, new object[]{target, "WebKit.framework", false});
             }
-#if UNITYWEBVIEW_IOS_ALLOW_FILE_URLS
-            // proj.AddBuildProperty(target, "OTHER_LDFLAGS", "-DUNITYWEBVIEW_IOS_ALLOW_FILE_URLS");
-            {
-                var method = type.GetMethod("AddBuildProperty", new Type[]{typeof(string), typeof(string), typeof(string)});
-                method.Invoke(proj, new object[]{target, "OTHER_CFLAGS", "-DUNITYWEBVIEW_IOS_ALLOW_FILE_URLS"});
+            var cflags = "";
+            if (EditorUserBuildSettings.development) {
+                cflags += " -DUNITYWEBVIEW_DEVELOPMENT";
             }
+#if UNITYWEBVIEW_IOS_ALLOW_FILE_URLS
+            cflags += " -DUNITYWEBVIEW_IOS_ALLOW_FILE_URLS";
 #endif
+            cflags = cflags.Trim();
+            if (!string.IsNullOrEmpty(cflags)) {
+                // proj.AddBuildProperty(target, "OTHER_LDFLAGS", cflags);
+                var method = type.GetMethod("AddBuildProperty", new Type[]{typeof(string), typeof(string), typeof(string)});
+                method.Invoke(proj, new object[]{target, "OTHER_CFLAGS", cflags});
+            }
             var dst = "";
             //dst = proj.WriteToString();
             {
@@ -289,6 +341,27 @@ internal class AndroidManifest : AndroidXmlDocument {
         bool changed = false;
         if (ApplicationElement.GetAttribute("usesCleartextTraffic", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
             ApplicationElement.SetAttribute("usesCleartextTraffic", AndroidXmlNamespace, (enabled) ? "true" : "false");
+            changed = true;
+        }
+        return changed;
+    }
+
+    // for api level 33
+    internal bool SetExported(bool enabled) {
+        bool changed = false;
+        var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity.GetAttribute("exported", AndroidXmlNamespace) != ((enabled) ? "true" : "false")) {
+            activity.SetAttribute("exported", AndroidXmlNamespace, (enabled) ? "true" : "false");
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool SetWindowSoftInputMode(string mode) {
+        bool changed = false;
+        var activity = GetActivityWithLaunchIntent() as XmlElement;
+        if (activity.GetAttribute("windowSoftInputMode", AndroidXmlNamespace) != mode) {
+            activity.SetAttribute("windowSoftInputMode", AndroidXmlNamespace, mode);
             changed = true;
         }
         return changed;
@@ -371,6 +444,60 @@ internal class AndroidManifest : AndroidXmlDocument {
             var elem = CreateElement("uses-permission");
             elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.ACCESS_MEDIA_LOCATION"));
             ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        // cf. https://developer.android.com/training/package-visibility/declaring
+        if (SelectNodes("/manifest/queries", nsMgr).Count == 0) {
+            var elem = CreateElement("queries");
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/queries/intent/action[@android:name='android.media.action.IMAGE_CAPTURE']", nsMgr).Count == 0) {
+            var action = CreateElement("action");
+            action.Attributes.Append(CreateAndroidAttribute("name", "android.media.action.IMAGE_CAPTURE"));
+            var intent = CreateElement("intent");
+            intent.AppendChild(action);
+            var queries = SelectSingleNode("/manifest/queries") as XmlElement;
+            queries.AppendChild(intent);
+            changed = true;
+        }
+        return changed;
+    }
+
+    internal bool AddGallery() {
+        bool changed = false;
+        // for api level 33
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.READ_MEDIA_IMAGES']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.READ_MEDIA_IMAGES"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.READ_MEDIA_VIDEO']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.READ_MEDIA_VIDEO"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/uses-permission[@android:name='android.permission.READ_MEDIA_AUDIO']", nsMgr).Count == 0) {
+            var elem = CreateElement("uses-permission");
+            elem.Attributes.Append(CreateAndroidAttribute("name", "android.permission.READ_MEDIA_AUDIO"));
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        // cf. https://developer.android.com/training/package-visibility/declaring
+        if (SelectNodes("/manifest/queries", nsMgr).Count == 0) {
+            var elem = CreateElement("queries");
+            ManifestElement.AppendChild(elem);
+            changed = true;
+        }
+        if (SelectNodes("/manifest/queries/intent/action[@android:name='android.media.action.GET_CONTENT']", nsMgr).Count == 0) {
+            var action = CreateElement("action");
+            action.Attributes.Append(CreateAndroidAttribute("name", "android.media.action.GET_CONTENT"));
+            var intent = CreateElement("intent");
+            intent.AppendChild(action);
+            var queries = SelectSingleNode("/manifest/queries") as XmlElement;
+            queries.AppendChild(intent);
             changed = true;
         }
         return changed;
