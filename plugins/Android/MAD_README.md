@@ -45,7 +45,8 @@ You can install and update the appropriate Android SDKs directly into your Unity
 
 ## Deploying new Plugin in git
 1. The `.tmpl` files for `WebViewPlugin` and `core-*` are already in the repo.
-2. After running `install.sh` and recompiling, push the updated file versions to github.
+2. After running `install.sh` and recompiling, copy the rebuilt plugin files to dist\package\Assets\Plugins\Android (overwrite the existing files)
+3. Push the update to the repo.s
 3. In your SlateApps's branch - edit `Packages/manifest.json` and replace the current hash with that of your latest commit.
    
    e.g., on the appropriate package line:
