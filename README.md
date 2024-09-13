@@ -6,14 +6,27 @@ This plugin is derived from [keijiro-san's Unity WebView Integration](https://gi
 
 **Note:** This plugin overlays native WebView/WKWebView views over Unity's rendering view and does not support these views in 3D. For alternative solutions, refer to [this issue comment](https://github.com/gree/unity-webview/issues/612#issuecomment-724541385).
 
-## Sample Project
+## Getting Started
 
-The sample project can be found under the `sample/` directory. To import the plugin:
+We recommand starting from the sample project (under the `sample/` directory of the repo) as everything is already preconfigured :
+1. Clone this repo
+2. Open `sample/Assets/Sample.unity` to open the sample project in Unity (If you have a newer unity you will be warned that issues may accur but in general it is fine so click continue. You can also be warned that the project has issues but continue anyways because we will import the necessary packages).
+2. Double click on `dist/unity-webview.unitypackage` to opening it in Unity and click on `import` to import the package to your Unity project (You can also use the package manager if you prefer). If you've imported `unity-webview` before, it might be easier to extract `dist/unity-webview.zip`.
+3. Click on the `SampleWebView` gameobject and put the url that you want to open by default (if http, refer to the cleartraffictext section).
+4. Select the platform you want to export to
+5. Build
 
-1. Open `sample/Assets/Sample.unity`.
-2. Import `dist/unity-webview.unitypackage` by opening it in Unity. If you've imported `unity-webview` before, it might be easier to extract `dist/unity-webview.zip`.
+If you want to make the webview fullscreen :
+1. Open `Assets/Scripts/SampleWebView.cs`
+2. Edit this line ```webViewObject.SetMargins(0, 0, 0, 0);```
+
+If you want to make the webview transparent (the background is the Unity scene) :
+1. Open `Assets/Scripts/SampleWebView.cs`
+2. Uncomment(or add in the webViewObject.Init function if it doesn't exist) this line ```transparent: true```
+3. Add and remove comma's accordingly to the code 
 
 **Note:** For Android, the current implementation uses Android Fragment to enable the file input field. This might cause new issues. If you don't need the file input field, you can use `dist/unity-webview-nofragment.unitypackage` or `dist/unity-webview-nofragment.zip`.
+**Issues** If you have a blank white page, please make sure to see the clearTraffictext section of this README 
 
 ## Package Manager
 
@@ -308,3 +321,8 @@ $ cp -a /Applications/Unity/Hub/Editor/2018.4.13f1/PlaybackEngines/WebGLSupport/
 ```
 
 Then in `Project Settings/Player/Resolution and Presentation`, please select `unity-webview` in `WebGL Template`.
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=gree/unity-webview&type=Date)](https://tutim.io/developers)
