@@ -8,10 +8,10 @@ This plugin is derived from [keijiro-san's Unity WebView Integration](https://gi
 
 ## Getting Started
 
-We recommand starting from the sample project (under the `sample/` directory of the repo) as everything is already preconfigured :
+We recommend starting from the sample project (under the `sample/` directory of the repo) as everything is already preconfigured :
 1. Clone this repo
-2. Open `sample/Assets/Sample.unity` to open the sample project in Unity (If you have a newer unity you will be warned that issues may accur but in general it is fine so click continue. You can also be warned that the project has issues but continue anyways because we will import the necessary packages).
-2. Double click on `dist/unity-webview.unitypackage` to opening it in Unity and click on `import` to import the package to your Unity project (You can also use the package manager if you prefer). If you've imported `unity-webview` before, it might be easier to extract `dist/unity-webview.zip`.
+2. Open `sample/Assets/Sample.unity` to open the sample project in Unity (If you have a newer unity you will be warned that issues may occur but in general it is fine so click continue. You can also be warned that the project has issues but continue anyways because we will import the necessary packages).
+2. Double click on `dist/unity-webview.unitypackage` to open it in Unity and click on `import` to import the package to your Unity project (You can also use the package manager if you prefer). If you've imported `unity-webview` before, it might be easier to extract `dist/unity-webview.zip`.
 3. Click on the `SampleWebView` gameobject and put the url that you want to open by default (if http, refer to the cleartraffictext section).
 4. Select the platform you want to export to
 5. Build
@@ -23,7 +23,7 @@ If you want to make the webview fullscreen :
 If you want to make the webview transparent (the background is the Unity scene) :
 1. Open `Assets/Scripts/SampleWebView.cs`
 2. Uncomment(or add in the webViewObject.Init function if it doesn't exist) this line ```transparent: true```
-3. Add and remove comma's accordingly to the code 
+3. Add and remove a comma accordingly to the code
 
 **Note:** For Android, the current implementation uses Android Fragment to enable the file input field. This might cause new issues. If you don't need the file input field, you can use `dist/unity-webview-nofragment.unitypackage` or `dist/unity-webview-nofragment.zip`.
 **Issues** If you have a blank white page, please make sure to see the clearTraffictext section of this README 
@@ -55,13 +55,13 @@ For the variant without Fragment:
 ## General Notes
 If you start from the `sample` project, most of the time you just have to comment and uncomment to make the webview fit your needs.
 
-Please also  note that the Init function of the `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` have a lot of parameter and can be quite long.
+Please also  note that the Init function of the `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` has a lot of parameters and can be quite long.
 
 If you have a blank screen, it is most likely that you used HTTP (instead of HTTPS) or self signed certificates. In this case, please refer to the `use Cleartext Traffic` section of this README.
 
 You can call JS functions via Unity with the webViewObject.EvaluateJS() function even if your JS is served by a server. However, you cannot launch Unity functions from JS.
 To do this, you will either have to use [this repo](https://github.com/zouloux/unity-web-view) or to create a JS->Server->Unity.
-If you create a fork that allows a remote Unity to JS communication, feel free to fork this repo, add the functionnality and submit your changes via a clear and well described Pull Request
+If you create a fork that allows a remote Unity to JS communication, feel free to fork this repo, add the functionality and submit your changes via a clear and well described Pull Request
 
 **Warning** : Carefully look at the ```#if``` and ```#endif``` because they make parts of the code run or not run depending on the platform and the Editor version. 
 You sometimes have to look at them to be sure that the code you add or edit will be executed.
@@ -159,7 +159,7 @@ cf. https://github.com/gree/unity-webview/issues/224#issuecomment-640642516
 
 ### Android
 
-Since `Assets/Plugins/src` is depreciated in recent Unity version, we switched to .aar files (Android Archive Library). 
+Since `Assets/Plugins/src` is deprecated in recent Unity versions, we switched to .aar files (Android Archive Library).
 If you need to edit some AndroidManifest.xml files :
 1. Opening the `plugin`folder of this repo in Android Studio
 2. Make somes changes (most of the time edit the `plugin/Android/webview/src/main/AndroidManifest.xml`).
@@ -325,4 +325,4 @@ Then in `Project Settings/Player/Resolution and Presentation`, please select `un
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=gree/unity-webview&type=Date)](https://tutim.io/developers)
+![Star History Chart](https://api.star-history.com/svg?repos=gree/unity-webview&type=Date)]
