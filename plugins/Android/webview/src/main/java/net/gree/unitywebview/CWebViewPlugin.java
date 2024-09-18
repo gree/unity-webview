@@ -1420,6 +1420,8 @@ public class CWebViewPlugin extends Fragment {
     public void GetCookies(String url)
     {
         CookieManager cookieManager = CookieManager.getInstance();
+        Log.i("CWebViewPlugin", "APPL-8689 cookieManager is null? " + ((cookieManager == null)? "true" : "false"));
+        Log.i("CWebViewPlugin", cookieManager.toString());
         mWebViewPlugin.call("CallOnCookies", cookieManager.getCookie(url));
     }
 
