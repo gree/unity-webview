@@ -172,6 +172,11 @@ static std::unordered_map<int, int> _nskey2cgkey{
     { NSModeSwitchFunctionKey,         0 },
 };
 
+- (BOOL)isInitialized
+{
+    return webView != nil;
+}
+
 - (id)initWithGameObject:(const char *)gameObject_ transparent:(BOOL)transparent zoom:(BOOL)zoom width:(int)width height:(int)height ua:(const char *)ua separated:(BOOL)separated
 {
     self = [super init];
@@ -974,6 +979,7 @@ extern "C" {
 #endif
     const char *_CWebViewPlugin_GetAppPath(void);
     void _CWebViewPlugin_InitStatic(BOOL inEditor, BOOL useMetal);
+    BOOL _CWebViewPlugin_IsInitialized(void *instance);
     void *_CWebViewPlugin_Init(
         const char *gameObject, BOOL transparent, BOOL zoom, int width, int height, const char *ua, BOOL separated);
     void _CWebViewPlugin_Destroy(void *instance);
@@ -1019,6 +1025,14 @@ void _CWebViewPlugin_InitStatic(BOOL inEditor, BOOL useMetal)
 {
     s_inEditor = inEditor;
     s_useMetal = useMetal;
+}
+
+BOOL _CWebViewPlugin_IsInitialized(void *instance)
+{
+    if (instance == NULL)
+        return NO;
+    CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
+    return [webViewPlugin isInitialized];
 }
 
 void *_CWebViewPlugin_Init(
