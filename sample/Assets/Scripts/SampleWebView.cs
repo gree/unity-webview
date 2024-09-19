@@ -128,6 +128,12 @@ public class SampleWebView : MonoBehaviour
             //// editor
             //separated: false
             );
+
+        // cf. https://github.com/gree/unity-webview/issues/1094#issuecomment-2358718029
+        while (!webViewObject.IsInitialized()) {
+            yield return null;
+        }
+
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
         webViewObject.devicePixelRatio = 1;  // 1 or 2
