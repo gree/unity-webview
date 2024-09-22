@@ -446,6 +446,9 @@ public class WebViewObject : MonoBehaviour
     private static extern IntPtr _CWebViewPlugin_InitStatic(
         bool inEditor, bool useMetal);
     [DllImport("WebView")]
+    private static extern bool _CWebViewPlugin_IsInitialized(
+        IntPtr instance);
+    [DllImport("WebView")]
     private static extern IntPtr _CWebViewPlugin_Init(
         string gameObject, bool transparent, bool zoom, int width, int height, string ua, bool separated);
     [DllImport("WebView")]
@@ -515,6 +518,9 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
+    [DllImport("__Internal")]
+    private static extern bool _CWebViewPlugin_IsInitialized(
+        IntPtr instance);
     [DllImport("__Internal")]
     private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures, int radius);
     [DllImport("__Internal")]
@@ -611,6 +617,25 @@ public class WebViewObject : MonoBehaviour
         }
 #else
         return true;
+#endif
+    }
+
+    public bool IsInitialized()
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+        return true;
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+        //TODO: UNSUPPORTED
+        return true;
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return false;
+        return _CWebViewPlugin_IsInitialized(webView);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return false;
+        return webView.Call<bool>("IsInitialized");
 #endif
     }
 
