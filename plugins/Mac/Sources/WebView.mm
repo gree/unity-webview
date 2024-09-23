@@ -1031,7 +1031,7 @@ BOOL _CWebViewPlugin_IsInitialized(void *instance)
 {
     if (instance == NULL)
         return NO;
-    CWebViewPlugin *webViewPlugin = (__bridge_transfer CWebViewPlugin *)instance;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     return [webViewPlugin isInitialized];
 }
 
