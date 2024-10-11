@@ -24,8 +24,6 @@ var unityWebView =
                     if (href.substr(0, 6) === 'unity:') {
                         unityInstance.SendMessage(name, "CallFromJS", href.substring(6, href.length));
                         e.preventDefault();
-                    } else {
-                        w.location.replace(href);
                     }
                 });
 
