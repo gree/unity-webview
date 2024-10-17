@@ -19,7 +19,6 @@ MINGW64_NT*)
     UNITY='/c/PROGRA~1/Unity/Hub/Editor/2019.4.40f1/Editor/Data'
     ;;
 esac
-DEST_DIR='../../build/Packager/Assets/Plugins/Android'
 
 if [ ! -d "$JAVA_HOME" ]
 then
@@ -33,6 +32,7 @@ then
 fi
 
 # options
+DEST_DIR='../../dist/package/Assets/Plugins/Android'
 TARGET="webview"
 MODE="Release"
 for OPT in $*
@@ -40,6 +40,7 @@ do
     case $OPT in
     '--nofragment')
         TARGET="webview-nofragment"
+        DEST_DIR='../../dist/package-nofragment/Assets/Plugins/Android'
         ;;
     '--development')
         MODE="Development"
