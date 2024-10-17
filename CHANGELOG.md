@@ -6,10 +6,11 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [1.1.1] - 2024-10-17
+
 ### Added
 
 - Update Android WebView configuration to meet AirConsole platform requirements for Android.
-
 
 ## [1.1.0] - 2024-07-31
 
