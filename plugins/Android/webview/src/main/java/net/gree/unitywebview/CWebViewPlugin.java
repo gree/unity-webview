@@ -36,6 +36,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
@@ -401,6 +402,18 @@ public class CWebViewPlugin extends Fragment {
                 }
             }});
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            final boolean debugEnabled = enabled;
+            UnityPlayer.currentActivity.runOnUiThread(new Runnable() {public void run() {
+                try {
+                    // We only allow mixed content for debugging purposes, not for production.
+                    mWebView.getSettings().setMixedContentMode(debugEnabled ? WebSettings.MIXED_CONTENT_ALWAYS_ALLOW : WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+                } catch (Exception ex) {
+                    android.util.Log.e(TAG, "setMixedContentMode failed with exception", ex);
+                }
+            }});
+        }
     }
 
     public void Init(final String gameObject, final boolean transparent, final boolean zoom, final int androidForceDarkMode, final String ua, final int radius) {
@@ -569,6 +582,14 @@ public class CWebViewPlugin extends Fragment {
                     mFilePathCallback = filePathCallback;
                     MyUnitySendMessage(gameObject, "RequestFileChooserPermissions", "");
                     return true;
+                }
+
+                @Override public Bitmap getDefaultVideoPoster() {
+                    // Overwrites the placeholder loading image for videos
+                    final Bitmap bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_4444);
+                    Canvas canvas = new Canvas(bitmap);
+                    canvas.drawARGB(0, 0, 0, 0);
+                    return bitmap;
                 }
 
             });
@@ -832,6 +853,7 @@ public class CWebViewPlugin extends Fragment {
                     LayoutParams.MATCH_PARENT,
                     LayoutParams.MATCH_PARENT,
                     Gravity.NO_GRAVITY));
+
             mWebView = webView;
         }});
 

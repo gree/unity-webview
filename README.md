@@ -30,7 +30,7 @@ the following entry in your `Packages/manifest.json`:
 {
   "dependencies": {
     ...
-    "com.airconsole.unity-webview": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package",
+    "com.airconsole.unity-webview": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment#v1.1.1",
     ...
   }
 }
