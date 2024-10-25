@@ -941,6 +941,31 @@ window.Unity = { \
         }
     }
 }
+
++ (BOOL)openUniversalLink:(const char *)url
+{
+    // cf. https://github.com/firebase/firebase-ios-sdk/blob/main/FirebaseInAppMessaging/Sources/Runtime/FIRIAMActionURLFollower.m
+    NSUserActivity *userActivity
+        = [[NSUserActivity alloc] initWithActivityType:NSUserActivityTypeBrowsingWeb];
+    userActivity.webpageURL = [NSURL URLWithString:[NSString stringWithUTF8String:url]];
+    UIApplication *app = [UIApplication sharedApplication];
+    BOOL handled
+        = [app.delegate
+              application:app
+              continueUserActivity:userActivity
+              restorationHandler:^(NSArray *restorableObjects) {
+                  // mimic system behavior of triggering restoreUserActivityState:
+                  // method on each element of restorableObjects
+                  for (id nextRestoreObject in restorableObjects) {
+                      if ([nextRestoreObject isKindOfClass:[UIResponder class]]) {
+                          UIResponder *responder = (UIResponder *)nextRestoreObject;
+                          [responder restoreUserActivityState:userActivity];
+                      }
+                  }
+              }
+          ];
+    return handled;
+}
 @end
 
 extern "C" {
@@ -974,6 +999,7 @@ extern "C" {
     void _CWebViewPlugin_SetBasicAuthInfo(void *instance, const char *userName, const char *password);
     void _CWebViewPlugin_ClearCache(void *instance, BOOL includeDiskFiles);
     void _CWebViewPlugin_SetSuspended(void *instance, BOOL suspended);
+    BOOL _CWebViewPlugin_OpenUniversalLink(const char *url);
 }
 
 BOOL _CWebViewPlugin_IsInitialized(void *instance)
@@ -1214,5 +1240,10 @@ void _CWebViewPlugin_SetSuspended(void *instance, BOOL suspended)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setAllMediaPlaybackSuspended:suspended];
+}
+
+BOOL _CWebViewPlugin_OpenUniversalLink(const char *url)
+{
+    return [CWebViewPlugin openUniversalLink:url];
 }
 #endif // !(__IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
