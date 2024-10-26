@@ -584,6 +584,8 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_ClearCache(IntPtr instance, bool includeDiskFiles);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetSuspended(IntPtr instance, bool suspended);
+    [DllImport("__Internal")]
+    private static extern bool _CWebViewPlugin_OpenUniversalLink(string url);
 #elif UNITY_WEBGL
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_init(string name);
@@ -597,8 +599,6 @@ public class WebViewObject : MonoBehaviour
     private static extern void _gree_unity_webview_evaluateJS(string name, string js);
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_destroy(string name);
-    [DllImport("__Internal")]
-    private static extern bool _CWebViewPlugin_OpenUniversalLink(string url);
 #endif
 
     public static bool IsWebViewAvailable()
@@ -784,6 +784,15 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("Resume");
+#endif
+    }
+
+    public static bool OpenUniversalLink(string url)
+    {
+#if !UNITY_EDITOR && UNITY_IPHONE
+        return _CWebViewPlugin_OpenUniversalLink(url);
+#else
+        return false;
 #endif
     }
 
