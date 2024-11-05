@@ -37,12 +37,14 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Base64;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
+import android.webkit.ConsoleMessage;
 import android.webkit.GeolocationPermissions.Callback;
 import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
@@ -243,12 +245,6 @@ public class CWebViewPlugin {
             webView.setFocusable(true);
             webView.setFocusableInTouchMode(true);
 
-            // webView.setWebChromeClient(new WebChromeClient() {
-            //     public boolean onConsoleMessage(android.webkit.ConsoleMessage cm) {
-            //         Log.d("Webview", cm.message());
-            //         return true;
-            //     }
-            // });
             webView.setWebChromeClient(new WebChromeClient() {
                 // cf. https://stackoverflow.com/questions/40659198/how-to-access-the-camera-from-within-a-webview/47525818#47525818
                 // cf. https://github.com/googlesamples/android-PermissionRequest/blob/eff1d21f0b9c91d67c7f2a2303b591447e61e942/Application/src/main/java/com/example/android/permissionrequest/PermissionRequestFragment.java#L148-L161
@@ -272,6 +268,12 @@ public class CWebViewPlugin {
                             break;
                         }
                     }
+                }
+
+                @Override
+                public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                    Log.d("Webview", consoleMessage.message());
+                    return true;
                 }
 
                 @Override
@@ -532,6 +534,8 @@ public class CWebViewPlugin {
             webSettings.setUseWideViewPort(true);
             webSettings.setJavaScriptEnabled(true);
             webSettings.setGeolocationEnabled(true);
+            webSettings.setDomStorageEnabled(true);
+            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 // Log.i("CWebViewPlugin", "Build.VERSION.SDK_INT = " + Build.VERSION.SDK_INT);

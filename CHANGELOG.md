@@ -6,6 +6,16 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [1.1.2] - 2024-11-05
+
+### Added
+
+- Update Android WebView configuration to include third party cookie support and DOM storage.
+
+### Changed
+
+- Reactivated output for Android WebView console message forwarding to Log.d on Android.
+
 ## [1.1.1] - 2024-10-17
 
 ### Added
