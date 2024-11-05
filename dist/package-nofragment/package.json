@@ -1,7 +1,7 @@
 {
     "name": "com.airconsole.unity-webview",
     "displayName": "unity-webview",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "unity": "2011.3",
     "description": "A plugin to display native webview views.",
     "dependencies": {}
