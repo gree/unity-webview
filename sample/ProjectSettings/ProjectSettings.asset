@@ -803,7 +803,8 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
   webGLPowerPreference: 2
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Android: UNITYWEBVIEW_ANDROID_ENABLE_CAMERA;UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
   additionalCompilerArguments: {}
   platformArchitecture:
     iPhone: 2
