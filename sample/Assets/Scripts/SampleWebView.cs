@@ -18,12 +18,16 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
+using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
 #endif
 using UnityEngine.UI;
+#if !UNITY_EDITOR && UNITY_ANDROID
+using UnityEngine.Android;
+#endif
 
 public class SampleWebView : MonoBehaviour
 {
@@ -31,8 +35,50 @@ public class SampleWebView : MonoBehaviour
     public Text status;
     WebViewObject webViewObject;
 
+#if !UNITY_EDITOR && UNITY_ANDROID
+    List<string> permissions = new List<string>();
+
+    void PermissionGranted(string permission)
+    {
+        permissions.Remove(permission);
+    }
+
+    void PermissionDeniedAndDontAskAgain(string permission)
+    {
+        permissions.Remove(permission);
+    }
+
+    void PermissionDenied(string permission)
+    {
+        permissions.Remove(permission);
+    }
+
+#endif
+
     IEnumerator Start()
     {
+#if !UNITY_EDITOR && UNITY_ANDROID
+        permissions.Clear();
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+        {
+            permissions.Add(Permission.Camera);
+        }
+        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
+        {
+            permissions.Add(Permission.Microphone);
+        }
+        if (permissions.Count > 0) {
+            var callbacks = new PermissionCallbacks();
+            callbacks.PermissionGranted += PermissionGranted;
+            callbacks.PermissionDeniedAndDontAskAgain += PermissionDeniedAndDontAskAgain;
+            callbacks.PermissionDenied += PermissionDenied;
+            Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
+            while (permissions.Count > 0)
+            {
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+#endif
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.canvas = GameObject.Find("Canvas");
@@ -143,8 +189,10 @@ public class SampleWebView : MonoBehaviour
         //webViewObject.SetAlertDialogEnabled(false);
 
         // cf. https://github.com/gree/unity-webview/pull/728
-        //webViewObject.SetCameraAccess(true);
-        //webViewObject.SetMicrophoneAccess(true);
+#if !UNITY_EDITOR && UNITY_ANDROID
+        webViewObject.SetCameraAccess(Permission.HasUserAuthorizedPermission(Permission.Camera));
+        webViewObject.SetMicrophoneAccess(Permission.HasUserAuthorizedPermission(Permission.Microphone));
+#endif
 
         // cf. https://github.com/gree/unity-webview/pull/550
         // introduced SetURLPattern(..., hookPattern). by KojiNakamaru · Pull Request #550 · gree/unity-webview
