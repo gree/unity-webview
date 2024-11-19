@@ -557,14 +557,6 @@ public class CWebViewPlugin {
                         LayoutParams.MATCH_PARENT));
                 layout.setFocusable(true);
                 layout.setFocusableInTouchMode(true);
-                {
-                    // cf. https://stackoverflow.com/questions/6759036/how-to-send-view-to-back-how-to-control-the-z-order-programmatically/19872801#19872801
-                    ViewGroup parent = (ViewGroup)layout.getParent();
-                    if (parent != null) {
-                        parent.removeView(layout);
-                        parent.addView(layout, 0);
-                    }
-                }
             }
             layout.addView(
                 webView,
