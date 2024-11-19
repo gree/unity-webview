@@ -41,26 +41,21 @@ public class CUnityPlayerActivity
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        boolean ret = super.dispatchTouchEvent(event);
+        boolean inMask = false;
         int pointerCount = event.getPointerCount();
         for (int p = 0; p < pointerCount; p++) {
             float x = event.getX(p);
             float y = event.getY(p);
             for (Rect mask : _masks) {
                 if (mask.contains((int)x, (int)y)) {
-                    return ret;
+                    inMask = true;
                 }
             }
         }
-        for (CWebViewPlugin webViewPlugin : _webViewPlugins) {
-            // cf. https://stackoverflow.com/questions/17845545/custom-viewgroup-dispatchtouchevent-doesnt-work-correctly/17845670#17845670
-            MotionEvent cp = MotionEvent.obtain(event);
-            View view = (webViewPlugin.mVideoView != null) ? webViewPlugin.mVideoView : webViewPlugin.mWebView;
-            cp.offsetLocation(-view.getLeft(), -view.getTop());
-            view.dispatchTouchEvent(cp);
-            cp.recycle();
+        if (inMask && onTouchEvent(event)) {
+            return true;
         }
-        return ret;
+        return super.dispatchTouchEvent(event);
     }
 
     void add(CWebViewPlugin webViewPlugin) {

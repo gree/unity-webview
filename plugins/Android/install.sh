@@ -28,7 +28,7 @@ fi
 # options
 TARGET="webview"
 MODE="Release"
-UNITY='2019.4.40f1'
+UNITY='6000.0.26f1'
 for OPT in $*
 do
     case $OPT in
@@ -90,14 +90,6 @@ case $MODE in
 *)
     dst=${DEST_DIR}/WebViewPlugin-development.aar.tmpl
     cp -a $tmp/CWebViewPlugin.java ${TARGET}/src/main/java/net/gree/unitywebview/CWebViewPlugin.java
-    ;;
-esac
-# remove CUnityPlayer*.java if UNITY != 5.6.1f1.
-case $UNITY in
-'5.6.1f1')
-    ;;
-*)
-    rm -f ${TARGET}/src/main/java/net/gree/unitywebview/CUnityPlayer*.java
     ;;
 esac
 
