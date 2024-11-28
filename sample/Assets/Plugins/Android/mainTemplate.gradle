@@ -3,6 +3,7 @@ apply from: '../shared/keepUnitySymbols.gradle'
 **APPLY_PLUGINS**
 
 dependencies {
+    implementation 'com.github.rongi:rotate-layout:v3.0.0'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 **DEPS**}
 
