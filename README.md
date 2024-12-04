@@ -57,11 +57,20 @@ If you start from the `sample` project, most of the time you just have to commen
 
 Please also  note that the Init function of the `Assets/Plugins/Editor/UnityWebViewPostprocessBuild.cs` has a lot of parameters and can be quite long.
 
+The play mode of the editor is not well supported, always try on a real build.
+
+If you encounter an issue, try the sample app.
+
 If you have a blank screen, it is most likely that you used HTTP (instead of HTTPS) or self signed certificates. In this case, please refer to the `use Cleartext Traffic` section of this README.
 
-You can call JS functions via Unity with the webViewObject.EvaluateJS() function even if your JS is served by a server. However, you cannot launch Unity functions from JS.
-To do this, you will either have to use [this repo](https://github.com/zouloux/unity-web-view) or to create a JS->Server->Unity.
+You can call JS functions via Unity with the webViewObject.EvaluateJS() function even if your JS is served by a server. However, you cannot "directly" launch Unity functions from JS.
+Here is three potentials ways to mitigate this issue :
+- Use Unity.call('something') to send 'something' to the msg of the cb (for callback) function of the sample app. So you can say Unity.call('Function1') then in the cb say if(msg == 'Function1'){Function1()}
+- Use [this repo](https://github.com/zouloux/unity-web-view) 
+- Create a JS->Server->Unity.
 If you create a fork that allows a remote Unity to JS communication, feel free to fork this repo, add the functionality and submit your changes via a clear and well described Pull Request
+
+If you want to pass clicks and touches to Unity and the click is in the webview area, it will not work. If you really want, you can try this experimental branch :  https://github.com/gree/unity-webview/pull/584 enable 32bits and renderoverui and create a Mask on the area you want unity to take control.
 
 **Warning** : Carefully look at the ```#if``` and ```#endif``` because they make parts of the code run or not run depending on the platform and the Editor version. 
 You sometimes have to look at them to be sure that the code you add or edit will be executed.
@@ -158,7 +167,6 @@ cf. https://github.com/gree/unity-webview/issues/785
 cf. https://github.com/gree/unity-webview/issues/224#issuecomment-640642516
 
 ### Android
-
 Since `Assets/Plugins/src` is deprecated in recent Unity versions, we switched to .aar files (Android Archive Library).
 If you need to edit some AndroidManifest.xml files :
 1. Opening the `plugin`folder of this repo in Android Studio
@@ -166,6 +174,8 @@ If you need to edit some AndroidManifest.xml files :
 3. Build the app
 4. You will see your aar file in `build/outputs/aar/`
 5. Move this file to `Assets/Plugins/Android/`
+#### How does it work ?
+It works on Android by calling a new android activity which implements a webview. We pass arguments from Unity to this activity to control it.   
 
 #### File Input Field
 
