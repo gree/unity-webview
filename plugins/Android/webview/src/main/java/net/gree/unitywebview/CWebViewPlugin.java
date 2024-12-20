@@ -1124,7 +1124,7 @@ public class CWebViewPlugin extends Fragment {
                     ((ViewGroup)layout.getParent().getParent()).requestLayout();
                 }
                 if (forceBringToFront && layout != null) {
-                    layout.bringToFront();
+                    //layout.bringToFront();
                 }
             } else {
                 mWebView.setVisibility(View.GONE);
