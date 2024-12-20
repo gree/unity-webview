@@ -89,7 +89,7 @@ task :buildnofragment do
     sh "git clean -dxf ."
   end
   # for keeping meta files
-  if Dir.exists?('../dist/package-nofragment')
+  if Dir.exist?('../dist/package-nofragment')
     sh "cd ../dist/package-nofragment; git clean -dxf .; git checkout ."
     sh "cp -a ../dist/package-nofragment/* Packager"
   end

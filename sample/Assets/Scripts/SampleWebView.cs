@@ -128,6 +128,12 @@ public class SampleWebView : MonoBehaviour
             //// editor
             //separated: false
             );
+
+        // cf. https://github.com/gree/unity-webview/issues/1094#issuecomment-2358718029
+        while (!webViewObject.IsInitialized()) {
+            yield return null;
+        }
+
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.bitmapRefreshCycle = 1;
         webViewObject.devicePixelRatio = 1;  // 1 or 2
@@ -152,6 +158,7 @@ public class SampleWebView : MonoBehaviour
 
         webViewObject.SetMargins(5, 100, 5, Screen.height / 4);
         webViewObject.SetTextZoom(100);  // android only. cf. https://stackoverflow.com/questions/21647641/android-webview-set-font-size-system-default/47017410#47017410
+        //webViewObject.SetMixedContentMode(2);  // android only. 0: MIXED_CONTENT_ALWAYS_ALLOW, 1: MIXED_CONTENT_NEVER_ALLOW, 2: MIXED_CONTENT_COMPATIBILITY_MODE
         webViewObject.SetVisibility(true);
 
         WebViewObject.ClearMasks();
