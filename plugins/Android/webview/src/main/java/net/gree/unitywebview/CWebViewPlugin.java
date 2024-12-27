@@ -136,8 +136,8 @@ public class CWebViewPlugin extends Fragment {
     private static boolean forceBringToFront;
     private static FrameLayout layout = null;
     private Queue<String> mMessages = new ArrayDeque<String>();
-    private WebView mWebView;
-    private View mVideoView;
+    WebView mWebView;
+    View mVideoView;
     private OnGlobalLayoutListener mGlobalLayoutListener;
     private CWebViewPluginInterface mWebViewPlugin;
     private int progress;
@@ -487,7 +487,7 @@ public class CWebViewPlugin extends Fragment {
                     super.onHideCustomView();
                     if (layout != null) {
                         layout.removeView(mVideoView);
-                        layout.setBackgroundColor(0x00000000);
+                        layout.setBackgroundColor(0xff000000);
                         mVideoView = null;
                     }
                 }
@@ -803,6 +803,7 @@ public class CWebViewPlugin extends Fragment {
 
             if (layout == null || layout.getParent() != a.findViewById(android.R.id.content)) {
                 layout = new FrameLayout(a);
+                layout.setBackgroundColor(0xff000000);
                 a.addContentView(
                     layout,
                     new LayoutParams(
@@ -810,6 +811,14 @@ public class CWebViewPlugin extends Fragment {
                         LayoutParams.MATCH_PARENT));
                 layout.setFocusable(true);
                 layout.setFocusableInTouchMode(true);
+                {
+                    // cf. https://stackoverflow.com/questions/6759036/how-to-send-view-to-back-how-to-control-the-z-order-programmatically/19872801#19872801
+                    ViewGroup parent = (ViewGroup)layout.getParent();
+                    if (parent != null) {
+                        parent.removeView(layout);
+                        parent.addView(layout, 0);
+                    }
+                }
             }
             layout.addView(
                 webView,
@@ -818,6 +827,7 @@ public class CWebViewPlugin extends Fragment {
                     LayoutParams.MATCH_PARENT,
                     Gravity.NO_GRAVITY));
             mWebView = webView;
+            ((CUnityPlayerActivity)a).add(self);
         }});
 
         final View activityRootView = a.getWindow().getDecorView().getRootView();
@@ -929,6 +939,7 @@ public class CWebViewPlugin extends Fragment {
     public void Destroy() {
         final Activity a = UnityPlayer.currentActivity;
         final CWebViewPlugin self = this;
+        ((CUnityPlayerActivity)a).remove(self);
         mMessages.clear();
         if (CWebViewPlugin.isDestroyed(a)) {
             return;
@@ -947,7 +958,7 @@ public class CWebViewPlugin extends Fragment {
             webView.stopLoading();
             if (mVideoView != null) {
                 layout.removeView(mVideoView);
-                layout.setBackgroundColor(0x00000000);
+                layout.setBackgroundColor(0xff000000);
                 mVideoView = null;
             }
             layout.removeView(webView);
@@ -1113,7 +1124,7 @@ public class CWebViewPlugin extends Fragment {
                     ((ViewGroup)layout.getParent().getParent()).requestLayout();
                 }
                 if (forceBringToFront && layout != null) {
-                    layout.bringToFront();
+                    //layout.bringToFront();
                 }
             } else {
                 mWebView.setVisibility(View.GONE);
@@ -1263,7 +1274,7 @@ public class CWebViewPlugin extends Fragment {
                 mWebView.onResume();
                 mWebView.resumeTimers();
                 if (forceBringToFront && layout != null) {
-                    layout.bringToFront();
+                    //layout.bringToFront();
                 }
             }
         }});

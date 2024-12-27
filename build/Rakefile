@@ -64,8 +64,8 @@ task :build do
   end
   ["Android"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
-      sh "git clean -dxf .; ./install.sh"
-      sh "git clean -dxf .; ./install.sh --development"
+      sh "git clean -dxf .; ./install.sh --zorderpatch"
+      sh "git clean -dxf .; ./install.sh --zorderpatch --development"
     end
   end
   ["Mac"].each do |t|
@@ -102,8 +102,8 @@ task :buildnofragment do
   end
   ["Android"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
-      sh "git clean -dxf .; ./install.sh --nofragment"
-      sh "git clean -dxf .; ./install.sh --nofragment --development"
+      sh "git clean -dxf .; ./install.sh --zorderpatch --nofragment"
+      sh "git clean -dxf .; ./install.sh --zorderpatch --nofragment --development"
     end
   end
   ["Mac"].each do |t|

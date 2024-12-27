@@ -161,6 +161,9 @@ public class SampleWebView : MonoBehaviour
         //webViewObject.SetMixedContentMode(2);  // android only. 0: MIXED_CONTENT_ALWAYS_ALLOW, 1: MIXED_CONTENT_NEVER_ALLOW, 2: MIXED_CONTENT_COMPATIBILITY_MODE
         webViewObject.SetVisibility(true);
 
+        WebViewObject.ClearMasks();
+        WebViewObject.AddMask(0, 0, Screen.width, 100);
+
 #if !UNITY_WEBPLAYER && !UNITY_WEBGL
         if (Url.StartsWith("http")) {
             webViewObject.LoadURL(Url.Replace(" ", "%20"));
