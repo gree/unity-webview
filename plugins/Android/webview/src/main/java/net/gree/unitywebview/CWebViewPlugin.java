@@ -741,13 +741,15 @@ public class CWebViewPlugin extends Fragment {
                         // Let webview handle the URL
                         return false;
                     } else if (url.startsWith("intent://") || url.startsWith("android-app://")) {
+                        Intent intent = null;
                         try {
-                            Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                            intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                             // cf. https://www.m3tech.blog/entry/android-webview-intent-scheme
                             sanitizeQueryIntentActivitiesIntent(intent);
                             view.getContext().startActivity(intent);
                         } catch (URISyntaxException ex) {
                         } catch (ActivityNotFoundException ex) {
+                            launchMarket(view.getContext(), intent);
                         }
                         return true;
                     }
@@ -762,6 +764,27 @@ public class CWebViewPlugin extends Fragment {
                     } catch (ActivityNotFoundException ex) {
                     }
                     return true;
+                }
+
+                private void launchMarket(Context context, Intent intent) {
+                    if (intent == null) {
+                        return;
+                    }
+                    String packageName = intent.getPackage();
+                    if (packageName == null) {
+                        return;
+                    }
+                    // cf. https://stackoverflow.com/questions/11753000/how-to-open-the-google-play-store-directly-from-my-android-application/11753070#11753070
+                    try {
+                        intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageName));
+                        context.startActivity(intent);
+                    } catch (android.content.ActivityNotFoundException ex) {
+                        try {
+                            intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
+                            context.startActivity(intent);
+                        } catch (android.content.ActivityNotFoundException ex2) {
+                        }
+                    }
                 }
             });
             webView.addJavascriptInterface(mWebViewPlugin , "Unity");
