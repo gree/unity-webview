@@ -266,7 +266,10 @@ window.Unity = { \
     [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
 
     [view addSubview:webView];
-
+    
+    //set webview for Unity 6 accessibility hierarchy
+    view.accessibilityElements = @[webView]; // workaround
+    
     return self;
 }
 
@@ -284,6 +287,13 @@ window.Unity = { \
         [webView0 stopLoading];
         [webView0 removeFromSuperview];
         [webView0 removeObserver:self forKeyPath:@"loading"];
+        
+        //remove the WebViewObject from Unity hierarchy tree
+        UIView *view = UnityGetGLViewController().view;
+        NSMutableArray<UIAccessibilityElement *> *accessibilityElements = view.accessibilityElements ?
+        [view.accessibilityElements mutableCopy] : [NSMutableArray array];
+        [accessibilityElements removeObject: (UIAccessibilityElement *)webView];
+        view.accessibilityElements = accessibilityElements;
     }
     basicAuthPassword = nil;
     basicAuthUserName = nil;
