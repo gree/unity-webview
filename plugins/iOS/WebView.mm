@@ -268,7 +268,10 @@ window.Unity = { \
     [view addSubview:webView];
 
     //set webview for Unity 6 accessibility hierarchy
-    view.accessibilityElements = @[webView]; // workaround
+    NSMutableArray<UIAccessibilityElement *> *accessibilityElements
+        = view.accessibilityElements ? [view.accessibilityElements mutableCopy] : [NSMutableArray array];
+    [accessibilityElements addObject:(UIAccessibilityElement *)webView];
+    view.accessibilityElements = accessibilityElements;
     
     return self;
 }
@@ -290,9 +293,9 @@ window.Unity = { \
         
         //remove the WebViewObject from Unity hierarchy tree
         UIView *view = UnityGetGLViewController().view;
-        NSMutableArray<UIAccessibilityElement *> *accessibilityElements = view.accessibilityElements ?
-        [view.accessibilityElements mutableCopy] : [NSMutableArray array];
-        [accessibilityElements removeObject: (UIAccessibilityElement *)webView];
+        NSMutableArray<UIAccessibilityElement *> *accessibilityElements
+            = view.accessibilityElements ? [view.accessibilityElements mutableCopy] : [NSMutableArray array];
+        [accessibilityElements removeObject: (UIAccessibilityElement *)webView0];
         view.accessibilityElements = accessibilityElements;
     }
     basicAuthPassword = nil;
