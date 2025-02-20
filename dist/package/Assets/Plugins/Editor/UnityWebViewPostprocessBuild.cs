@@ -60,7 +60,7 @@ public class UnityWebViewPostprocessBuild
                             independencies = true;
                         } else if (independencies && line == "}") {
                             independencies = false;
-                            lines.Add("    implementation 'androidx.core:core:1.6.0'");
+                            lines.Add("    implementation 'androidx.core:core:1.9.0'");
                         } else if (independencies) {
                             if (line.Contains("implementation(name: 'core")
                                 || line.Contains("implementation(name: 'androidx.core.core")
