@@ -319,38 +319,38 @@ window.Unity = { \
     }];
 }
 
-+ (void)clearCookies
+- (void)clearCookies
 {
-    [CWebViewPlugin resetSharedProcessPool];
+    NSLog(@"JFR NATIVE - All website data has been cleared.");
+    
+    if ([webView isKindOfClass:[WKWebView class]]) {
+        WKWebView *wkWebView = (WKWebView *)webView;
 
-    // cf. https://dev.classmethod.jp/smartphone/remove-webview-cookies/
-    NSString *libraryPath = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES).firstObject;
-    NSString *cookiesPath = [libraryPath stringByAppendingPathComponent:@"Cookies"];
-    NSString *webKitPath = [libraryPath stringByAppendingPathComponent:@"WebKit"];
-    [[NSFileManager defaultManager] removeItemAtPath:cookiesPath error:nil];
-    [[NSFileManager defaultManager] removeItemAtPath:webKitPath error:nil];
+        // Define the data types you want to clear (cookies, cache, local storage, etc.)
+        NSSet *dataTypes = [NSSet setWithArray:@[
+            WKWebsiteDataTypeCookies,
+            WKWebsiteDataTypeDiskCache,
+            WKWebsiteDataTypeMemoryCache,
+            WKWebsiteDataTypeLocalStorage,
+            WKWebsiteDataTypeSessionStorage,
+            WKWebsiteDataTypeIndexedDBDatabases,
+            WKWebsiteDataTypeWebSQLDatabases
+        ]];
 
-    NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-    if (cookieStorage == nil) {
-        // cf. https://stackoverflow.com/questions/33876295/nshttpcookiestorage-sharedhttpcookiestorage-comes-up-empty-in-10-11
-        cookieStorage = [NSHTTPCookieStorage sharedCookieStorageForGroupContainerIdentifier:@"Cookies"];
-    }
-    [[cookieStorage cookies] enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
-        [cookieStorage deleteCookie:cookie];
-    }];
-
-    NSOperatingSystemVersion version = { 9, 0, 0 };
-    if ([[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]) {
-        // cf. https://stackoverflow.com/questions/46465070/how-to-delete-cookies-from-wkhttpcookiestore/47928399#47928399
-        NSSet *websiteDataTypes = [WKWebsiteDataStore allWebsiteDataTypes];
-        NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
-        [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:websiteDataTypes
-                                                   modifiedSince:date
-                                               completionHandler:^{}];
+        // Remove the specified types of data (set the date to distant past to clear everything)
+        [wkWebView.configuration.websiteDataStore removeDataOfTypes:dataTypes
+                                                   modifiedSince:[NSDate distantPast]
+                                               completionHandler:^{
+                                                   NSLog(@"All website data has been cleared.");
+                                               }];
+        
+        NSMutableString *result = [NSMutableString string];
+        [result appendString:[NSString stringWithFormat:@"%s %s", "All cookie data cleared", "All data cleared"]];
+        UnitySendMessage([gameObjectName UTF8String], "CallOnClearCookies", [result UTF8String]);
     }
 }
 
-+ saveCookies
++ (void)saveCookies
 {
     [CWebViewPlugin resetSharedProcessPool];
 }
@@ -980,7 +980,7 @@ extern "C" {
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
-    void _CWebViewPlugin_ClearCookies();
+    void _CWebViewPlugin_ClearCookies(void *instance);
     void _CWebViewPlugin_SaveCookies();
     void _CWebViewPlugin_GetCookies(void *instance, const char *url);
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
@@ -1181,9 +1181,12 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
     [webViewPlugin clearCustomRequestHeader];
 }
 
-void _CWebViewPlugin_ClearCookies()
+void _CWebViewPlugin_ClearCookies(void *instance)
 {
-    [CWebViewPlugin clearCookies];
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin clearCookies];
 }
 
 void _CWebViewPlugin_SaveCookies()
