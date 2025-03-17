@@ -159,14 +159,6 @@ cf. https://github.com/gree/unity-webview/issues/224#issuecomment-640642516
 
 ### Android
 
-Since `Assets/Plugins/src` is deprecated in recent Unity versions, we switched to .aar files (Android Archive Library).
-If you need to edit some AndroidManifest.xml files :
-1. Opening the `plugin`folder of this repo in Android Studio
-2. Make somes changes (most of the time edit the `plugin/Android/webview/src/main/AndroidManifest.xml`).
-3. Build the app
-4. You will see your aar file in `build/outputs/aar/`
-5. Move this file to `Assets/Plugins/Android/`
-
 #### File Input Field
 
 The Android implementation uses Android Fragment for file input fields since [here](https://github.com/gree/unity-webview/commit/a1a2a89d2d0ced366faed9db308ccf4f689a7278)  and may cause new issues that were not found before. 
@@ -288,15 +280,15 @@ Enable `navigator.onLine` by defining `UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONL
 #### Margin Adjustment for Keyboard Popup
 This plugin adjusts the bottom margin temporarily when the keyboard pops up to keep the focused input field displayed. This adjustment is however disabled for some cases (non-fullscreen mode or both portrait/landscape are enabled) to avoid odd behaviours (cf. https://github.com/gree/unity-webview/pull/809 ). Please define `UNITYWEBVIEW_ANDROID_FORCE_MARGIN_ADJUSTMENT_FOR_KEYBOARD` to force the margin adjustment even for these cases.
 
-#### How to build WebViewPlugin-*.aar.tmpl
+#### How to build WebViewPlugin.androidlib
 
-UnityWebViewPostprocessBuild.cs will select one of WebViewPlugin-*.aar.tmpl depending on EditorUserSettings.development. You can build these files as below:
+*NOTE: You may directly edit java source and other code in WebViewPlugin.androidlib.*
 
 1. Install Unity 2019.4.40f1 with Android Build Support by Unity Hub.
    * Also install Unity 5.6.1f1 from https://unity.com/ja/releases/editor/whats-new/5.6.1 and specify `--zorderpatch` if you need to include CUnityPlayer and CUnityPlayerActivity (cf. [Unity 5.x or older](#unity-5x-or-older)).
 2. Open Terminal (mac) or Git Bash (windows), `cd plugins/Android`, and invoke `./install.sh`.
 
-If successful, you should find `build/Packager/Assets/Plugins/Android/WebViewPlugin-*.aar.tmpl`. install.sh has the following options:
+If successful, you should find `build/Packager/Assets/Plugins/Android/WebViewPlugin.androidlib`. install.sh has the following options:
 
 ```
 Usage: ./install.sh [OPTIONS]
@@ -311,7 +303,7 @@ Options:
 
 ### WebGL
 
-*NOTE: for Unity 2020.1.0f1 or newer, please use `unity-webview-2020` instead of `unity-webview` below.*
+*NOTE: For Unity 2020.1.0f1 or newer, please use `unity-webview-2020` instead of `unity-webview` below.*
 
 After importing `dist/unity-webview.unitypackage` or `dist/unity-webview.zip`, please copy 
 `WebGLTemplates/Default/TemplateData` from your Unity installation to `Assets/WebGLTemplates/unity-webview`. If you utilize Unity 2018.4.13f1 for example,
