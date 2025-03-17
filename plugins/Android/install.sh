@@ -29,6 +29,7 @@ fi
 TARGET="webview"
 MODE="Release"
 UNITY='2019.4.40f1'
+DEPLOY='androidlib'
 for OPT in $*
 do
     case $OPT in
@@ -40,6 +41,9 @@ do
         ;;
     '--zorderpatch')
         UNITY='5.6.1f1'
+        ;;
+    '--aar')
+        DEPLOY=aar
         ;;
     *)
         cat <<EOF
@@ -110,13 +114,33 @@ cp "${UNITY_DIR}/PlaybackEngines/AndroidPlayer/Variations/il2cpp/${MODE}/Classes
 
 # install
 mkdir -p ${DEST_DIR}
-echo cp ${TARGET}/build/outputs/aar/*.aar $dst
-cp ${TARGET}/build/outputs/aar/*.aar $dst
-case $TARGET in
-'webview')
-    core_aar=`basename ${TARGET}/libs-ext/core*.aar`
-    echo cp ${TARGET}/libs-ext/$core_aar ${DEST_DIR}/$core_aar.tmpl
-    cp ${TARGET}/libs-ext/$core_aar ${DEST_DIR}/$core_aar.tmpl
+case $DEPLOY in
+androidlib)
+    case $MODE in
+    Release)
+        d=release
+        ;;
+    Development)
+        d=debug
+        ;;
+    esac
+    if [ ! -d ${DEST_DIR}/WebViewPlugin.androidlib ]
+    then
+        cp -a ${TARGET}/androidlib.tmpl ${DEST_DIR}/WebViewPlugin.androidlib
+        rm -f `find ${DEST_DIR}/WebViewPlugin.androidlib | grep .gitkeep`
+    fi
+    cp ${TARGET}/src/main/java/net/gree/unitywebview/*.java ${DEST_DIR}/WebViewPlugin.androidlib/src/$d/java/net/gree/unitywebview
+    ;;
+aar)
+    echo cp ${TARGET}/build/outputs/aar/*.aar $dst
+    cp ${TARGET}/build/outputs/aar/*.aar $dst
+    case $TARGET in
+    'webview')
+        core_aar=`basename ${TARGET}/libs-ext/core*.aar`
+        echo cp ${TARGET}/libs-ext/$core_aar ${DEST_DIR}/$core_aar.tmpl
+        cp ${TARGET}/libs-ext/$core_aar ${DEST_DIR}/$core_aar.tmpl
+        ;;
+    esac
     ;;
 esac
 
