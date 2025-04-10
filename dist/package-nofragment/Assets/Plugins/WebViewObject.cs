@@ -214,6 +214,7 @@ public class WebViewObject : MonoBehaviour
         {
             mKeyboardVisibleHeight = keyboardVisibleHeight1;
             SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
+            EvaluateJS("setTimeout(function(){if(document&&document.activeElement){document.activeElement.scrollIntoView();}}, 200);");
         }
     }
     
