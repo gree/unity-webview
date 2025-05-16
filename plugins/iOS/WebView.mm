@@ -148,7 +148,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
     return webView != nil;
 }
 
-- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent zoom:(BOOL)zoom ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode allowsLinkPreview:(BOOL)allowsLinkPreview allowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures radius:(int)radius
+- (id)initWithGameObjectName:(const char *)gameObjectName_ transparent:(BOOL)transparent zoom:(BOOL)zoom ua:(const char *)ua enableWKWebView:(BOOL)enableWKWebView contentMode:(WKContentMode)contentMode allowsLinkPreview:(BOOL)allowsLinkPreview allowsBackForwardNavigationGestures:(BOOL)allowsBackForwardNavigationGestures radius:(int)radius angle:(int)angle
 {
     self = [super init];
 
@@ -243,6 +243,9 @@ window.Unity = { \
         if (radius > 0) {
             webView.layer.cornerRadius = radius;
             webView.layer.masksToBounds = YES;
+        }
+        if (angle != 0) {
+            webView.transform = CGAffineTransformMakeRotation(-angle * M_PI / 180);
         }
         if (ua != NULL && strcmp(ua, "") != 0) {
             ((WKWebView *)webView).customUserAgent = [[NSString alloc] initWithUTF8String:ua];
@@ -960,7 +963,7 @@ window.Unity = { \
 
 extern "C" {
     BOOL _CWebViewPlugin_IsInitialized(void *instance);
-    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview, BOOL allowsBackForwardNavigationGestures, int radius);
+    void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview, BOOL allowsBackForwardNavigationGestures, int radius, int angle);
     void _CWebViewPlugin_Destroy(void *instance);
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
@@ -999,7 +1002,7 @@ BOOL _CWebViewPlugin_IsInitialized(void *instance)
     return [webViewPlugin isInitialized];
 }
 
-void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview, BOOL allowsBackForwardNavigationGestures, int radius)
+void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview, BOOL allowsBackForwardNavigationGestures, int radius, int angle)
 {
     if (! (enableWKWebView && [WKWebView class]))
         return nil;
@@ -1015,7 +1018,7 @@ void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zo
         wkContentMode = WKContentModeRecommended;
         break;
     }
-    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent zoom:zoom ua:ua enableWKWebView:enableWKWebView contentMode:wkContentMode allowsLinkPreview:allowsLinkPreview allowsBackForwardNavigationGestures:allowsBackForwardNavigationGestures radius:radius];
+    CWebViewPlugin *webViewPlugin = [[CWebViewPlugin alloc] initWithGameObjectName:gameObjectName transparent:transparent zoom:zoom ua:ua enableWKWebView:enableWKWebView contentMode:wkContentMode allowsLinkPreview:allowsLinkPreview allowsBackForwardNavigationGestures:allowsBackForwardNavigationGestures radius:radius angle:angle];
     [_instances addObject:webViewPlugin];
     return (__bridge_retained void *)webViewPlugin;
 }
