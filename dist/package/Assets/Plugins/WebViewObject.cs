@@ -514,7 +514,7 @@ public class WebViewObject : MonoBehaviour
     private static extern bool _CWebViewPlugin_IsInitialized(
         IntPtr instance);
     [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures, int radius);
+    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures, int radius, int angle);
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
@@ -651,7 +651,9 @@ public class WebViewObject : MonoBehaviour
         bool wkAllowsLinkPreview = true,
         bool wkAllowsBackForwardNavigationGestures = true,
         // editor
-        bool separated = false)
+        bool separated = false,
+        // android/ios
+        int angle = 0)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
@@ -703,13 +705,13 @@ public class WebViewObject : MonoBehaviour
             );
         rect = new Rect(0, 0, Screen.width, Screen.height);
 #elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures, radius);
+        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures, radius, angle);
 #elif UNITY_ANDROID
         webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
 #if UNITY_2021_1_OR_NEWER
         webView.SetStatic<bool>("forceBringToFront", true);
 #endif
-        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
+        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius, angle);
 #else
         Debug.LogError("Webview is not supported on this platform.");
 #endif
