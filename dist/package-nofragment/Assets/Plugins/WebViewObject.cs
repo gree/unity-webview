@@ -518,6 +518,9 @@ public class WebViewObject : MonoBehaviour
     [DllImport("__Internal")]
     private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
     [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetAngle(
+        IntPtr instance, int angle);
+    [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_SetMargins(
         IntPtr instance, float left, float top, float right, float bottom, bool relative);
     [DllImport("__Internal")]
@@ -802,6 +805,25 @@ public class WebViewObject : MonoBehaviour
         float bottom = (Screen.height - scale.y) / 2.0f + center.y;
         float top = Screen.height - (bottom + scale.y);
         SetMargins((int)left, (int)top, (int)right, (int)bottom);
+#endif
+    }
+
+    public void SetAngle(int angle)
+    {
+#if UNITY_EDITOR
+        //TODO: UNSUPPORTED
+        return;
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetAngle(webView, angle);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetAngle", angle);
+#else
+        //TODO: UNSUPPORTED
+        return;
 #endif
     }
 
