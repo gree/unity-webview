@@ -263,5 +263,10 @@ public class SampleWebView : MonoBehaviour
             webViewObject?.SetInteractionEnabled(true);
         }
         x += 90;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "A")) {
+            webViewObject?.SetAngle(angle += 90);
+        }
+        x += 90;
     }
 }
