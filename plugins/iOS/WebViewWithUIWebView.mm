@@ -322,9 +322,7 @@ window.Unity = { \
         webView.layer.cornerRadius = radius;
         webView.layer.masksToBounds = YES;
     }
-    if (angle != 0) {
-        webView.transform = CGAffineTransformMakeRotation(-angle * M_PI / 180);
-    }
+    [self setAngle:angle];
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     webView.hidden = YES;
 
@@ -814,6 +812,13 @@ window.Unity = { \
     return (NSURLRequest *)[convertedRequest copy];
 }
 
+- (void)setAngle:(int)angle
+{
+    if (webView == nil)
+        return;
+    webView.transform = CGAffineTransformMakeRotation(-angle * M_PI / 180);
+}
+
 - (void)setMargins:(float)left top:(float)top right:(float)right bottom:(float)bottom relative:(BOOL)relative
 {
     if (webView == nil)
@@ -1045,6 +1050,8 @@ extern "C" {
     BOOL _CWebViewPlugin_IsInitialized(void *instance);
     void *_CWebViewPlugin_Init(const char *gameObjectName, BOOL transparent, BOOL zoom, const char *ua, BOOL enableWKWebView, int contentMode, BOOL allowsLinkPreview, BOOL allowsBackForwardNavigationGestures, int radius, int angle);
     void _CWebViewPlugin_Destroy(void *instance);
+    void _CWebViewPlugin_SetAngle(
+        void *instance, int angle);
     void _CWebViewPlugin_SetMargins(
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
@@ -1109,6 +1116,15 @@ void _CWebViewPlugin_Destroy(void *instance)
     [_instances removeObject:webViewPlugin];
     [webViewPlugin dispose];
     webViewPlugin = nil;
+}
+
+void _CWebViewPlugin_SetAngle(
+    void *instance, int angle)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setAngle:angle];
 }
 
 void _CWebViewPlugin_SetMargins(
