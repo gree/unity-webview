@@ -389,7 +389,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         return;
     }
     if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
-        [[UIApplication sharedApplication] openURL:nsurl];
+        if (@available(iOS 10.0, *)) {
+            [[UIApplication sharedApplication] openURL:nsurl options:@{} completionHandler:nil];
+        } else {
+            [[UIApplication sharedApplication] openURL:nsurl];
+        }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if ([url hasPrefix:@"unity:"]) {
@@ -405,7 +409,11 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
                && ![url hasPrefix:@"http:"]
                && ![url hasPrefix:@"https:"]) {
         if([[UIApplication sharedApplication] canOpenURL:nsurl]) {
-            [[UIApplication sharedApplication] openURL:nsurl];
+            if (@available(iOS 10.0, *)) {
+                [[UIApplication sharedApplication] openURL:nsurl options:@{} completionHandler:nil];
+            } else {
+                [[UIApplication sharedApplication] openURL:nsurl];
+            }
         }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
