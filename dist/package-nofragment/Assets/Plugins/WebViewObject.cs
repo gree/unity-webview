@@ -536,6 +536,9 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_SetInteractionEnabled(
         IntPtr instance, bool enabled);
     [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_SetGoogleAppRedirectionEnabled(
+        IntPtr instance, bool enabled);
+    [DllImport("__Internal")]
     private static extern bool _CWebViewPlugin_SetURLPattern(
         IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
     [DllImport("__Internal")]
@@ -994,6 +997,23 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("SetInteractionEnabled", enabled);
+#else
+        // TODO: UNSUPPORTED
+#endif
+    }
+
+    public void SetGoogleAppRedirectionEnabled(bool enabled)
+    {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+        // TODO: UNSUPPORTED
+#elif UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_SetGoogleAppRedirectionEnabled(webView, enabled);
+#elif UNITY_ANDROID
+        if (webView == null)
+            return;
+        webView.Call("SetGoogleAppRedirectionEnabled", enabled);
 #else
         // TODO: UNSUPPORTED
 #endif
