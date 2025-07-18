@@ -145,6 +145,7 @@ public class CWebViewPlugin extends Fragment {
     private boolean canGoBack;
     private boolean canGoForward;
     private boolean mInteractionEnabled = true;
+    private boolean mGoogleAppRedirectionEnabled;
     private boolean mAlertDialogEnabled;
     private boolean mAllowVideoCapture;
     private boolean mAllowAudioCapture;
@@ -731,6 +732,11 @@ public class CWebViewPlugin extends Fragment {
                     } else if (mHookRegex != null && mHookRegex.matcher(url).find()) {
                         mWebViewPlugin.call("CallOnHooked", url);
                         return true;
+                    } else if (!mGoogleAppRedirectionEnabled && url.startsWith("https://www.google.com/")) {
+                        mWebView.loadUrl(url);
+                        return true;
+                    } else if (!mGoogleAppRedirectionEnabled && url.startsWith("intent://www.google.com/")) {
+                        return true;
                     } else if (!url.toLowerCase().endsWith(".pdf")
                                && !url.startsWith("https://maps.app.goo.gl")
                                && (url.startsWith("http://")
@@ -1185,6 +1191,16 @@ public class CWebViewPlugin extends Fragment {
         }
         a.runOnUiThread(new Runnable() {public void run() {
             mInteractionEnabled = enabled;
+        }});
+    }
+
+    public void SetGoogleAppRedirectionEnabled(final boolean enabled) {
+        final Activity a = UnityPlayer.currentActivity;
+        if (CWebViewPlugin.isDestroyed(a)) {
+            return;
+        }
+        a.runOnUiThread(new Runnable() {public void run() {
+            mGoogleAppRedirectionEnabled = enabled;
         }});
     }
 
