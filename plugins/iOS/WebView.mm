@@ -129,6 +129,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
+    BOOL googleAppRedirectionEnabled;
     BOOL alertDialogEnabled;
     NSRegularExpression *allowRegex;
     NSRegularExpression *denyRegex;
@@ -154,6 +155,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
     customRequestHeader = [[NSMutableDictionary alloc] init];
+    googleAppRedirectionEnabled = false;
     alertDialogEnabled = true;
     allowRegex = nil;
     denyRegex = nil;
@@ -599,6 +601,14 @@ window.Unity = { \
         }
     }
     UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
+    // cf. https://stackoverflow.com/questions/37086605/disable-wkwebview-for-opening-links-to-redirect-to-apps-installed-on-my-iphone/76948270#76948270
+    if (!googleAppRedirectionEnabled
+        && [url hasPrefix:@"https://www.google.com/"]
+        && navigationAction.navigationType == WKNavigationTypeLinkActivated) {
+        [webView load:navigationAction.request];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
@@ -758,6 +768,13 @@ window.Unity = { \
     if (webView == nil)
         return;
     webView.userInteractionEnabled = enabled;
+}
+
+- (void)setGoogleAppRedirectionEnabled:(BOOL)enabled
+{
+    if (webView == nil)
+        return;
+    googleAppRedirectionEnabled = enabled;
 }
 
 - (void)setAlertDialogEnabled:(BOOL)enabled
@@ -974,6 +991,7 @@ extern "C" {
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled);
+    void _CWebViewPlugin_SetGoogleAppRedirectionEnabled(void *instance, BOOL enabled);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollbarsVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
@@ -1061,6 +1079,14 @@ void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setInteractionEnabled:enabled];
+}
+
+void _CWebViewPlugin_SetGoogleAppRedirectionEnabled(void *instance, BOOL enabled)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setGoogleAppRedirectionEnabled:enabled];
 }
 
 void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
