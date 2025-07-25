@@ -502,6 +502,8 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
     [DllImport("WebView")]
+    private static extern void _CWebViewPlugin_ClearCookie(string url, string name);
+    [DllImport("WebView")]
     private static extern void _CWebViewPlugin_ClearCookies();
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_SaveCookies();
@@ -576,6 +578,8 @@ public class WebViewObject : MonoBehaviour
     private static extern void _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
+    [DllImport("__Internal")]
+    private static extern void _CWebViewPlugin_ClearCookie(string url, string name);
     [DllImport("__Internal")]
     private static extern void _CWebViewPlugin_ClearCookies();
     [DllImport("__Internal")]
@@ -1420,6 +1424,23 @@ public class WebViewObject : MonoBehaviour
         if (webView == null)
             return;
         webView.Call("ClearCustomHeader");
+#endif
+    }
+
+    public void ClearCookie(string url, string name)
+    {
+#if UNITY_WEBPLAYER || UNITY_WEBGL
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX || UNITY_SERVER
+        //TODO: UNSUPPORTED
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
+        if (webView == IntPtr.Zero)
+            return;
+        _CWebViewPlugin_ClearCookie(url, name);
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("ClearCookie", url, name);
 #endif
     }
 

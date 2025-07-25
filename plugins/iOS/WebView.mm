@@ -323,6 +323,42 @@ window.Unity = { \
     }];
 }
 
++ (void)clearCookie:(const char *)name of:(const char *)url
+{
+    NSURL *nsurl = [NSURL URLWithString:[[NSString alloc] initWithUTF8String:url]];
+    if (nsurl == nil) {
+        return;
+    }
+    NSString *nsname = [NSString stringWithUTF8String:name];
+    if (@available(iOS 9.0, *)) {
+        WKHTTPCookieStore *cookieStore = WKWebsiteDataStore.defaultDataStore.httpCookieStore;
+        [cookieStore
+            getAllCookies:^(NSArray<NSHTTPCookie *> *array) {
+                [array
+                    enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+                        if ([cookie.name isEqualToString:nsname]
+                            && [cookie.domain isEqualToString:nsurl.host]
+                            && [cookie.path isEqualToString:nsurl.path]) {
+                            [cookieStore deleteCookie:cookie completionHandler:^{}];
+                        }
+                    }];
+            }];
+    } else {
+        NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        if (cookieStorage == nil) {
+            // cf. https://stackoverflow.com/questions/33876295/nshttpcookiestorage-sharedhttpcookiestorage-comes-up-empty-in-10-11
+            cookieStorage = [NSHTTPCookieStorage sharedCookieStorageForGroupContainerIdentifier:@"Cookies"];
+        }
+        [[cookieStorage cookies] enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+            if ([cookie.name isEqualToString:nsname]
+                && [cookie.domain isEqualToString:nsurl.host]
+                && [cookie.path isEqualToString:nsurl.path]) {
+                [cookieStorage deleteCookie:cookie];
+            }
+        }];
+    }
+}
+
 + (void)clearCookies
 {
     [CWebViewPlugin resetSharedProcessPool];
@@ -1008,6 +1044,7 @@ extern "C" {
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
+    void _CWebViewPlugin_ClearCookie(const char *url, const char *name);
     void _CWebViewPlugin_ClearCookies();
     void _CWebViewPlugin_SaveCookies();
     void _CWebViewPlugin_GetCookies(void *instance, const char *url);
@@ -1215,6 +1252,11 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin clearCustomRequestHeader];
+}
+
+void _CWebViewPlugin_ClearCookie(const char *url, const char *name)
+{
+    [CWebViewPlugin clearCookie:name of:url];
 }
 
 void _CWebViewPlugin_ClearCookies()
