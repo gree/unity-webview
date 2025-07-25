@@ -1040,6 +1040,30 @@ public class CWebViewPlugin {
         }});
     }
 
+    public void ClearCookie(String url, String name)
+    {
+        try {
+            URL u = new URL(url);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                CookieManager cookieManager = CookieManager.getInstance();
+                String cookieString = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=" + u.getPath();
+                cookieManager.setCookie(url, cookieString);
+                cookieManager.flush();
+            } else {
+                final Activity a = UnityPlayer.currentActivity;
+                if (CWebViewPlugin.isDestroyed(a)) {
+                    return;
+                }
+                CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(a);
+                cookieSyncManager.startSync();
+                CookieManager cookieManager = CookieManager.getInstance();
+                String cookieString = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=" + u.getHost() + "; path=" + u.getPath();
+                cookieManager.setCookie(url, cookieString);
+            }
+        } catch (Exception e) {
+        }
+    }
+
     public void ClearCookies()
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
