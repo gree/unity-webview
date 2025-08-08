@@ -129,6 +129,7 @@ extern "C" void UnitySendMessage(const char *, const char *, const char *);
     UIView <WebViewProtocol> *webView;
     NSString *gameObjectName;
     NSMutableDictionary *customRequestHeader;
+    BOOL googleAppRedirectionEnabled;
     BOOL alertDialogEnabled;
     NSRegularExpression *allowRegex;
     NSRegularExpression *denyRegex;
@@ -154,6 +155,7 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
 
     gameObjectName = [NSString stringWithUTF8String:gameObjectName_];
     customRequestHeader = [[NSMutableDictionary alloc] init];
+    googleAppRedirectionEnabled = false;
     alertDialogEnabled = true;
     allowRegex = nil;
     denyRegex = nil;
@@ -169,7 +171,8 @@ static NSMutableArray *_instances = [[NSMutableArray alloc] init];
         WKUserContentController *controller = [[WKUserContentController alloc] init];
         [controller addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:@"unityControl"];
         [controller addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:@"saveDataURL"];
-        NSString *str = @"\
+        {
+            NSString *str = @"\
 window.Unity = { \
     call: function(msg) { \
         window.webkit.messageHandlers.unityControl.postMessage(msg); \
@@ -179,8 +182,11 @@ window.Unity = { \
     } \
 }; \
 ";
+            WKUserScript *script = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+            [controller addUserScript:script];
+        }
         if (!zoom) {
-          str = [str stringByAppendingString:@"\
+            NSString *str = @"\
 (function() { \
     var meta = document.querySelector('meta[name=viewport]'); \
     if (meta == null) { \
@@ -191,12 +197,10 @@ window.Unity = { \
     var head = document.getElementsByTagName('head')[0]; \
     head.appendChild(meta); \
 })(); \
-"
-            ];
+";
+            WKUserScript *script = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
+            [controller addUserScript:script];
         }
-        WKUserScript *script
-            = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
-        [controller addUserScript:script];
         configuration.userContentController = controller;
         configuration.allowsInlineMediaPlayback = true;
         if (@available(iOS 10.0, *)) {
@@ -267,6 +271,12 @@ window.Unity = { \
 
     [view insertSubview:webView atIndex:0];
 
+    //set webview for Unity 6 accessibility hierarchy
+    NSMutableArray<UIAccessibilityElement *> *accessibilityElements
+        = view.accessibilityElements ? [view.accessibilityElements mutableCopy] : [NSMutableArray array];
+    [accessibilityElements addObject:(UIAccessibilityElement *)webView];
+    view.accessibilityElements = accessibilityElements;
+    
     return self;
 }
 
@@ -284,6 +294,13 @@ window.Unity = { \
         [webView0 stopLoading];
         [webView0 removeFromSuperview];
         [webView0 removeObserver:self forKeyPath:@"loading"];
+        
+        //remove the WebViewObject from Unity hierarchy tree
+        UIView *view = UnityGetGLViewController().view;
+        NSMutableArray<UIAccessibilityElement *> *accessibilityElements
+            = view.accessibilityElements ? [view.accessibilityElements mutableCopy] : [NSMutableArray array];
+        [accessibilityElements removeObject: (UIAccessibilityElement *)webView0];
+        view.accessibilityElements = accessibilityElements;
     }
     basicAuthPassword = nil;
     basicAuthUserName = nil;
@@ -304,6 +321,42 @@ window.Unity = { \
             webView.configuration.processPool = _sharedProcessPool;
         }
     }];
+}
+
++ (void)clearCookie:(const char *)name of:(const char *)url
+{
+    NSURL *nsurl = [NSURL URLWithString:[[NSString alloc] initWithUTF8String:url]];
+    if (nsurl == nil) {
+        return;
+    }
+    NSString *nsname = [NSString stringWithUTF8String:name];
+    if (@available(iOS 9.0, *)) {
+        WKHTTPCookieStore *cookieStore = WKWebsiteDataStore.defaultDataStore.httpCookieStore;
+        [cookieStore
+            getAllCookies:^(NSArray<NSHTTPCookie *> *array) {
+                [array
+                    enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+                        if ([cookie.name isEqualToString:nsname]
+                            && [cookie.domain isEqualToString:nsurl.host]
+                            && [cookie.path isEqualToString:nsurl.path]) {
+                            [cookieStore deleteCookie:cookie completionHandler:^{}];
+                        }
+                    }];
+            }];
+    } else {
+        NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        if (cookieStorage == nil) {
+            // cf. https://stackoverflow.com/questions/33876295/nshttpcookiestorage-sharedhttpcookiestorage-comes-up-empty-in-10-11
+            cookieStorage = [NSHTTPCookieStorage sharedCookieStorageForGroupContainerIdentifier:@"Cookies"];
+        }
+        [[cookieStorage cookies] enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+            if ([cookie.name isEqualToString:nsname]
+                && [cookie.domain isEqualToString:nsurl.host]
+                && [cookie.path isEqualToString:nsurl.path]) {
+                [cookieStorage deleteCookie:cookie];
+            }
+        }];
+    }
 }
 
 + (void)clearCookies
@@ -537,7 +590,11 @@ window.Unity = { \
         return;
     }
     if ([url rangeOfString:@"//itunes.apple.com/"].location != NSNotFound) {
-        [[UIApplication sharedApplication] openURL:nsurl];
+        if (@available(iOS 10.0, *)) {
+            [[UIApplication sharedApplication] openURL:nsurl options:@{} completionHandler:nil];
+        } else {
+            [[UIApplication sharedApplication] openURL:nsurl];
+        }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
     } else if ([url hasPrefix:@"unity:"]) {
@@ -554,7 +611,11 @@ window.Unity = { \
                && ![url hasPrefix:@"http:"]
                && ![url hasPrefix:@"https:"]) {
         if([[UIApplication sharedApplication] canOpenURL:nsurl]) {
-            [[UIApplication sharedApplication] openURL:nsurl];
+            if (@available(iOS 10.0, *)) {
+                [[UIApplication sharedApplication] openURL:nsurl options:@{} completionHandler:nil];
+            } else {
+                [[UIApplication sharedApplication] openURL:nsurl];
+            }
         }
         decisionHandler(WKNavigationActionPolicyCancel);
         return;
@@ -576,6 +637,14 @@ window.Unity = { \
         }
     }
     UnitySendMessage([gameObjectName UTF8String], "CallOnStarted", [url UTF8String]);
+    // cf. https://stackoverflow.com/questions/37086605/disable-wkwebview-for-opening-links-to-redirect-to-apps-installed-on-my-iphone/76948270#76948270
+    if (!googleAppRedirectionEnabled
+        && [url hasPrefix:@"https://www.google.com/"]
+        && navigationAction.navigationType == WKNavigationTypeLinkActivated) {
+        [webView load:navigationAction.request];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
@@ -735,6 +804,13 @@ window.Unity = { \
     if (webView == nil)
         return;
     webView.userInteractionEnabled = enabled;
+}
+
+- (void)setGoogleAppRedirectionEnabled:(BOOL)enabled
+{
+    if (webView == nil)
+        return;
+    googleAppRedirectionEnabled = enabled;
 }
 
 - (void)setAlertDialogEnabled:(BOOL)enabled
@@ -951,6 +1027,7 @@ extern "C" {
         void *instance, float left, float top, float right, float bottom, BOOL relative);
     void _CWebViewPlugin_SetVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled);
+    void _CWebViewPlugin_SetGoogleAppRedirectionEnabled(void *instance, BOOL enabled);
     void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollbarsVisibility(void *instance, BOOL visibility);
     void _CWebViewPlugin_SetScrollBounceEnabled(void *instance, BOOL enabled);
@@ -967,6 +1044,7 @@ extern "C" {
     void _CWebViewPlugin_AddCustomHeader(void *instance, const char *headerKey, const char *headerValue);
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
+    void _CWebViewPlugin_ClearCookie(const char *url, const char *name);
     void _CWebViewPlugin_ClearCookies();
     void _CWebViewPlugin_SaveCookies();
     void _CWebViewPlugin_GetCookies(void *instance, const char *url);
@@ -1038,6 +1116,14 @@ void _CWebViewPlugin_SetInteractionEnabled(void *instance, BOOL enabled)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin setInteractionEnabled:enabled];
+}
+
+void _CWebViewPlugin_SetGoogleAppRedirectionEnabled(void *instance, BOOL enabled)
+{
+    if (instance == NULL)
+        return;
+    CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
+    [webViewPlugin setGoogleAppRedirectionEnabled:enabled];
 }
 
 void _CWebViewPlugin_SetAlertDialogEnabled(void *instance, BOOL enabled)
@@ -1166,6 +1252,11 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
         return;
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin clearCustomRequestHeader];
+}
+
+void _CWebViewPlugin_ClearCookie(const char *url, const char *name)
+{
+    [CWebViewPlugin clearCookie:name of:url];
 }
 
 void _CWebViewPlugin_ClearCookies()

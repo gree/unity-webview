@@ -62,7 +62,7 @@ Darwin)
     UNITY_DIR="/Applications/Unity/Hub/Editor/${UNITY}"
     ;;
 MINGW64_NT*)
-    UNITY_DIR='/c/PROGRA~1/Unity/Hub/Editor/${UNITY}/Editor/Data'
+    UNITY_DIR="/c/PROGRA~1/Unity/Hub/Editor/${UNITY}/Editor/Data"
     ;;
 esac
 if [ ! -d "$UNITY_DIR" ]

@@ -196,15 +196,19 @@ static std::unordered_map<int, int> _nskey2cgkey{
     preferences.javaScriptEnabled = true;
     preferences.plugInsEnabled = true;
     [controller addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:@"unityControl"];
-    NSString *str = @"\
+    {
+        NSString *str = @"\
 window.Unity = { \
     call: function(msg) { \
         window.webkit.messageHandlers.unityControl.postMessage(msg); \
     } \
 }; \
 ";
+        WKUserScript *script = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+        [controller addUserScript:script];
+    }
     if (!zoom) {
-        str = [str stringByAppendingString:@"\
+        NSString *str = @"\
 (function() { \
     var meta = document.querySelector('meta[name=viewport]'); \
     if (meta == null) { \
@@ -215,12 +219,10 @@ window.Unity = { \
     var head = document.getElementsByTagName('head')[0]; \
     head.appendChild(meta); \
 })(); \
-"
-            ];
+";
+        WKUserScript *script = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
+        [controller addUserScript:script];
     }
-    WKUserScript *script
-        = [[WKUserScript alloc] initWithSource:str injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES];
-    [controller addUserScript:script];
     configuration.userContentController = controller;
     configuration.processPool = _sharedProcessPool;
     // configuration.preferences = preferences;
@@ -306,6 +308,42 @@ window.Unity = { \
             webView.configuration.processPool = _sharedProcessPool;
         }
     }];
+}
+
++ (void)clearCookie:(const char *)name of:(const char *)url
+{
+    NSURL *nsurl = [NSURL URLWithString:[[NSString alloc] initWithUTF8String:url]];
+    if (nsurl == nil) {
+        return;
+    }
+    NSString *nsname = [NSString stringWithUTF8String:name];
+    if (@available(macOS 10.11, *)) {
+        WKHTTPCookieStore *cookieStore = WKWebsiteDataStore.defaultDataStore.httpCookieStore;
+        [cookieStore
+            getAllCookies:^(NSArray<NSHTTPCookie *> *array) {
+                [array
+                    enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+                        if ([cookie.name isEqualToString:nsname]
+                            && [cookie.domain isEqualToString:nsurl.host]
+                            && [cookie.path isEqualToString:nsurl.path]) {
+                            [cookieStore deleteCookie:cookie completionHandler:^{}];
+                        }
+                    }];
+            }];
+    } else {
+        NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+        if (cookieStorage == nil) {
+            // cf. https://stackoverflow.com/questions/33876295/nshttpcookiestorage-sharedhttpcookiestorage-comes-up-empty-in-10-11
+            cookieStorage = [NSHTTPCookieStorage sharedCookieStorageForGroupContainerIdentifier:@"Cookies"];
+        }
+        [[cookieStorage cookies] enumerateObjectsUsingBlock:^(NSHTTPCookie *cookie, NSUInteger idx, BOOL *stop) {
+            if ([cookie.name isEqualToString:nsname]
+                && [cookie.domain isEqualToString:nsurl.host]
+                && [cookie.path isEqualToString:nsurl.path]) {
+                [cookieStorage deleteCookie:cookie];
+            }
+        }];
+    }
 }
 
 + (void)clearCookies
@@ -1005,6 +1043,7 @@ extern "C" {
     void _CWebViewPlugin_RemoveCustomHeader(void *instance, const char *headerKey);
     void _CWebViewPlugin_ClearCustomHeader(void *instance);
     const char *_CWebViewPlugin_GetCustomHeaderValue(void *instance, const char *headerKey);
+    void _CWebViewPlugin_ClearCookie(const char *url, const char *name);
     void _CWebViewPlugin_ClearCookies();
     void _CWebViewPlugin_SaveCookies();
     void _CWebViewPlugin_GetCookies(void *instance, const char *url);
@@ -1181,6 +1220,11 @@ void _CWebViewPlugin_ClearCustomHeader(void *instance)
 {
     CWebViewPlugin *webViewPlugin = (__bridge CWebViewPlugin *)instance;
     [webViewPlugin clearCustomRequestHeader];
+}
+
+void _CWebViewPlugin_ClearCookie(const char *url, const char *name)
+{
+    [CWebViewPlugin clearCookie:name of:url];
 }
 
 void _CWebViewPlugin_ClearCookies()
