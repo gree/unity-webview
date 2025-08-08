@@ -329,7 +329,7 @@ window.Unity = { \
 
     [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
 
-    [view addSubview:webView];
+    [view insertSubview:webView atIndex:0];
 
     return self;
 }

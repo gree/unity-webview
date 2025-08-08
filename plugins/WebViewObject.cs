@@ -513,6 +513,10 @@ public class WebViewObject : MonoBehaviour
     private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
 #elif UNITY_IPHONE
     [DllImport("__Internal")]
+    private static extern void CWebViewPlugin_ClearMasks();
+    [DllImport("__Internal")]
+    private static extern void CWebViewPlugin_AddMask(int x, int y, int w, int h);
+    [DllImport("__Internal")]
     private static extern bool _CWebViewPlugin_IsInitialized(
         IntPtr instance);
     [DllImport("__Internal")]
@@ -616,6 +620,32 @@ public class WebViewObject : MonoBehaviour
         }
 #else
         return true;
+#endif
+    }
+
+    public static void ClearMasks()
+    {
+#if !UNITY_EDITOR && UNITY_ANDROID
+        using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        {
+            var activity = UnityClass.GetStatic<AndroidJavaObject>("currentActivity");
+            activity.Call("clearMasks");
+        }
+#elif !UNITY_EDITOR && UNITY_IPHONE
+        CWebViewPlugin_ClearMasks();
+#endif
+    }
+
+    public static void AddMask(int x, int y, int w, int h)
+    {
+#if !UNITY_EDITOR && UNITY_ANDROID
+        using(AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        {
+            var activity = UnityClass.GetStatic<AndroidJavaObject>("currentActivity");
+            activity.Call("addMask", x, y, w, h);
+        }
+#elif !UNITY_EDITOR && UNITY_IPHONE
+        CWebViewPlugin_AddMask(x, y, w, h);
 #endif
     }
 
