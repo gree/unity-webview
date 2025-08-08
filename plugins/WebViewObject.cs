@@ -516,6 +516,7 @@ public class WebViewObject : MonoBehaviour
     private static extern void CWebViewPlugin_ClearMasks();
     [DllImport("__Internal")]
     private static extern void CWebViewPlugin_AddMask(int x, int y, int w, int h);
+    [DllImport("__Internal")]
     private static extern bool _CWebViewPlugin_IsInitialized(
         IntPtr instance);
     [DllImport("__Internal")]
