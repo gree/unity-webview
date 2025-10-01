@@ -31,9 +31,32 @@ public class SampleWebView : MonoBehaviour
     WebViewObject webView;
     WebViewObject webViewObject;
 
-    void Start()
+    bool inRequestingPermission;
+
+    void OnApplicationFocus(bool hasFocus)
+    {
+        if (inRequestingPermission && hasFocus) {
+            inRequestingPermission = false;
+        }
+    }
+
+    IEnumerator Start()
     {
         Debug.Log(Application.internetReachability);
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera)) {
+            inRequestingPermission = true;
+            Permission.RequestUserPermission(Permission.Camera);
+        }
+        while (inRequestingPermission) {
+            yield return new WaitForSeconds(0.5f);
+        }
+        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone)) {
+            inRequestingPermission = true;
+            Permission.RequestUserPermission(Permission.Microphone);
+        }
+        while (inRequestingPermission) {
+            yield return new WaitForSeconds(0.5f);
+        }
     }
 
     public void OpenMicTesting()
@@ -72,14 +95,6 @@ public class SampleWebView : MonoBehaviour
         string url = "https://webrtc.github.io/samples/src/content/getusermedia/gum/";
         webView.LoadURL(url);
         webView.SetVisibility(true);
-    }
-
-    void Awake()
-    {
-        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
-            Permission.RequestUserPermission(Permission.Camera);
-        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
-            Permission.RequestUserPermission(Permission.Microphone);
     }
 
     void OnGUI()
