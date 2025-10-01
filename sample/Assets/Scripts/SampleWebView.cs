@@ -65,10 +65,10 @@ public class SampleWebView : MonoBehaviour
         {
             //canvas.SetActive(false);
             webView = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+            webView.Init(transparent: false, enableWKWebView: true, cb: (msg) => Debug.Log("WV MSG: " + msg));
             webView.SetCameraAccess(true);
             webView.SetMicrophoneAccess(true);
             webView.SetInteractionEnabled(true);
-            webView.Init(transparent: false, enableWKWebView: true, cb: (msg) => Debug.Log("WV MSG: " + msg));
             webView.SetMargins(0, 100, 0, 0);
             webView.SetVisibility(true);
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
@@ -84,10 +84,10 @@ public class SampleWebView : MonoBehaviour
         {
             //canvas.SetActive(false);
             webView = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+            webView.Init(transparent: false, enableWKWebView: true, cb: (msg) => Debug.Log("WV MSG: " + msg));
             webView.SetCameraAccess(true);
             webView.SetMicrophoneAccess(true);
             webView.SetInteractionEnabled(true);
-            webView.Init(transparent: false, enableWKWebView: true, cb: (msg) => Debug.Log("WV MSG: " + msg));
             webView.SetMargins(0, 100, 0, 0);
             webView.SetVisibility(true);
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
