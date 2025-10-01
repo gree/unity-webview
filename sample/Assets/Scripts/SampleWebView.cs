@@ -24,7 +24,86 @@ using UnityEngine;
 using UnityEngine.Networking;
 #endif
 using UnityEngine.UI;
+using UnityEngine.Android;
 
 public class SampleWebView : MonoBehaviour
 {
+    WebViewObject webView;
+    WebViewObject webViewObject;
+
+    void Start()
+    {
+        Debug.Log(Application.internetReachability);
+    }
+
+    public void OpenMicTesting()
+    {
+        if (webView == null)
+        {
+            //canvas.SetActive(false);
+            webView = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+            webView.SetCameraAccess(true);
+            webView.SetMicrophoneAccess(true);
+            webView.SetInteractionEnabled(true);
+            webView.Init(transparent: false, enableWKWebView: true, cb: (msg) => Debug.Log("WV MSG: " + msg));
+            webView.SetMargins(0, 100, 0, 0);
+            webView.SetVisibility(true);
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        }
+        string url = "https://webrtc.github.io/samples/src/content/devices/input-output/";
+        webView.LoadURL(url);
+        webView.SetVisibility(true);
+    }
+
+    public void OpenCameraTesting()
+    {
+        if (webView == null)
+        {
+            //canvas.SetActive(false);
+            webView = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+            webView.SetCameraAccess(true);
+            webView.SetMicrophoneAccess(true);
+            webView.SetInteractionEnabled(true);
+            webView.Init(transparent: false, enableWKWebView: true, cb: (msg) => Debug.Log("WV MSG: " + msg));
+            webView.SetMargins(0, 100, 0, 0);
+            webView.SetVisibility(true);
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        }
+        string url = "https://webrtc.github.io/samples/src/content/getusermedia/gum/";
+        webView.LoadURL(url);
+        webView.SetVisibility(true);
+    }
+
+    void Awake()
+    {
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+            Permission.RequestUserPermission(Permission.Camera);
+        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
+            Permission.RequestUserPermission(Permission.Microphone);
+    }
+
+    void OnGUI()
+    {
+        var x = 10;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "Mic")) {
+            var g = GameObject.Find("WebViewObject");
+            if (g != null) {
+                Destroy(g);
+            } else {
+                OpenMicTesting();
+            }
+        }
+        x += 90;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "Camera")) {
+            var g = GameObject.Find("WebViewObject");
+            if (g != null) {
+                Destroy(g);
+            } else {
+                OpenCameraTesting();
+            }
+        }
+        x += 90;
+    }
 }
