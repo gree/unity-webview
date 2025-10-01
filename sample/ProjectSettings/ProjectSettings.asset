@@ -843,7 +843,8 @@ PlayerSettings:
   webGLMemoryGeometricGrowthStep: 0.2
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Android: UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE;UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
   additionalCompilerArguments: {}
   platformArchitecture:
     iPhone: 1
