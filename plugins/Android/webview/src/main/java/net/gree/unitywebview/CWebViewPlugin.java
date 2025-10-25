@@ -25,6 +25,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.ContentValues;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -341,14 +342,22 @@ public class CWebViewPlugin extends Fragment {
                         results = new Uri[] { mCameraPhotoUri };
                     }
                 } else {
-                    String dataString = data.getDataString();
-                    // cf. https://www.petitmonte.com/java/android_webview_camera.html
-                    if (dataString == null) {
-                        if (mCameraPhotoUri != null) {
-                            results = new Uri[] { mCameraPhotoUri };
+                    ClipData clipData = data.getClipData();
+                    if (clipData != null) {
+                        results = new Uri[clipData.getItemCount()];
+                        for (int i = 0; i < clipData.getItemCount(); i++) {
+                            results[i] = clipData.getItemAt(i).getUri();
                         }
                     } else {
-                        results = new Uri[] { Uri.parse(dataString) };
+                        String dataString = data.getDataString();
+                        // cf. https://www.petitmonte.com/java/android_webview_camera.html
+                        if (dataString == null) {
+                            if (mCameraPhotoUri != null) {
+                                results = new Uri[] { mCameraPhotoUri };
+                            }
+                        } else {
+                            results = new Uri[] { Uri.parse(dataString) };
+                        }
                     }
                 }
             }
