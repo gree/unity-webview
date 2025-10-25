@@ -24,12 +24,55 @@ using UnityEngine;
 using UnityEngine.Networking;
 #endif
 using UnityEngine.UI;
+using System.Collections.Generic;
+using UnityEngine.Android;
 
 public class SampleWebView : MonoBehaviour
 {
     public string Url;
     public Text status;
     WebViewObject webViewObject;
+
+    List<string> permissions = new List<string>();
+
+    void PermissionGranted(string permission)
+    {
+        permissions.Remove(permission);
+    }
+
+    void PermissionDeniedAndDontAskAgain(string permission)
+    {
+        permissions.Remove(permission);
+    }
+
+    void PermissionDenied(string permission)
+    {
+        permissions.Remove(permission);
+    }
+
+    IEnumerator RequestCamera()
+    {
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera)) {
+            permissions.Add(Permission.Camera);
+        }
+        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone)) {
+            permissions.Add(Permission.Microphone);
+        }
+        if (permissions.Count > 0) {
+            var callbacks = new PermissionCallbacks();
+            callbacks.PermissionGranted += PermissionGranted;
+            callbacks.PermissionDeniedAndDontAskAgain += PermissionDeniedAndDontAskAgain;
+            callbacks.PermissionDenied += PermissionDenied;
+            Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
+            while (permissions.Count > 0) {
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+        if (Permission.HasUserAuthorizedPermission(Permission.Camera)
+            && Permission.HasUserAuthorizedPermission(Permission.Microphone)) {
+            webViewObject.EvaluateJS("RequestCameraApproved()");
+        }
+    }
 
     IEnumerator Start()
     {
@@ -43,6 +86,9 @@ public class SampleWebView : MonoBehaviour
                 Debug.Log(string.Format("CallFromJS[{0}]", msg));
                 status.text = msg;
                 status.GetComponent<Animation>().Play();
+                if (msg == "RequestCamera") {
+                    StartCoroutine(RequestCamera());
+                }
             },
             err: (msg) =>
             {

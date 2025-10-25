@@ -3,6 +3,32 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Unity WebView</title>
     <script src="sample.js"></script>
+    <script>
+      window.addEventListener(
+          'load',
+          function() {
+              var button = document.getElementById('videobutton');
+              button.addEventListener(
+                  'click',
+                  function() {
+                      Unity.call("RequestCamera");
+                  });
+          });
+      function RequestCameraApproved() {
+          // cf. https://www.aedi.jp/work/webrtc/
+          var constraints = { audio: true, video: { facingMode: "user" } };
+          navigator.mediaDevices
+              .getUserMedia(constraints)
+              .then(function(mediaStream) {
+                  var video = document.querySelector('video');
+                  video.srcObject = mediaStream;
+                  video.onloadedmetadata = function(e) {
+                      video.play();
+                  };
+              })
+              .catch(function(err) { console.log(err.name + ": " + err.message); });
+      }
+    </script>
     <!-- geolocation example
     <script>
       window.addEventListener(
@@ -32,5 +58,7 @@
       <input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/><br/>
       <input type="file" name="datafile"/>
     </form>
+    <button id="videobutton">Turn on Camera</button><br>
+    <video id="video" autoplay playsinline></video>
   </body>
 </html>
