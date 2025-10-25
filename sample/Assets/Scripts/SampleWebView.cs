@@ -143,8 +143,8 @@ public class SampleWebView : MonoBehaviour
         //webViewObject.SetAlertDialogEnabled(false);
 
         // cf. https://github.com/gree/unity-webview/pull/728
-        //webViewObject.SetCameraAccess(true);
-        //webViewObject.SetMicrophoneAccess(true);
+        webViewObject.SetCameraAccess(true);
+        webViewObject.SetMicrophoneAccess(true);
 
         // cf. https://github.com/gree/unity-webview/pull/550
         // introduced SetURLPattern(..., hookPattern). by KojiNakamaru · Pull Request #550 · gree/unity-webview
