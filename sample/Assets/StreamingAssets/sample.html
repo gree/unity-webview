@@ -7,11 +7,27 @@
       window.addEventListener(
           'load',
           function() {
+              window.requestCameraApproved = false;
+              var oldGM = window.navigator.mediaDevices.getUserMedia.bind(window.navigator.mediaDevices);
+              var retry = 0;
+              window.navigator.mediaDevices.getUserMedia = function(constraints) {
+                  Unity.call("RequestCamera");
+                  return new Promise(function(resolve, reject) {
+                      var wait = function() {
+                          if (window.requestCameraApproved) {
+                              oldGM(constraints).then(resolve).catch(reject);
+                          } else if (retry++ < 20) {
+                              setTimeout(wait, 1000);
+                          }
+                      };
+                      wait();
+                  });
+              };
               var button = document.getElementById('videobutton');
               button.addEventListener(
                   'click',
                   function() {
-                      Unity.call("RequestCamera");
+                      RequestCameraApproved();
                   });
           });
       function RequestCameraApproved() {

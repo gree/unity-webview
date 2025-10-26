@@ -70,7 +70,7 @@ public class SampleWebView : MonoBehaviour
         }
         if (Permission.HasUserAuthorizedPermission(Permission.Camera)
             && Permission.HasUserAuthorizedPermission(Permission.Microphone)) {
-            webViewObject.EvaluateJS("RequestCameraApproved()");
+            webViewObject.EvaluateJS("window.requestCameraApproved = true");
         }
     }
 
