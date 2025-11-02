@@ -36,6 +36,8 @@ public class SampleWebView : MonoBehaviour
 
     IEnumerator Start()
     {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
         f0 = Time.frameCount;
         t0 = Time.timeAsDouble;
         fps = 0.0;
