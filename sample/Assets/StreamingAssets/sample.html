@@ -16,21 +16,30 @@
         });
     </script>
     -->
+    <script>
+       window.addEventListener(
+          'load',
+          function() {
+              let count = 0;
+              let t0 = Date.now();
+              requestAnimationFrame(
+                  function loop(){
+                      count++;
+                      if (count % 30 == 0) {
+                          let t1 = Date.now();
+                          if (t1 > t0) {
+                              fps_disp.textContent = Math.round(1000.0 * 30 / (t1 - t0)) + " fps";
+                              t0 = t1;
+                          }
+                          count = 0;
+                      }
+                      requestAnimationFrame(loop);
+                  }
+              )
+          });
+    </script>
   </head>
   <body>
-    <h1>Hello Unity WebView!</h1>
-    <hr/>
-    <p><a href="https://google.com">https://google.com</a> (for testing go/back buttons)</p>
-    <p><a href="http://httpbin.org/headers">http://httpbin.org/headers</a> (for testing custom headers.)</p>
-    <p><img id="img" src="sample.jpg"/> (local image)</p>
-    <p><a href="javascript:void(0)" onclick="testSaveDataURL();">Test saveDataURL</a> (experimental, only for Android/iOS)</p>
-    <hr/>
-    <div id="msg">[]</div>
-    <p><a href="javascript:void(0)" onclick="Unity.call('anchor');">[Send Message!]</a></p>
-    <form method="get" action="form">
-      <input id="input1" type="text" value="hoge" name="msg"/>
-      <input type="submit" value="Send Message!" onclick="Unity.call('form?msg=' + document.getElementById('input1').value); return false;"/><br/>
-      <input type="file" name="datafile"/>
-    </form>
+    <span id="fps_disp"></span>
   </body>
 </html>
