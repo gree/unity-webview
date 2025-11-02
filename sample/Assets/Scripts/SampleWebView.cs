@@ -30,9 +30,15 @@ public class SampleWebView : MonoBehaviour
     public string Url;
     public Text status;
     WebViewObject webViewObject;
+    int f0;
+    double t0;
+    double fps;
 
     IEnumerator Start()
     {
+        f0 = Time.frameCount;
+        t0 = Time.timeAsDouble;
+        fps = 0.0;
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.canvas = GameObject.Find("Canvas");
@@ -261,5 +267,14 @@ public class SampleWebView : MonoBehaviour
             webViewObject?.SetInteractionEnabled(true);
         }
         x += 90;
+
+        var f1 = Time.frameCount;
+        var t1 = Time.timeAsDouble;
+        if (f1 - f0 == 30) {
+            fps = (int)Mathf.Round((float)(30.0 / (t1 - t0)));
+            f0 = f1;
+            t0 = t1;
+        }
+        GUI.TextField(new Rect(x, 10, 180, 80), "" + fps);
     }
 }
