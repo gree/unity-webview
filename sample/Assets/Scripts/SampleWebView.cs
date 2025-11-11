@@ -33,6 +33,7 @@ public class SampleWebView : MonoBehaviour
 
     IEnumerator Start()
     {
+        Url = "https://eaflux.com/cookietest";
         webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         webViewObject.canvas = GameObject.Find("Canvas");
@@ -249,6 +250,13 @@ public class SampleWebView : MonoBehaviour
 
         if (GUI.Button(new Rect(x, 10, 80, 80), "x")) {
             webViewObject?.ClearCookies();
+            Debug.Log("ClearCookies()");
+        }
+        x += 90;
+
+        if (GUI.Button(new Rect(x, 10, 80, 80), "y")) {
+            webViewObject?.ClearCookie("https://eaflux.com/cookietest", "visit_count");
+            Debug.Log("ClearCookie(\"https://eaflux.com/cookietest\", \"visit_count\")");
         }
         x += 90;
 
