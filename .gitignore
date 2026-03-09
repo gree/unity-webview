@@ -1,12 +1,15 @@
 Library
 Temp
 *.csproj
-*.sln
 *.pidb
 *.userprefs
 **/*.xcodeproj/*
 !**/*.xcodeproj/project.pbxproj
 !**/*.xcworkspace/contents.xcworkspacedata
+
+# Ignore global sln files but track the plugin's sln
+*.sln
+!plugins/Windows/WebViewPlugin.sln
 plugins/Windows/.vs
 plugins/Windows/obj
 plugins/Windows/packages/
