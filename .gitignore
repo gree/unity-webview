@@ -9,3 +9,4 @@ Temp
 !**/*.xcworkspace/contents.xcworkspacedata
 plugins/Windows/.vs
 plugins/Windows/obj
+plugins/Windows/packages/
