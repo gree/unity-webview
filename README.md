@@ -1,6 +1,6 @@
 # unity-webview
 
-`unity-webview` is a Unity 5 (and newer) plugin that overlays WebView components on Unity's rendering view. It supports Android, iOS, Unity Web Player, and Mac (Windows is not supported at this time).
+`unity-webview` is a Unity 5 (and newer) plugin that overlays WebView components on Unity's rendering view. It supports Android, iOS, Unity Web Player, Mac, and Windows (Editor and Standalone).
 
 This plugin is derived from [keijiro-san's Unity WebView Integration](https://github.com/keijiro/unity-webview-integration).
 
@@ -60,6 +60,15 @@ Please also  note that the Init function of the `Assets/Plugins/WebViewObject.cs
 If you have a blank screen, it is most likely that you used HTTP (instead of HTTPS) or self-signed certificates. In this case, please refer to [Uses Cleartext Traffic](#uses-cleartext-traffic).
 
 ## Platform-Specific Notes
+
+### Windows (Editor and Standalone)
+
+Windows support uses **Microsoft WebView2** (Edge Chromium). The WebView is rendered offscreen and displayed as a texture in the game view (same pattern as Mac).
+
+- **WebView2 Runtime:** The machine running the Unity Editor or a built Windows game must have the [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) installed. It is included by default on Windows 11 and many recent Windows 10 builds; otherwise the user can install it from Microsoft.
+- **Building the plugin:** The Windows native plugin (DLL) is not prebuilt in the repository. To use WebView on Windows, build it from the `plugins/Windows` folder with Visual Studio. See [plugins/Windows/README.md](plugins/Windows/README.md) for requirements (WebView2 SDK, NuGet or manual SDK), build steps, and where to copy `WebView.dll` (e.g. `Assets/Plugins/x64/WebView.dll` or `Assets/Plugins/x86/WebView.dll`).
+- **Performance:** On Windows, the WebView image is captured with WebView2's CapturePreview, which is costly. The default `bitmapRefreshCycle` is set to **3** (refresh every 3rd frame) to keep FPS up; you can change it on the `WebViewObject` component (e.g. 1 = every frame, 5 = every 5th frame). Higher values improve FPS but make the web view update less often.
+- **Distribution:** When distributing your game, either rely on the user having WebView2 Runtime installed or bundle the [fixed version runtime](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution) as documented by Microsoft.
 
 ### Mac (Editor)
 
