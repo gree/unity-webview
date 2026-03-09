@@ -7,3 +7,5 @@ Temp
 **/*.xcodeproj/*
 !**/*.xcodeproj/project.pbxproj
 !**/*.xcworkspace/contents.xcworkspacedata
+plugins/Windows/.vs
+plugins/Windows/obj
