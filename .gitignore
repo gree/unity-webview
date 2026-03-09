@@ -10,3 +10,14 @@ Temp
 plugins/Windows/.vs
 plugins/Windows/obj
 plugins/Windows/packages/
+
+# Ignore Visual Studio build artifacts
+plugins/Windows/bin/**/*.exp
+plugins/Windows/bin/**/*.lib
+plugins/Windows/bin/**/*.pdb
+plugins/Windows/bin/**/*.ilk
+plugins/Windows/WebViewPlugin/Release/
+plugins/Windows/WebViewPlugin/Debug/
+plugins/Windows/WebViewPlugin/x64/
+*.log
+*.tlog
