@@ -22,24 +22,24 @@ Open **PowerShell** and navigate to the `plugins/Windows` folder, then run:
 .\restore_webview2_sdk.ps1
 ```
 
-The script will automatically download `nuget.exe` (if not installed) and restore `Microsoft.Web.WebView2`, generating the `packages\Microsoft.Web.WebView2.1.0.2210.55\` folder which contains `build\native\include\WebView2.h` and other necessary files.
+The script will automatically download `nuget.exe` (if not installed) and restore `Microsoft.Web.WebView2`, generating the `packages\Microsoft.Web.WebView2.1.0.3800.47\` folder which contains `build\native\include\WebView2.h` and other necessary files.
 
 **Method B – Manual NuGet Restore**
 
 If you have the [NuGet CLI](https://www.nuget.org/downloads) installed, open **Command Prompt** or **Developer PowerShell**, navigate to `plugins/Windows`, and run:
 
 ```cmd
-nuget install Microsoft.Web.WebView2 -Version 1.0.2210.55 -OutputDirectory packages
+nuget install Microsoft.Web.WebView2 -Version 1.0.3800.47 -OutputDirectory packages
 ```
 
 **Method C – Manual SDK Download**
 
-1. Go to [NuGet: Microsoft.Web.WebView2](https://www.nuget.org/packages/Microsoft.Web.WebView2/), download the 1.0.2210.55 `.nupkg` file, rename its extension to `.zip`, and extract it.
+1. Go to [NuGet: Microsoft.Web.WebView2](https://www.nuget.org/packages/Microsoft.Web.WebView2/), download the 1.0.3800.47 `.nupkg` file, rename its extension to `.zip`, and extract it.
 2. Place the extracted `build\native\include` and `build\native\x64` (use `build\native\x86` for 32-bit) in the appropriate paths, or modify the Include/Library directories in `WebViewPlugin.vcxproj` to point to your custom location.
 
 ### 2. Build with Visual Studio
 
-1. **Ensure you have completed "1. Get the WebView2 SDK"** above, so that files like `packages\Microsoft.Web.WebView2.1.0.2210.55\build\native\include\WebView2.h` exist.
+1. **Ensure you have completed "1. Get the WebView2 SDK"** above, so that files like `packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\include\WebView2.h` exist.
 2. Double-click to open **`WebViewPlugin.sln`** (or open this solution file via Visual Studio).
 3. **Build 64-bit (x64)**:
    - Select **x64** from the platform dropdown at the top, and set the configuration to **Release**.

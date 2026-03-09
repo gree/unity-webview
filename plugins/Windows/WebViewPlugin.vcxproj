@@ -64,13 +64,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.2210.55\build\native\include;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.2210.55\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.3800.47\build\native\include;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.2210.55\build\native\x64;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.2210.55\build\native\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.3800.47\build\native\x64;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>WebView2LoaderStatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -80,13 +80,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.2210.55\build\native\include;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.2210.55\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.3800.47\build\native\include;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.2210.55\build\native\x86;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.2210.55\build\native\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.3800.47\build\native\x86;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>WebView2LoaderStatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

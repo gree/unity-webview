@@ -22,7 +22,7 @@ This folder contains the native Windows plugin for unity-webview, using **Micros
 .\restore_webview2_sdk.ps1
 ```
 
-腳本會自動下載 nuget.exe（若尚未安裝）並還原 `Microsoft.Web.WebView2`，產生 `packages\Microsoft.Web.WebView2.1.0.2210.55\`，裡面會有 `build\native\include\WebView2.h` 等檔案。
+腳本會自動下載 nuget.exe（若尚未安裝）並還原 `Microsoft.Web.WebView2`，產生 `packages\Microsoft.Web.WebView2.1.0.3800.47\`，裡面會有 `build\native\include\WebView2.h` 等檔案。
 
 **方式 B – 手動用 NuGet 還原**
 
@@ -30,19 +30,19 @@ This folder contains the native Windows plugin for unity-webview, using **Micros
 
 ```cmd
 cd 專案根目錄\plugins\Windows
-nuget install Microsoft.Web.WebView2 -Version 1.0.2210.55 -OutputDirectory packages
+nuget install Microsoft.Web.WebView2 -Version 1.0.3800.47 -OutputDirectory packages
 ```
 
-完成後應會出現 `packages\Microsoft.Web.WebView2.1.0.2210.55\build\native\include\WebView2.h`。
+完成後應會出現 `packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\include\WebView2.h`。
 
 **方式 C – 手動下載 SDK**
 
-1. 到 [NuGet: Microsoft.Web.WebView2](https://www.nuget.org/packages/Microsoft.Web.WebView2/) 下載 1.0.2210.55 的 .nupkg，副檔名改為 .zip 後解壓。
+1. 到 [NuGet: Microsoft.Web.WebView2](https://www.nuget.org/packages/Microsoft.Web.WebView2/) 下載 1.0.3800.47 的 .nupkg，副檔名改為 .zip 後解壓。
 2. 將解壓後的 `build\native\include` 與 `build\native\x64`（32 位元則用 `build\native\x86`）放到對應的位置，或在 `WebViewPlugin.vcxproj` 中把 Include/Lib 路徑改為指向你存放的地方。
 
 ### 2. 用 Visual Studio 建置
 
-1. **確認已執行過上面的「1. Get the WebView2 SDK」**，使 `packages\Microsoft.Web.WebView2.1.0.2210.55\build\native\include\WebView2.h` 等檔案存在。
+1. **確認已執行過上面的「1. Get the WebView2 SDK」**，使 `packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\include\WebView2.h` 等檔案存在。
 2. 雙擊開啟 `WebViewPlugin.sln`（或用 Visual Studio 開啟此方案檔）。
 3. **建置 64 位元 (x64)**：
    - 上方平台下拉選單選 **x64**，組態選 **Release**。

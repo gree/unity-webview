@@ -3,7 +3,7 @@
 
 $ErrorActionPreference = "Stop"
 $packagesDir = Join-Path $PSScriptRoot "packages"
-$packageDir = Join-Path $packagesDir "Microsoft.Web.WebView2.1.0.2210.55"
+$packageDir = Join-Path $packagesDir "Microsoft.Web.WebView2.1.0.3800.47"
 $includeDir = Join-Path $packageDir "build\native\include"
 
 if (Test-Path $includeDir) {
@@ -11,7 +11,7 @@ if (Test-Path $includeDir) {
     exit 0
 }
 
-Write-Host "Downloading WebView2 SDK (Microsoft.Web.WebView2 1.0.2210.55)..." -ForegroundColor Yellow
+Write-Host "Downloading WebView2 SDK (Microsoft.Web.WebView2 1.0.3800.47)..." -ForegroundColor Yellow
 
 # Try nuget.exe (in PATH or in current folder)
 $nugetExe = $null
@@ -27,7 +27,7 @@ if (Get-Command nuget -ErrorAction SilentlyContinue) {
         Invoke-WebRequest -Uri $nugetUrl -OutFile $nugetExe -UseBasicParsing
     } catch {
         Write-Host "ERROR: Could not download nuget.exe. Please install NuGet from https://www.nuget.org/downloads and run:" -ForegroundColor Red
-        Write-Host "  nuget install Microsoft.Web.WebView2 -Version 1.0.2210.55 -OutputDirectory packages" -ForegroundColor Cyan
+        Write-Host "  nuget install Microsoft.Web.WebView2 -Version 1.0.3800.47 -OutputDirectory packages" -ForegroundColor Cyan
         exit 1
     }
 }
@@ -38,15 +38,15 @@ if (-not (Test-Path $packagesDir)) {
 
 Push-Location $PSScriptRoot
 try {
-    & $nugetExe install Microsoft.Web.WebView2 -Version 1.0.2210.55 -OutputDirectory packages
+    & $nugetExe install Microsoft.Web.WebView2 -Version 1.0.3800.47 -OutputDirectory packages
     if (-not (Test-Path $includeDir)) {
         # NuGet may use lowercase folder name
-        $packageDirLower = Join-Path $packagesDir "microsoft.web.webview2.1.0.2210.55"
+        $packageDirLower = Join-Path $packagesDir "microsoft.web.webview2.1.0.3800.47"
         $includeDirLower = Join-Path $packageDirLower "build\native\include"
         if (Test-Path $includeDirLower) {
             Write-Host "WebView2 SDK installed at: $packageDirLower" -ForegroundColor Green
         } else {
-            Write-Host "ERROR: SDK not found after install. Check that packages folder contains Microsoft.Web.WebView2.1.0.2210.55" -ForegroundColor Red
+            Write-Host "ERROR: SDK not found after install. Check that packages folder contains Microsoft.Web.WebView2.1.0.3800.47" -ForegroundColor Red
             exit 1
         }
     } else {
