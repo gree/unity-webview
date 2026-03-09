@@ -21,3 +21,10 @@ plugins/Windows/WebViewPlugin/Debug/
 plugins/Windows/WebViewPlugin/x64/
 *.log
 *.tlog
+
+# User-specific files
+*.user
+*.vcxproj.user
+
+# Downloaded tools
+plugins/Windows/nuget.exe
