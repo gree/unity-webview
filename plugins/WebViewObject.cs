@@ -2063,7 +2063,7 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
-    // On Windows, CapturePreview is heavy; default 3 = refresh every 3rd frame for better FPS.
+    // On Windows, CapturePreview is heavy; default 10 = refresh every 10th frame for better FPS.
     public int bitmapRefreshCycle = 10;
     public int devicePixelRatio = 1;
 
