@@ -652,7 +652,9 @@ __declspec(dllexport) void* _CWebViewPlugin_Init(
         CloseHandle(params.readyEvent);
         return nullptr;
     }
-    WaitForSingleObject(params.readyEvent, 30000);
+    // Reduce from 30s to 10s so slow/failed WebView2 init does not freeze the app as long
+    const DWORD kInitTimeoutMs = 10000;
+    WaitForSingleObject(params.readyEvent, kInitTimeoutMs);
     CloseHandle(params.readyEvent);
 
     if (params.createResult != S_OK) {

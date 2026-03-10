@@ -179,3 +179,36 @@ The following fixes and additions were made during implementation and debugging 
   - **Non-blocking**: Start a new capture only when none is in progress. The main thread uses a `captureInProgress` flag (`std::atomic<bool>`): only when `!captureInProgress.exchange(true)` does it call `PostMessage(inst->hwnd, WM_WEBVIEW_CAPTURE, 0, 0)`; no event is created or passed, and `WaitForSingleObject` is removed. `captureInProgress` is set back to `false` in the STA thread's CapturePreview completion callback, and also in the `WM_WEBVIEW_CAPTURE` handler when `!inst || !inst->webview`.
   - **Double-buffering**: Add a back buffer in `WebViewInstance` (`bitmapPixelsBack`, `bitmapWidthBack`, `bitmapHeightBack`). After CapturePreview completes on the STA thread, decode into a local buffer, write into `bitmapPixelsBack`, then under `bitmapMutex` swap with `bitmapPixels` and update width/height. `_CWebViewPlugin_Render` always reads only the front buffer `bitmapPixels`, so it never waits on capture and never sees a half-updated buffer.
 - **Result**: The main thread no longer blocks on capture; Render reads only the current front buffer, consistent with the macOS double-buffering approach.
+
+---
+
+## Blocking-point review (other possible causes of “stuck when opening page”)
+
+Findings for cases where the page has loaded but the app still feels stuck.
+
+### 1. Init blocking (most likely cause)
+
+- **Location**: Inside `_CWebViewPlugin_Init`, `WaitForSingleObject(params.readyEvent, 30000)` (around line 655).
+- **Behavior**: When creating the WebView, the main thread **synchronously waits** for the STA thread to complete the **asynchronous** callbacks of `CreateCoreWebView2EnvironmentWithOptions` and `CreateCoreWebView2CompositionController`, for up to **30 seconds**. On a slow system, first-run WebView2, or under antivirus/network delay, initialization can take several seconds, during which the **Unity main thread is fully blocked** and the app appears stuck when “opening the page.”
+- **Recommendation**:
+  - The timeout has been reduced from 30 seconds to **10 seconds** so that on failure or slow init the main thread does not stay blocked as long.
+  - To avoid blocking entirely, Init could be made asynchronous: the C API returns immediately with a “pending” instance, and C# polls `IsInitialized` in Update or uses a callback before calling LoadURL, etc. (larger change).
+
+### 2. Destroy blocking
+
+- **Location**: Inside `_CWebViewPlugin_Destroy`, `WaitForSingleObject(destroyDoneEvent, 10000)` (around line 680).
+- **Behavior**: On close, the main thread waits up to 10 seconds for STA cleanup. This only affects shutdown, not “opening” or “loading.”
+
+### 3. PostToInstanceAndWait
+
+- **Status**: **Not used** anywhere in the code; only defined. Does not cause blocking.
+
+### 4. Mutex contention (BitmapWidth / BitmapHeight / Render)
+
+- **Behavior**: The main thread takes `bitmapMutex` when calling `BitmapWidth`, `BitmapHeight`, and `Render` each frame. With double-buffering, the STA thread holds the lock only briefly during the swap; decoding is done outside the lock, so contention is minimal and should not cause noticeable stutter.
+
+### Summary
+
+- **“Stuck when opening the page”** is most likely due to **Init’s synchronous wait** (formerly up to 30 seconds). The timeout has been reduced to 10 seconds to limit the impact.
+- Capture-related blocking has been removed by non-blocking capture and double-buffering.
+- Other blocking (Destroy, unused PostToInstanceAndWait, brief mutex) should not explain the app feeling stuck after load.

@@ -181,3 +181,36 @@ flowchart LR
   - **非阻塞**: 僅在「目前沒有擷取在進行」時才發送一次擷取：主線程以 `captureInProgress`（`std::atomic<bool>`）為旗標，若 `!captureInProgress.exchange(true)` 才 `PostMessage(inst->hwnd, WM_WEBVIEW_CAPTURE, 0, 0)`；不再建立／傳遞 Event，也不呼叫 `WaitForSingleObject`。`captureInProgress` 在 STA 的 CapturePreview 完成 callback 中設回 `false`；若 `WM_WEBVIEW_CAPTURE` 開頭發現 `!inst || !inst->webview` 也設回 `false`。
   - **雙緩衝**: 在 `WebViewInstance` 中新增後端緩衝 `bitmapPixelsBack`、`bitmapWidthBack`、`bitmapHeightBack`。STA 的 CapturePreview 完成後，先解碼到區域緩衝再寫入 `bitmapPixelsBack`，然後在 `bitmapMutex` 下與 `bitmapPixels` 做 swap（及同步 width/height），使 `_CWebViewPlugin_Render` 始終只讀取前端的 `bitmapPixels`，無需等待擷取完成且不會讀到半寫入狀態。
 - **結果**: 主線程不再因擷圖而阻塞；Render 僅讀取當前已交換好的前端 buffer，與 macOS 的雙緩衝做法一致。
+
+---
+
+## 阻塞點檢查（其他可能造成「開啟網頁時卡住」的地方）
+
+以下為針對「載入完成了 webView 卻卡住」可能原因的檢查結果。
+
+### 1. Init 阻塞（最可能原因）
+
+- **位置**: `_CWebViewPlugin_Init` 內 `WaitForSingleObject(params.readyEvent, 30000)`（約第 655 行）。
+- **行為**: 建立 WebView 時，主線程會**同步等待** STA 線程完成 `CreateCoreWebView2EnvironmentWithOptions` 與 `CreateCoreWebView2CompositionController` 的**非同步**完成 callback，最多等 **30 秒**。若系統較慢、首次啟動 WebView2、或防毒/網路延遲，初始化可能需數秒，期間 **Unity 主線程完全卡住**，畫面會像「開啟網頁時卡住」。
+- **建議**:
+  - 已將逾時由 30 秒改為 **10 秒**，失敗時較快回傳，避免長時間凍結。
+  - 若需完全避免卡住，可改為「非同步 Init」：C API 立即回傳一個 pending 的 instance，由 C# 在 Update 中輪詢 `IsInitialized` 或透過 callback 得知就緒後再呼叫 LoadURL 等（需較大改動）。
+
+### 2. Destroy 阻塞
+
+- **位置**: `_CWebViewPlugin_Destroy` 內 `WaitForSingleObject(destroyDoneEvent, 10000)`（約第 680 行）。
+- **行為**: 關閉時主線程最多等 10 秒讓 STA 清理完。通常只在關閉時發生，不影響「開啟網頁」時的卡住感。
+
+### 3. PostToInstanceAndWait
+
+- **狀態**: 目前程式內**未使用**，僅定義。不會造成阻塞。
+
+### 4. Mutex 競爭（BitmapWidth / BitmapHeight / Render）
+
+- **行為**: 主線程在每幀呼叫 `BitmapWidth`、`BitmapHeight`、`Render` 時會取得 `bitmapMutex`。STA 端在雙緩衝實作下僅在 swap 時短暫持鎖，解碼在鎖外完成，持鎖時間極短，一般不會造成明顯卡頓。
+
+### 小結
+
+- **「開啟網頁時卡住」** 最可能來自 **Init 的 30 秒同步等待**；已將逾時改為 10 秒以減輕影響。
+- 擷圖造成的阻塞已由「非阻塞擷圖 + 雙緩衝」排除。
+- 其餘阻塞點（Destroy、未使用的 PostToInstanceAndWait、短暫 mutex）在正常情境下不至於造成載入完成後仍卡住的現象。
