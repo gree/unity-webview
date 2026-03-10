@@ -1,9 +1,33 @@
 Library
 Temp
 *.csproj
-*.sln
 *.pidb
 *.userprefs
 **/*.xcodeproj/*
 !**/*.xcodeproj/project.pbxproj
 !**/*.xcworkspace/contents.xcworkspacedata
+
+# Ignore global sln files but track the plugin's sln
+*.sln
+!plugins/Windows/WebViewPlugin.sln
+plugins/Windows/.vs
+plugins/Windows/obj
+plugins/Windows/packages/
+
+# Ignore Visual Studio build artifacts
+plugins/Windows/bin/**/*.exp
+plugins/Windows/bin/**/*.lib
+plugins/Windows/bin/**/*.pdb
+plugins/Windows/bin/**/*.ilk
+plugins/Windows/WebViewPlugin/Release/
+plugins/Windows/WebViewPlugin/Debug/
+plugins/Windows/WebViewPlugin/x64/
+*.log
+*.tlog
+
+# User-specific files
+*.user
+*.vcxproj.user
+
+# Downloaded tools
+plugins/Windows/nuget.exe
