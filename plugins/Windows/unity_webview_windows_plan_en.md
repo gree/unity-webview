@@ -159,3 +159,15 @@ The following fixes and additions were made during implementation and debugging 
 - **Issue**: When running the Unity project, a blank, unnamed application icon would appear on the Windows taskbar. This was because the hidden window hosting WebView2 was created with the default `WS_OVERLAPPEDWINDOW` style.
 - **Approach**: In the `CreateWindowExW` call within `WebViewPlugin.cpp`, changed the window style to `WS_POPUP` and added the extended style `WS_EX_TOOLWINDOW`.
 - **Result**: The hidden window no longer shows up on the Windows taskbar, and it does not affect WebView2's offscreen rendering or input forwarding.
+
+### GetMessage return buffer: CoTaskMemAlloc
+
+- **Issue**: `_CWebViewPlugin_GetMessage` returned a string buffer allocated with `malloc()`. For P/Invoke, the .NET/Mono runtime expects to free such buffers with `Marshal.FreeCoTaskMem` (i.e. `CoTaskMemFree()`); mixing allocators can cause leaks or undefined behavior.
+- **Approach**: Allocate the message buffer with `CoTaskMemAlloc()` (include `<objbase.h>`, link `ole32.lib`). The marshaller then frees it with `CoTaskMemFree()` when marshalling the returned `const char*` to a C# string.
+- **Reference**: [Mono P/Invoke](https://www.mono-project.com/docs/advanced/pinvoke/) — memory passed across the managed/unmanaged boundary should use the runtime’s allocator (on Windows, the COM task memory allocator).
+
+### Destroy race: wait for STA cleanup before freeing instance
+
+- **Issue**: In `_CWebViewPlugin_Destroy`, the code posted `WM_WEBVIEW_DESTROY` to the STA thread and then immediately erased the `WebViewInstance` from `s_instances`, freeing the object. The STA thread could still be accessing `inst` (e.g. in the WndProc when handling `WM_WEBVIEW_DESTROY`), leading to use-after-free and intermittent crashes on app exit.
+- **Approach**: Create a “destroy done” event; pass it as `lParam` when posting `WM_WEBVIEW_DESTROY`. In the WndProc, after releasing COM references and closing handles, call `SetEvent(destroyDoneEvent)` and then `DestroyWindow(hwnd)`. In `_CWebViewPlugin_Destroy`, call `WaitForSingleObject(destroyDoneEvent, 10000)` before erasing the instance from `s_instances` and closing the event handle.
+- **Result**: The instance is only destroyed after the STA thread has finished all cleanup, eliminating the use-after-free and the associated exit crash.

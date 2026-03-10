@@ -9,6 +9,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <objbase.h>
 #include <wrl.h>
 #include <string>
 #include <cstring>
@@ -21,6 +22,7 @@
 #include "WebView2.h"
 
 #pragma comment(lib, "user32.lib")
+#pragma comment(lib, "ole32.lib")
 
 // Set to 1 to log input and window info to OutputDebugString.
 // View logs: run DebugView (Sysinternals) as admin and enable "Capture Global Win32", or run Unity from Visual Studio and check Output.
@@ -345,6 +347,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         return 0;
     }
     case WM_WEBVIEW_DESTROY: {
+        HANDLE destroyDoneEvent = (HANDLE)lParam;
         if (inst) {
             inst->controller = nullptr;
             inst->compositionController = nullptr;
@@ -354,6 +357,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                 inst->captureDoneEvent = nullptr;
             }
         }
+        if (destroyDoneEvent)
+            SetEvent(destroyDoneEvent);
         DestroyWindow(hwnd);
         return 0;
     }
@@ -661,7 +666,14 @@ __declspec(dllexport) void* _CWebViewPlugin_Init(
 __declspec(dllexport) int _CWebViewPlugin_Destroy(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
     if (!inst) return 0;
-    PostToInstance(inst, WM_WEBVIEW_DESTROY);
+    // Wait for STA thread to finish cleanup before erasing instance (avoids use-after-free / intermittent crash on exit)
+    HANDLE destroyDoneEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+    if (destroyDoneEvent && inst->hwnd) {
+        PostMessage(inst->hwnd, WM_WEBVIEW_DESTROY, 0, (LPARAM)destroyDoneEvent);
+        WaitForSingleObject(destroyDoneEvent, 10000);
+    }
+    if (destroyDoneEvent)
+        CloseHandle(destroyDoneEvent);
     std::lock_guard<std::mutex> lk(s_instancesMutex);
     for (auto it = s_instances.begin(); it != s_instances.end(); ++it) {
         if (it->get() == inst) {
@@ -853,7 +865,7 @@ __declspec(dllexport) const char* _CWebViewPlugin_GetMessage(void* instance) {
     if (!inst) return nullptr;
     std::string msg;
     if (!inst->messages.pop(msg)) return nullptr;
-    char* buf = (char*)malloc(msg.size() + 1);
+    char* buf = (char*)CoTaskMemAlloc(msg.size() + 1);
     if (!buf) return nullptr;
     memcpy(buf, msg.c_str(), msg.size() + 1);
     return buf;

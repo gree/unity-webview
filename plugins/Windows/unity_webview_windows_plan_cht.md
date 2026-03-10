@@ -161,3 +161,15 @@ flowchart LR
 - **問題**: 執行 Unity 專案時，Windows 工作列會多出一個沒有名稱的空白應用程式圖示。這是因為承載 WebView2 的隱藏視窗預設使用了 `WS_OVERLAPPEDWINDOW` 樣式。
 - **作法**: 在 `WebViewPlugin.cpp` 的 `CreateWindowExW` 呼叫中，將視窗樣式改為 `WS_POPUP`，並加上擴充樣式 `WS_EX_TOOLWINDOW`。
 - **結果**: 該隱藏視窗不再顯示於 Windows 工作列上，且不影響 WebView2 的離屏渲染與輸入轉發。
+
+### GetMessage 回傳緩衝區：CoTaskMemAlloc
+
+- **問題**: `_CWebViewPlugin_GetMessage` 回傳的字串緩衝區原先以 `malloc()` 配置。在 P/Invoke 下，.NET/Mono 執行期預期以 `Marshal.FreeCoTaskMem`（即 `CoTaskMemFree()`）釋放這類緩衝區；混用不同配置器可能造成洩漏或未定義行為。
+- **作法**: 改以 `CoTaskMemAlloc()` 配置訊息緩衝區（需 include `<objbase.h>`、連結 `ole32.lib`）。marshaller 在將回傳的 `const char*` 轉成 C# 字串時會以 `CoTaskMemFree()` 釋放。
+- **參考**: [Mono P/Invoke](https://www.mono-project.com/docs/advanced/pinvoke/) — 跨越 managed/unmanaged 邊界的記憶體應使用執行期配置器（Windows 上為 COM task memory allocator）。
+
+### Destroy 競態：等 STA 清理完再釋放 instance
+
+- **問題**: 在 `_CWebViewPlugin_Destroy` 中，程式對 STA 執行緒送出 `WM_WEBVIEW_DESTROY` 後，立即從 `s_instances` 移除並釋放 `WebViewInstance`。此時 STA 執行緒仍可能正在存取 `inst`（例如在 WndProc 處理 `WM_WEBVIEW_DESTROY` 時），造成 use-after-free 與關閉應用時偶發崩潰。
+- **作法**: 建立「清理完成」事件，並在 PostMessage 送出 `WM_WEBVIEW_DESTROY` 時以 `lParam` 傳入。WndProc 中在釋放 COM 參考、關閉 handle 後呼叫 `SetEvent(destroyDoneEvent)`，再呼叫 `DestroyWindow(hwnd)`。在 `_CWebViewPlugin_Destroy` 中先以 `WaitForSingleObject(destroyDoneEvent, 10000)` 等待，再從 `s_instances` 移除 instance 並關閉事件 handle。
+- **結果**: 僅在 STA 執行緒完成所有清理後才釋放 instance，消除 use-after-free 與關閉時的崩潰。
