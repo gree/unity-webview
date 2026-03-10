@@ -35,7 +35,6 @@ using UnityEngine.Rendering;
 using UnityEngine.UI;
 #endif
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-using System.IO;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 #endif
