@@ -73,12 +73,16 @@ struct WebViewInstance {
     int rectHeight = 0;
     bool visible = true;
 
-    // Bitmap from CapturePreview (decoded to RGBA)
+    // Bitmap from CapturePreview (decoded to RGBA). Double-buffered: STA thread decodes into
+    // bitmapPixelsBack then swaps with bitmapPixels so Render() reads consistent front buffer.
     std::mutex bitmapMutex;
     std::vector<uint8_t> bitmapPixels;
     int bitmapWidth = 0;
     int bitmapHeight = 0;
-    std::atomic<bool> capturePending{ false };
+    std::vector<uint8_t> bitmapPixelsBack;
+    int bitmapWidthBack = 0;
+    int bitmapHeightBack = 0;
+    std::atomic<bool> captureInProgress{ false };
     HANDLE captureDoneEvent = nullptr;
 
     // Custom headers for navigation
@@ -419,11 +423,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_WEBVIEW_CAPTURE: {
         if (!inst || !inst->webview) {
             if (inst && inst->captureDoneEvent) SetEvent(inst->captureDoneEvent);
+            if (inst) inst->captureInProgress = false;
             return 0;
         }
         HANDLE doneEv = (HANDLE)lParam;
         inst->captureDoneEvent = doneEv;
-        inst->capturePending = true;
 
         ComPtr<IStream> stream;
         CreateStreamOnHGlobal(nullptr, TRUE, &stream);
@@ -439,13 +443,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                         int w, h;
                         if (DecodePngStreamToRgba(streamRef.Get(), pixels, w, h)) {
                             std::lock_guard<std::mutex> lk(inst->bitmapMutex);
-                            inst->bitmapPixels = std::move(pixels);
-                            inst->bitmapWidth = w;
-                            inst->bitmapHeight = h;
+                            inst->bitmapPixelsBack = std::move(pixels);
+                            inst->bitmapWidthBack = w;
+                            inst->bitmapHeightBack = h;
+                            inst->bitmapPixels.swap(inst->bitmapPixelsBack);
+                            inst->bitmapWidth = inst->bitmapWidthBack;
+                            inst->bitmapHeight = inst->bitmapHeightBack;
                         }
                     }
                     if (inst->captureDoneEvent) SetEvent(inst->captureDoneEvent);
-                    inst->capturePending = false;
+                    inst->captureInProgress = false;
                     return S_OK;
                 }).Get());
         return 0;
@@ -791,11 +798,12 @@ __declspec(dllexport) void _CWebViewPlugin_SendKeyEvent(void* instance, int x, i
 __declspec(dllexport) void _CWebViewPlugin_Update(void* instance, bool refreshBitmap, int devicePixelRatio) {
     WebViewInstance* inst = (WebViewInstance*)instance;
     if (!inst) return;
+    // Non-blocking: only start a new capture when none is in progress. STA thread uses
+    // double-buffering so Render() can read current bitmapPixels without delay.
     if (refreshBitmap && inst->hwnd && inst->webview) {
-        HANDLE ev = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        PostMessage(inst->hwnd, WM_WEBVIEW_CAPTURE, 0, (LPARAM)ev);
-        WaitForSingleObject(ev, 5000);
-        CloseHandle(ev);
+        if (!inst->captureInProgress.exchange(true)) {
+            PostMessage(inst->hwnd, WM_WEBVIEW_CAPTURE, 0, 0);
+        }
     }
 }
 

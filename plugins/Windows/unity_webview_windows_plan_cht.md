@@ -173,3 +173,11 @@ flowchart LR
 - **問題**: 在 `_CWebViewPlugin_Destroy` 中，程式對 STA 執行緒送出 `WM_WEBVIEW_DESTROY` 後，立即從 `s_instances` 移除並釋放 `WebViewInstance`。此時 STA 執行緒仍可能正在存取 `inst`（例如在 WndProc 處理 `WM_WEBVIEW_DESTROY` 時），造成 use-after-free 與關閉應用時偶發崩潰。
 - **作法**: 建立「清理完成」事件，並在 PostMessage 送出 `WM_WEBVIEW_DESTROY` 時以 `lParam` 傳入。WndProc 中在釋放 COM 參考、關閉 handle 後呼叫 `SetEvent(destroyDoneEvent)`，再呼叫 `DestroyWindow(hwnd)`。在 `_CWebViewPlugin_Destroy` 中先以 `WaitForSingleObject(destroyDoneEvent, 10000)` 等待，再從 `s_instances` 移除 instance 並關閉事件 handle。
 - **結果**: 僅在 STA 執行緒完成所有清理後才釋放 instance，消除 use-after-free 與關閉時的崩潰。
+
+### 非阻塞擷圖與雙緩衝（避免主線程阻塞）
+
+- **問題**: `_CWebViewPlugin_Update` 原先在 `refreshBitmap` 時建立 Event、對 STA 送出 `WM_WEBVIEW_CAPTURE` 後以 `WaitForSingleObject(ev, 5000)` 等待，導致主線程（Unity）每幀可能阻塞最多 5 秒。
+- **作法**:
+  - **非阻塞**: 僅在「目前沒有擷取在進行」時才發送一次擷取：主線程以 `captureInProgress`（`std::atomic<bool>`）為旗標，若 `!captureInProgress.exchange(true)` 才 `PostMessage(inst->hwnd, WM_WEBVIEW_CAPTURE, 0, 0)`；不再建立／傳遞 Event，也不呼叫 `WaitForSingleObject`。`captureInProgress` 在 STA 的 CapturePreview 完成 callback 中設回 `false`；若 `WM_WEBVIEW_CAPTURE` 開頭發現 `!inst || !inst->webview` 也設回 `false`。
+  - **雙緩衝**: 在 `WebViewInstance` 中新增後端緩衝 `bitmapPixelsBack`、`bitmapWidthBack`、`bitmapHeightBack`。STA 的 CapturePreview 完成後，先解碼到區域緩衝再寫入 `bitmapPixelsBack`，然後在 `bitmapMutex` 下與 `bitmapPixels` 做 swap（及同步 width/height），使 `_CWebViewPlugin_Render` 始終只讀取前端的 `bitmapPixels`，無需等待擷取完成且不會讀到半寫入狀態。
+- **結果**: 主線程不再因擷圖而阻塞；Render 僅讀取當前已交換好的前端 buffer，與 macOS 的雙緩衝做法一致。
