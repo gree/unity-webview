@@ -68,7 +68,7 @@ task :build do
       sh "git clean -dxf .; ./install.sh --development"
     end
   end
-  ["Mac"].each do |t|
+  ["Mac", "Windows"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
       sh "./install.sh"
     end
@@ -107,7 +107,7 @@ task :buildnofragment do
       sh "git clean -dxf .; ./install.sh --nofragment --development"
     end
   end
-  ["Mac"].each do |t|
+  ["Mac", "Windows"].each do |t|
     Dir.chdir("#{SRCDIR[0]}/#{t}") do
       sh "./install.sh"
     end
