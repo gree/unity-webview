@@ -433,7 +433,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         CreateStreamOnHGlobal(nullptr, TRUE, &stream);
         ComPtr<IStream> streamRef = stream;
 
-        inst->webview->CapturePreview(COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG, stream.Get(),
+        HRESULT errCapture = inst->webview->CapturePreview(COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG, stream.Get(),
             Callback<ICoreWebView2CapturePreviewCompletedHandler>(
                 [inst, streamRef](HRESULT err) -> HRESULT {
                     if (SUCCEEDED(err) && streamRef) {
@@ -455,6 +455,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                     inst->captureInProgress = false;
                     return S_OK;
                 }).Get());
+	if (FAILED(errCapture)) {
+	    if (inst->captureDoneEvent) SetEvent(inst->captureDoneEvent);
+	    inst->captureInProgress = false;
+	}
         return 0;
     }
     case WM_WEBVIEW_SEND_MOUSE: {
