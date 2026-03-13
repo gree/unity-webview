@@ -96,6 +96,9 @@ struct WebViewInstance {
     std::mutex cacheMutex;
     bool canGoBack = false;
     bool canGoForward = false;
+
+    // Set when Destroy is in progress; main-thread APIs return early to avoid use-after-free.
+    std::atomic<bool> destroying{ false };
 };
 
 static std::mutex s_instancesMutex;
@@ -353,6 +356,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
     case WM_WEBVIEW_DESTROY: {
         HANDLE destroyDoneEvent = (HANDLE)lParam;
         if (inst) {
+            // Stop navigation before releasing COM to avoid crash when tearing down during load (e.g. heavy pages).
+            if (inst->webview) {
+                inst->webview->Stop();
+            }
             inst->controller = nullptr;
             inst->compositionController = nullptr;
             inst->webview = nullptr;
@@ -589,7 +596,7 @@ static DWORD WINAPI STAThreadProc(LPVOID param) {
 
 // Helper: run action on STA thread by posting to the instance's window
 static void PostToInstance(WebViewInstance* inst, UINT msg, WPARAM wParam = 0, LPARAM lParam = 0) {
-    if (inst && inst->hwnd)
+    if (inst && !inst->destroying && inst->hwnd)
         PostMessage(inst->hwnd, msg, wParam, lParam);
 }
 
@@ -628,7 +635,7 @@ __declspec(dllexport) void _CWebViewPlugin_InitStatic(bool inEditor, bool useMet
 
 __declspec(dllexport) bool _CWebViewPlugin_IsInitialized(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    return inst && inst->webview != nullptr;
+    return inst && !inst->destroying && inst->webview != nullptr;
 }
 
 __declspec(dllexport) void* _CWebViewPlugin_Init(
@@ -683,19 +690,26 @@ __declspec(dllexport) void* _CWebViewPlugin_Init(
 __declspec(dllexport) int _CWebViewPlugin_Destroy(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
     if (!inst) return 0;
+    inst->destroying = true;
     // Wait for STA thread to finish cleanup before erasing instance (avoids use-after-free / intermittent crash on exit)
     HANDLE destroyDoneEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+    DWORD waitResult = WAIT_TIMEOUT;
     if (destroyDoneEvent && inst->hwnd) {
         PostMessage(inst->hwnd, WM_WEBVIEW_DESTROY, 0, (LPARAM)destroyDoneEvent);
-        WaitForSingleObject(destroyDoneEvent, 10000);
+        waitResult = WaitForSingleObject(destroyDoneEvent, 10000);
     }
     if (destroyDoneEvent)
         CloseHandle(destroyDoneEvent);
-    std::lock_guard<std::mutex> lk(s_instancesMutex);
-    for (auto it = s_instances.begin(); it != s_instances.end(); ++it) {
-        if (it->get() == inst) {
-            s_instances.erase(it);
-            break;
+    // Only erase from s_instances if STA thread completed cleanup. On timeout the STA thread may still
+    // be blocked (e.g. in WebView2 on a heavy page); erasing here would run WebViewInstance destructor
+    // on the main thread and release COM objects from wrong thread -> crash in EmbeddedBrowserWebView.
+    if (waitResult == WAIT_OBJECT_0) {
+        std::lock_guard<std::mutex> lk(s_instancesMutex);
+        for (auto it = s_instances.begin(); it != s_instances.end(); ++it) {
+            if (it->get() == inst) {
+                s_instances.erase(it);
+                break;
+            }
         }
     }
     return 1;
@@ -719,7 +733,7 @@ __declspec(dllexport) bool _CWebViewPlugin_SetURLPattern(void* instance, const c
 
 __declspec(dllexport) void _CWebViewPlugin_LoadURL(void* instance, const char* url) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst || !url) return;
+    if (!inst || inst->destroying || !url) return;
     int n = MultiByteToWideChar(CP_UTF8, 0, url, -1, nullptr, 0);
     wchar_t* w = new wchar_t[n];
     MultiByteToWideChar(CP_UTF8, 0, url, -1, w, n);
@@ -728,7 +742,7 @@ __declspec(dllexport) void _CWebViewPlugin_LoadURL(void* instance, const char* u
 
 __declspec(dllexport) void _CWebViewPlugin_LoadHTML(void* instance, const char* html, const char* baseUrl) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst || !html) return;
+    if (!inst || inst->destroying || !html) return;
     int n = MultiByteToWideChar(CP_UTF8, 0, html, -1, nullptr, 0);
     wchar_t* wHtml = new wchar_t[n];
     MultiByteToWideChar(CP_UTF8, 0, html, -1, wHtml, n);
@@ -743,7 +757,7 @@ __declspec(dllexport) void _CWebViewPlugin_LoadHTML(void* instance, const char* 
 
 __declspec(dllexport) void _CWebViewPlugin_EvaluateJS(void* instance, const char* js) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst || !js) return;
+    if (!inst || inst->destroying || !js) return;
     int n = MultiByteToWideChar(CP_UTF8, 0, js, -1, nullptr, 0);
     wchar_t* w = new wchar_t[n];
     MultiByteToWideChar(CP_UTF8, 0, js, -1, w, n);
@@ -757,14 +771,14 @@ __declspec(dllexport) int _CWebViewPlugin_Progress(void* instance) {
 
 __declspec(dllexport) bool _CWebViewPlugin_CanGoBack(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst) return false;
+    if (!inst || inst->destroying) return false;
     std::lock_guard<std::mutex> lk(inst->cacheMutex);
     return inst->canGoBack;
 }
 
 __declspec(dllexport) bool _CWebViewPlugin_CanGoForward(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst) return false;
+    if (!inst || inst->destroying) return false;
     std::lock_guard<std::mutex> lk(inst->cacheMutex);
     return inst->canGoForward;
 }
@@ -784,7 +798,7 @@ __declspec(dllexport) void _CWebViewPlugin_Reload(void* instance) {
 __declspec(dllexport) void _CWebViewPlugin_SendMouseEvent(void* instance, int x, int y, float deltaY, int mouseState) {
     WebViewInstance* inst = (WebViewInstance*)instance;
     WV_LOG("SendMouseEvent called: inst=%p hwnd=%s x=%d y=%d state=%d", (void*)inst, inst && inst->hwnd ? "ok" : "null", x, y, mouseState);
-    if (!inst || !inst->hwnd) return;
+    if (!inst || inst->destroying || !inst->hwnd) return;
     MouseEventData* data = new MouseEventData{ x, y, deltaY, mouseState };
     PostMessage(inst->hwnd, WM_WEBVIEW_SEND_MOUSE, 0, (LPARAM)data);
 }
@@ -792,7 +806,7 @@ __declspec(dllexport) void _CWebViewPlugin_SendMouseEvent(void* instance, int x,
 __declspec(dllexport) void _CWebViewPlugin_SendKeyEvent(void* instance, int x, int y, char* keyChars, unsigned short keyCode, int keyState) {
     WebViewInstance* inst = (WebViewInstance*)instance;
     WV_LOG("SendKeyEvent called: inst=%p hwnd=%s keyCode=%u keyState=%d", (void*)inst, inst && inst->hwnd ? "ok" : "null", (unsigned)keyCode, keyState);
-    if (!inst || !inst->hwnd) return;
+    if (!inst || inst->destroying || !inst->hwnd) return;
     KeyEventData* data = new KeyEventData();
     data->keyCode = keyCode;
     data->keyState = keyState;
@@ -807,7 +821,7 @@ __declspec(dllexport) void _CWebViewPlugin_SendKeyEvent(void* instance, int x, i
 
 __declspec(dllexport) void _CWebViewPlugin_Update(void* instance, bool refreshBitmap, int devicePixelRatio) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst) return;
+    if (!inst || inst->destroying) return;
     // Non-blocking: only start a new capture when none is in progress. STA thread uses
     // double-buffering so Render() can read current bitmapPixels without delay.
     if (refreshBitmap && inst->hwnd && inst->webview) {
@@ -819,21 +833,21 @@ __declspec(dllexport) void _CWebViewPlugin_Update(void* instance, bool refreshBi
 
 __declspec(dllexport) int _CWebViewPlugin_BitmapWidth(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst) return 0;
+    if (!inst || inst->destroying) return 0;
     std::lock_guard<std::mutex> lk(inst->bitmapMutex);
     return inst->bitmapWidth;
 }
 
 __declspec(dllexport) int _CWebViewPlugin_BitmapHeight(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst) return 0;
+    if (!inst || inst->destroying) return 0;
     std::lock_guard<std::mutex> lk(inst->bitmapMutex);
     return inst->bitmapHeight;
 }
 
 __declspec(dllexport) void _CWebViewPlugin_Render(void* instance, void* textureBuffer) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst || !textureBuffer) return;
+    if (!inst || inst->destroying || !textureBuffer) return;
     std::lock_guard<std::mutex> lk(inst->bitmapMutex);
     if (inst->bitmapPixels.empty()) return;
     size_t copyLen = (size_t)inst->bitmapWidth * inst->bitmapHeight * 4;
@@ -880,7 +894,7 @@ __declspec(dllexport) void _CWebViewPlugin_GetCookies(void* instance, const char
 
 __declspec(dllexport) const char* _CWebViewPlugin_GetMessage(void* instance) {
     WebViewInstance* inst = (WebViewInstance*)instance;
-    if (!inst) return nullptr;
+    if (!inst || inst->destroying) return nullptr;
     std::string msg;
     if (!inst->messages.pop(msg)) return nullptr;
     char* buf = (char*)CoTaskMemAlloc(msg.size() + 1);
