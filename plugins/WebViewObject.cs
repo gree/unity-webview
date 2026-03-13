@@ -841,8 +841,9 @@ public class WebViewObject : MonoBehaviour
         }
         if (webView == IntPtr.Zero)
             return;
-        _CWebViewPlugin_Destroy(webView);
+        var ptr = webView;
         webView = IntPtr.Zero;
+        _CWebViewPlugin_Destroy(ptr);
         Destroy(texture);
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (bg != null) {
