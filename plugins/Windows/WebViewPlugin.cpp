@@ -488,7 +488,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             HWND target = GetWindow(hwnd, GW_CHILD);
             if (!target) target = hwnd;
             LPARAM lParamPos = MAKELPARAM(winX, winY);
-            if (data->mouseState == 1) SetFocus(target);
+            // Do not SetFocus(target) here: it would activate the off-screen host and cause the Unity window to lose focus (e.g. minimize).
             SendMessage(target, WM_MOUSEMOVE, 0, lParamPos);
             if (data->mouseState == 1) SendMessage(target, WM_LBUTTONDOWN, MK_LBUTTON, lParamPos);
             else if (data->mouseState == 2) SendMessage(target, WM_MOUSEMOVE, MK_LBUTTON, lParamPos);
@@ -512,6 +512,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         WV_LOG("KEY recv: hwnd=%p child=%p target=%p keyCode=%u keyState=%d hasChars=%d",
                (void*)hwnd, (void*)child, (void*)target, (unsigned)data->keyCode, data->keyState,
                data->keyChars && data->keyChars[0] ? 1 : 0);
+        HWND fg = GetForegroundWindow();
         SetFocus(target);
         if (data->keyChars && data->keyChars[0]) {
             WCHAR wch[32];
@@ -529,6 +530,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             if (data->keyState == 3)
                 SendMessage(target, WM_KEYUP, (WPARAM)data->keyCode, lp);
         }
+        if (fg && fg != hwnd)
+            SetForegroundWindow(fg);
         delete[] data->keyChars;
         delete data;
         return 0;
@@ -554,8 +557,9 @@ static DWORD WINAPI STAThreadProc(LPVOID param) {
     wc.lpszClassName = L"UnityWebView2Window";
     RegisterClassExW(&wc);
 
-    // Use WS_EX_TOOLWINDOW and WS_POPUP to prevent the window from appearing on the taskbar
-    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW, wc.lpszClassName, L"", WS_POPUP,
+    // Use WS_EX_TOOLWINDOW and WS_POPUP to prevent the window from appearing on the taskbar.
+    // WS_EX_NOACTIVATE prevents the host from being activated when receiving focus, avoiding Unity window minimize on click.
+    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, wc.lpszClassName, L"", WS_POPUP,
         0, 0, params->width > 0 ? params->width : 640, params->height > 0 ? params->height : 480,
         nullptr, nullptr, wc.hInstance, params);
     if (!hwnd) {
