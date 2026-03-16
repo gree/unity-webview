@@ -8,6 +8,7 @@
         "iOS",
         "macOSStandalone",
         "WebGL",
+        "WindowsStandalone32",
         "WindowsStandalone64"
     ],
     "excludePlatforms": [],
