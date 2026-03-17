@@ -779,7 +779,7 @@ window.Unity = { \
             default:
                 break;
             }
-            {
+            if (deltaY != 0) {
                 CGEventRef cgEvent = CGEventCreateScrollWheelEvent(NULL, kCGScrollEventUnitLine, 1, deltaY * 3, 0);
                 NSEvent *scrollEvent = [NSEvent eventWithCGEvent:cgEvent];
                 CFRelease(cgEvent);
