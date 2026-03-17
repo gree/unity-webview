@@ -85,7 +85,10 @@ public class WebViewObject : MonoBehaviour
     IntPtr webView;
     Rect rect;
     Texture2D texture;
+#if UNITY_2018_2_OR_NEWER
+#else
     byte[] textureDataBuffer;
+#endif
     string inputString = "";
     bool hasFocus;
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -507,7 +510,9 @@ public class WebViewObject : MonoBehaviour
     [DllImport("WebView")]
     private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
     [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
+    private static extern bool _CWebViewPlugin_BitmapARGB(IntPtr instance);
+    [DllImport("WebView")]
+    private static extern IntPtr _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
     [DllImport("WebView")]
     private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
     [DllImport("WebView")]
@@ -1861,23 +1866,35 @@ public class WebViewObject : MonoBehaviour
         bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
         _CWebViewPlugin_Update(webView, refreshBitmap, devicePixelRatio);
         if (refreshBitmap) {
-            {
-                var w = _CWebViewPlugin_BitmapWidth(webView);
-                var h = _CWebViewPlugin_BitmapHeight(webView);
+            var w = _CWebViewPlugin_BitmapWidth(webView);
+            var h = _CWebViewPlugin_BitmapHeight(webView);
+            var f = (_CWebViewPlugin_BitmapARGB(webView)) ? TextureFormat.ARGB32 : TextureFormat.RGBA32;
+            if (w > 0 && h > 0) {
                 if (texture == null || texture.width != w || texture.height != h) {
                     bool isLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
-                    texture = new Texture2D(w, h, TextureFormat.RGBA32, false, !isLinearSpace);
+                    texture = new Texture2D(w, h, f, false, !isLinearSpace);
                     texture.filterMode = FilterMode.Bilinear;
                     texture.wrapMode = TextureWrapMode.Clamp;
+#if UNITY_2018_2_OR_NEWER
+#else
                     textureDataBuffer = new byte[w * h * 4];
+#endif
                 }
-            }
-            if (textureDataBuffer.Length > 0) {
-                var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
-                _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
-                gch.Free();
-                texture.LoadRawTextureData(textureDataBuffer);
-                texture.Apply();
+                if (texture != null) {
+#if UNITY_2018_2_OR_NEWER
+                    var ptr = _CWebViewPlugin_Render(webView, IntPtr.Zero);
+                    if (ptr != IntPtr.Zero) {
+                        texture.LoadRawTextureData(ptr, w * h * 4);
+                        texture.Apply();
+                    }
+#else
+                    var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
+                    _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
+                    gch.Free();
+                    texture.LoadRawTextureData(textureDataBuffer);
+                    texture.Apply();
+#endif
+                }
             }
         }
     }
