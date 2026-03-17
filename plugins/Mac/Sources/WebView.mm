@@ -240,8 +240,6 @@ window.Unity = { \
     [webView setAutoresizingMask:(NSViewWidthSizable|NSViewHeightSizable)];
     // [webView setFrameLoadDelegate:(id)self];
     // [webView setPolicyDelegate:(id)self];
-    webView.UIDelegate = self;
-    webView.navigationDelegate = self;
     [webView addObserver:self forKeyPath: @"loading" options: NSKeyValueObservingOptionNew context:nil];
     gameObject = [NSString stringWithUTF8String:gameObject_];
     if (ua != NULL && strcmp(ua, "") != 0) {
