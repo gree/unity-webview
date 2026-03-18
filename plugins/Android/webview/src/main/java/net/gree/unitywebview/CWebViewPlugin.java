@@ -946,7 +946,7 @@ public class CWebViewPlugin extends Fragment {
                 photoFile = createImageFile();
             } catch (IOException ex) {
                 // Error occurred while creating the File
-                Log.e("CWebViewPlugin", "Unable to create Image File", ex);
+                //Log.e("CWebViewPlugin", "Unable to create Image File", ex);
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
