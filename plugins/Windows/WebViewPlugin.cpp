@@ -96,6 +96,7 @@ struct WebViewInstance {
     std::mutex cacheMutex;
     bool canGoBack = false;
     bool canGoForward = false;
+    std::atomic<int> progress{ 0 };
 
     // Set when Destroy is in progress; main-thread APIs return early to avoid use-after-free.
     std::atomic<bool> destroying{ false };
@@ -296,6 +297,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                 inst->webview->add_NavigationStarting(
                                     Callback<ICoreWebView2NavigationStartingEventHandler>(
                                         [inst](ICoreWebView2* wv, ICoreWebView2NavigationStartingEventArgs* args) -> HRESULT {
+                                            inst->progress = 0;
                                             LPWSTR uriRaw = nullptr;
                                             args->get_Uri(&uriRaw);
                                             if (uriRaw) {
@@ -314,6 +316,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                         [inst](ICoreWebView2* wv, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
                                             BOOL success = FALSE;
                                             args->get_IsSuccess(&success);
+                                            inst->progress = success ? 100 : 0;
                                             if (success) {
                                                 LPWSTR uriRaw = nullptr;
                                                 wv->get_Source(&uriRaw);
@@ -764,9 +767,13 @@ __declspec(dllexport) void _CWebViewPlugin_EvaluateJS(void* instance, const char
     PostMessage(inst->hwnd, WM_WEBVIEW_EVAL_JS, 0, (LPARAM)w);
 }
 
+// Returns load progress 0-100. Value is 0 when navigation starts, 100 when it completes successfully, and 0 on failure.
+// Using Progress() == 100 to detect "load complete" is correct. For a smooth progress bar, note that WebView2 does
+// not expose an estimatedProgress like WKWebView; we only get two states (0 and 100), so the progress is not gradual.
 __declspec(dllexport) int _CWebViewPlugin_Progress(void* instance) {
-    (void)instance;
-    return 0;
+    WebViewInstance* inst = (WebViewInstance*)instance;
+    if (!inst || inst->destroying) return 0;
+    return inst->progress.load();
 }
 
 __declspec(dllexport) bool _CWebViewPlugin_CanGoBack(void* instance) {
