@@ -735,7 +735,7 @@ window.Unity = { \
         if (navigationAction.targetFrame != nil && navigationAction.targetFrame.isMainFrame) {
             // If the custom header is not attached, give it and make a request again.
             if (![self isSetupedCustomHeader:[navigationAction request]]) {
-                NSLog(@"navi ... %@", navigationAction);
+                //NSLog(@"navi ... %@", navigationAction);
                 [wkWebView loadRequest:[self constructionCustomHeader:navigationAction.request]];
                 decisionHandler(WKNavigationActionPolicyCancel);
                 return;

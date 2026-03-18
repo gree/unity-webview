@@ -527,7 +527,7 @@ window.Unity = { \
       didReceiveScriptMessage:(WKScriptMessage *)message {
 
     // Log out the message received
-    NSLog(@"Received event %@", message.body);
+    //NSLog(@"Received event %@", message.body);
     [self addMessage:[NSString stringWithFormat:@"CallFromJS:%@",message.body]];
 
     /*
