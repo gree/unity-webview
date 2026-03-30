@@ -1206,6 +1206,8 @@ public class WebViewObject : MonoBehaviour
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         // TODO: UNSUPPORTED
+#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+        // TODO: WebView2 not implemented in native plugin
 #elif UNITY_IPHONE
         if (webView == IntPtr.Zero)
             return;
