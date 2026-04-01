@@ -25,6 +25,8 @@
       </div>
     </div>
     <script>
+      window._masks = [];
+
       var buildUrl = "Build";
       var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
       var config = {
@@ -41,6 +43,12 @@
         companyName: "{{{ COMPANY_NAME }}}",
         productName: "{{{ PRODUCT_NAME }}}",
         productVersion: "{{{ PRODUCT_VERSION }}}",
+        webglContextAttributes: {
+          alpha: true,
+          depth: true,
+          antialias: true,
+          premultipliedAlpha: false
+        },
       };
 
       var container = document.querySelector("#unity-container");
@@ -61,8 +69,41 @@
 #if BACKGROUND_FILENAME
       canvas.style.background = "url('" + buildUrl + "/{{{ BACKGROUND_FILENAME.replace(/'/g, '%27') }}}') center / cover";
 #endif
+      canvas.style.background = 'transparent';
       loadingBar.style.display = "block";
 
+      canvas.addEventListener(
+        'click',
+        function(e) {
+          var c = document.getElementById('unity-canvas');
+          var r = c.getBoundingClientRect();
+          var x = e.clientX - r.left;
+          var y = e.clientY - r.top;
+          var masks = window._masks;
+          for (var i = 0; i < masks.length; i++) {
+            if (masks[i][0] <= x && x < masks[i][2] && masks[i][1] <= y && y < masks[i][3]) {
+              return;
+            }
+          }
+          var elements = document.elementsFromPoint(e.clientX, e.clientY);
+          var webview = null;
+          for (var i = 0; i < elements.length; i++) {
+            if (elements[i].id && elements[i].id.startsWith('webview_')) {
+              webview = elements[i];
+              break;
+            }
+          }
+          if (webview) {
+            var r = webview.getBoundingClientRect();
+            var x = e.clientX - r.left;
+            var y = e.clientY - r.top;
+            var element = webview.contentWindow.document.elementFromPoint(x, y);
+            if (element) {
+              element.focus();
+              element.click();
+            }
+          }
+        });
       document.addEventListener(
         'fullscreenchange',
         function() {
