@@ -5,7 +5,7 @@ var unityWebView =
     init : function (name) {
         $containers = $('.webviewContainer');
         if ($containers.length === 0) {
-            $('<div style="position: absolute; left: 0px; width: 100%; height: 100%; top: 0px; pointer-events: none;"><div class="webviewContainer" style="overflow: hidden; position: relative; width: 100%; height: 100%; z-index: 1;"></div></div>')
+            $('<div style="position: absolute; left: 0px; width: 100%; height: 100%; top: 0px; pointer-events: none;"><div class="webviewContainer" style="overflow: hidden; position: relative; width: 100%; height: 100%; z-index: -1;"></div></div>')
                 .appendTo($('#unity-container'));
         }
         var $last = $('.webviewContainer:last');
@@ -94,6 +94,14 @@ var unityWebView =
 
     destroy: function (name) {
         this.iframe(name).parent().parent().remove();
+    },
+
+    clearMasks: function () {
+        window._masks = [];
+    },
+
+    addMask: function (left, top, right, bottom) {
+        window._masks.push([left, top, right, bottom]);
     },
 
     iframe: function (name) {
