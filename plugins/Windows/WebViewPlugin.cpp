@@ -314,6 +314,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                 inst->webview->add_NavigationCompleted(
                                     Callback<ICoreWebView2NavigationCompletedEventHandler>(
                                         [inst](ICoreWebView2* wv, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
+                                            // Unity posts WM_WEBVIEW_CAPTURE only when captureInProgress is false. If the previous
+                                            // CapturePreview callback is late or stuck, no new frame is captured (texture stays stale).
+                                            inst->captureInProgress = false;
                                             BOOL success = FALSE;
                                             args->get_IsSuccess(&success);
                                             inst->progress = success ? 100 : 0;
@@ -377,8 +380,19 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         return 0;
     }
     case WM_WEBVIEW_LOAD_URL: {
-        if (inst && inst->webview) {
-            wchar_t* url = (wchar_t*)lParam;
+        // wParam 0: Stop + queue Navigate on next message pump (Stop is not always synchronous;
+        // immediate Navigate on a heavy page can be dropped until user retries).
+        // wParam 1: perform Navigate and free url.
+        wchar_t* url = (wchar_t*)lParam;
+        if (!inst || !inst->webview) {
+            delete[] url;
+            return 0;
+        }
+        if (wParam == 0) {
+            inst->webview->Stop();
+            inst->captureInProgress = false;
+            PostMessage(hwnd, WM_WEBVIEW_LOAD_URL, 1, (LPARAM)url);
+        } else {
             inst->webview->Navigate(url);
             delete[] url;
         }
@@ -388,6 +402,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         if (inst && inst->webview) {
             wchar_t* html = (wchar_t*)wParam;
             wchar_t* baseUrl = (wchar_t*)lParam;
+            inst->webview->Stop();
+            inst->captureInProgress = false;
             inst->webview->NavigateToString(html);
             delete[] html;
             if (baseUrl) delete[] baseUrl;
