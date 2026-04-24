@@ -1072,13 +1072,7 @@ namespace Gree.UnityWebView
     
         public void SetVisibility(bool v)
         {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            if (bg != null)
-            {
-                bg.gameObject.active = v;
-            }
-#endif
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+#if UNITY_EDITOR || UNITY_STANDALONE
             if (bg != null)
             {
                 bg.gameObject.SetActive(v);
