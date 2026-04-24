@@ -54,7 +54,7 @@ namespace Gree.UnityWebView
                 Directory.CreateDirectory("Assets/Plugins/Android");
                 File.Copy(src, "Assets/Plugins/Android/WebViewPlugin.aar", true);
             }
-                                                                            }
+        }
 
         public void OnPostGenerateGradleAndroidProject(string basePath) {
             var changed = false;
