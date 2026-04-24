@@ -8,6 +8,9 @@ using System.Text;
 using System.Xml;
 using System;
 using UnityEditor.Android;
+#if UNITY_2020_1_OR_NEWER
+using UnityEditor.Build.Reporting;
+#endif
 #if UNITY_2018_1_OR_NEWER
 using UnityEditor.Build;
 #endif
@@ -17,7 +20,9 @@ using UnityEngine;
 
 namespace Gree.UnityWebView
 {
-#if UNITY_2018_1_OR_NEWER
+#if UNITY_2020_1_OR_NEWER
+    public class UnityWebViewPostprocessBuild : IPreprocessBuildWithReport, IPostGenerateGradleAndroidProject
+#elif UNITY_2018_1_OR_NEWER
     public class UnityWebViewPostprocessBuild : IPreprocessBuild, IPostGenerateGradleAndroidProject
 #else
     public class UnityWebViewPostprocessBuild
@@ -30,7 +35,12 @@ namespace Gree.UnityWebView
         //// cf. https://github.com/Over17/UnityAndroidManifestCallback
 
 #if UNITY_2018_1_OR_NEWER
+#if UNITY_2020_1_OR_NEWER
+        public void OnPreprocessBuild(BuildReport buildReport) {
+            var buildTarget = buildReport.summary.platform;
+#else
         public void OnPreprocessBuild(BuildTarget buildTarget, string path) {
+#endif
             if (buildTarget == BuildTarget.Android) {
                 var dev = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-development.aar.tmpl";
                 var rel = "Packages/net.gree.unity-webview/Assets/Plugins/Android/WebViewPlugin-release.aar.tmpl";
@@ -44,7 +54,7 @@ namespace Gree.UnityWebView
                 Directory.CreateDirectory("Assets/Plugins/Android");
                 File.Copy(src, "Assets/Plugins/Android/WebViewPlugin.aar", true);
             }
-                                                                            }
+        }
 
         public void OnPostGenerateGradleAndroidProject(string basePath) {
             var changed = false;
