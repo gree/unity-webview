@@ -24,6 +24,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 #endif
 using UnityEngine.UI;
+using Gree.UnityWebView;
 
 public class SampleWebView : MonoBehaviour
 {
