@@ -44,7 +44,7 @@ using UnityEngine.Android;
 
 using Callback = System.Action<string>;
 
-namespace Gree.WebView
+namespace Gree.UnityWebView
 {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
     public class UnitySendMessageDispatcher
