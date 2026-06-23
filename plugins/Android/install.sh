@@ -7,13 +7,13 @@ CWD=`cd $CWD && pwd -P`
 
 case $(uname) in
 Darwin)
-    export JAVA_HOME='/Applications/Unity/Hub/Editor/2019.4.40f1/PlaybackEngines/AndroidPlayer/OpenJDK'
-    export ANDROID_SDK_ROOT='/Applications/Unity/Hub/Editor/2019.4.40f1/PlaybackEngines/AndroidPlayer/SDK'
+    export JAVA_HOME='/Applications/Unity/Hub/Editor/2019.4.41f2/PlaybackEngines/AndroidPlayer/OpenJDK'
+    export ANDROID_SDK_ROOT='/Applications/Unity/Hub/Editor/2019.4.41f2/PlaybackEngines/AndroidPlayer/SDK'
     export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/tools:$ANDROID_SDK_ROOT/tools/bin:$JAVA_HOME/bin:$PATH
     ;;
 MINGW64_NT*)
-    export JAVA_HOME='/c/PROGRA~1/Unity/Hub/Editor/2019.4.40f1/Editor/Data/PlaybackEngines/AndroidPlayer/OpenJDK'
-    export ANDROID_SDK_ROOT='/c/PROGRA~1/Unity/Hub/Editor/2019.4.40f1/Editor/Data/PlaybackEngines/AndroidPlayer/SDK'
+    export JAVA_HOME='/c/PROGRA~1/Unity/Hub/Editor/2019.4.41f2/Editor/Data/PlaybackEngines/AndroidPlayer/OpenJDK'
+    export ANDROID_SDK_ROOT='/c/PROGRA~1/Unity/Hub/Editor/2019.4.41f2/Editor/Data/PlaybackEngines/AndroidPlayer/SDK'
     export PATH=$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/tools:$ANDROID_SDK_ROOT/tools/bin:$JAVA_HOME/bin:$PATH
     ;;
 esac
@@ -21,14 +21,14 @@ DEST_DIR='../../build/Packager/Assets/Plugins/Android'
 
 if [ ! -d "$JAVA_HOME" ]
 then
-    echo 'From Unity Hub, please install 2019.4.40f1 with the android module.'
+    echo 'From Unity Hub, please install 2019.4.41f2 with the android module.'
     exit 1
 fi
 
 # options
 TARGET="webview"
 MODE="Release"
-UNITY='2019.4.40f1'
+UNITY='2019.4.41f2'
 for OPT in $*
 do
     case $OPT in
