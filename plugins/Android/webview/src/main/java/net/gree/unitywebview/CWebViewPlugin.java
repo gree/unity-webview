@@ -938,28 +938,31 @@ public class CWebViewPlugin extends Fragment {
 
     private void ProcessChooser() {
         mCameraPhotoUri = null;
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
-            // Create the File where the photo should go
-            File photoFile = null;
-            try {
-                photoFile = createImageFile();
-            } catch (IOException ex) {
-                // Error occurred while creating the File
-                Log.e("CWebViewPlugin", "Unable to create Image File", ex);
-            }
-            // Continue only if the File was successfully created
-            if (photoFile != null) {
-                takePictureIntent.putExtra("PhotoPath", photoFile);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    mCameraPhotoUri = FileProvider.getUriForFile(getActivity(), getActivity().getPackageName() + ".unitywebview.fileprovider", photoFile);
-                } else {
-                    mCameraPhotoUri = Uri.parse("file:" + photoFile.getAbsolutePath());
+        Intent takePictureIntent = null;
+        if (mAllowVideoCapture) {
+            takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+                // Create the File where the photo should go
+                File photoFile = null;
+                try {
+                    photoFile = createImageFile();
+                } catch (IOException ex) {
+                    // Error occurred while creating the File
+                    Log.e("CWebViewPlugin", "Unable to create Image File", ex);
                 }
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraPhotoUri);
-                //takePictureIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, "720000");
-            } else {
-                takePictureIntent = null;
+                // Continue only if the File was successfully created
+                if (photoFile != null) {
+                    takePictureIntent.putExtra("PhotoPath", photoFile);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        mCameraPhotoUri = FileProvider.getUriForFile(getActivity(), getActivity().getPackageName() + ".unitywebview.fileprovider", photoFile);
+                    } else {
+                        mCameraPhotoUri = Uri.parse("file:" + photoFile.getAbsolutePath());
+                    }
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraPhotoUri);
+                    //takePictureIntent.putExtra(MediaStore.EXTRA_SIZE_LIMIT, "720000");
+                } else {
+                    takePictureIntent = null;
+                }
             }
         }
 
