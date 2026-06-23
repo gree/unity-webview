@@ -251,10 +251,12 @@ public class WebViewObject : MonoBehaviour
                 }
             }
         }
+#if false
         if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
         {
             permissions.Add(Permission.Camera);
         }
+#endif
         if (permissions.Count > 0)
         {
 #if UNITY_2020_2_OR_NEWER
