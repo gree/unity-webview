@@ -938,9 +938,7 @@ public class CWebViewPlugin extends Fragment {
 
     private void ProcessChooser() {
         mCameraPhotoUri = null;
-        Intent takePictureIntent = null;
-        if (mAllowVideoCapture) {
-            takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             // Create the File where the photo should go
             File photoFile = null;
@@ -963,7 +961,6 @@ public class CWebViewPlugin extends Fragment {
             } else {
                 takePictureIntent = null;
             }
-        }
         }
 
         Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);

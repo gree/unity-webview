@@ -112,15 +112,13 @@ namespace Gree.UnityWebView
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
             changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
 #endif
-            if (!nofragment) {
-                changed = (androidManifest.AddGallery() || changed);
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
             changed = (androidManifest.AddCamera() || changed);
+            changed = (androidManifest.AddGallery() || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
             changed = (androidManifest.AddMicrophone() || changed);
 #endif
-            }
             if (changed) {
                 androidManifest.Save();
                 Debug.Log("unitywebview: adjusted AndroidManifest.xml.");
@@ -224,15 +222,13 @@ namespace Gree.UnityWebView
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
                 changed = (androidManifest.SetUsesCleartextTraffic(true) || changed);
 #endif
-                if (!nofragment) {
-                    changed = (androidManifest.AddGallery() || changed);
 #if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
                 changed = (androidManifest.AddCamera() || changed);
+                changed = (androidManifest.AddGallery() || changed);
 #endif
 #if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
                 changed = (androidManifest.AddMicrophone() || changed);
 #endif
-                }
 #if UNITY_5_6_0 || UNITY_5_6_1
                 changed = (androidManifest.SetActivityName("net.gree.unitywebview.CUnityPlayerActivity") || changed);
 #endif
