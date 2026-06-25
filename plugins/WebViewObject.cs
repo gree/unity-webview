@@ -115,6 +115,8 @@ namespace Gree.UnityWebView
         float androidNetworkReachabilityCheckT0 = -1.0f;
         NetworkReachability? androidNetworkReachability0 = null;
 #endif
+        bool mAllowVideoCapture;
+        bool mAllowAudioCapture;
         
         void OnApplicationPause(bool paused)
         {
@@ -269,10 +271,18 @@ namespace Gree.UnityWebView
                     }
                 }
             }
-            if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
+#if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
+            if (!Permission.HasUserAuthorizedPermission(Permission.Camera) && mAllowVideoCapture)
             {
                 permissions.Add(Permission.Camera);
             }
+#endif
+#if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
+            if (!Permission.HasUserAuthorizedPermission(Permission.Microphone) && mAllowAudioCapture)
+            {
+                permissions.Add(Permission.Microphone);
+            }
+#endif
             if (permissions.Count > 0)
             {
 #if UNITY_2020_2_OR_NEWER
@@ -1230,9 +1240,12 @@ namespace Gree.UnityWebView
 #elif UNITY_IPHONE
             // TODO: UNSUPPORTED
 #elif UNITY_ANDROID
+#if UNITYWEBVIEW_ANDROID_ENABLE_CAMERA
             if (webView == null)
                 return;
             webView.Call("SetCameraAccess", allowed);
+            mAllowVideoCapture = allowed;
+#endif
 #else
             // TODO: UNSUPPORTED
 #endif
@@ -1247,9 +1260,12 @@ namespace Gree.UnityWebView
 #elif UNITY_IPHONE
             // TODO: UNSUPPORTED
 #elif UNITY_ANDROID
+#if UNITYWEBVIEW_ANDROID_ENABLE_MICROPHONE
             if (webView == null)
                 return;
             webView.Call("SetMicrophoneAccess", allowed);
+            mAllowAudioCapture = allowed;
+#endif
 #else
             // TODO: UNSUPPORTED
 #endif
