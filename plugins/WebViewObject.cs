@@ -27,6 +27,11 @@ using System.Runtime.InteropServices;
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
 #endif
+#if UNITY_EDITOR
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+#endif
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
 using System.IO;
 using System.Text.RegularExpressions;
@@ -461,6 +466,33 @@ namespace Gree.UnityWebView
             }
         }
     
+#if UNITY_EDITOR
+#if ENABLE_INPUT_SYSTEM
+        void OnEnable()
+        {
+            if (Keyboard.current != null)
+            {
+                Keyboard.current.onTextInput += OnTextInput;
+            }
+        }
+
+        void OnDisable()
+        {
+            if (Keyboard.current != null)
+            {
+                Keyboard.current.onTextInput -= OnTextInput;
+            }
+        }
+
+        void OnTextInput(char ch)
+        {
+            if (hasFocus)
+            {
+                inputString += ch;
+            }
+        }
+#endif
+#endif
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         [DllImport("WebView")]
         private static extern string _CWebViewPlugin_GetAppPath();
@@ -1839,9 +1871,11 @@ namespace Gree.UnityWebView
             if (bg != null) {
                 bg.transform.SetAsLastSibling();
             }
+#if !ENABLE_INPUT_SYSTEM
             if (hasFocus) {
                 inputString += Input.inputString;
             }
+#endif
             for (;;) {
                 if (webView == IntPtr.Zero)
                     break;
@@ -1935,7 +1969,11 @@ namespace Gree.UnityWebView
             switch (Event.current.type) {
             case EventType.MouseDown:
             case EventType.MouseUp:
-                hasFocus = rect.Contains(Input.mousePosition);
+                {
+                    var p = Event.current.mousePosition;
+                    p.y = Screen.height - p.y;
+                    hasFocus = rect.Contains(p);
+                }
                 break;
             }
             switch (Event.current.type) {
@@ -1945,21 +1983,21 @@ namespace Gree.UnityWebView
             case EventType.MouseUp:
             case EventType.ScrollWheel:
                 if (hasFocus) {
-                    Vector3 p;
-                    p.x = Input.mousePosition.x - rect.x;
-                    p.y = Input.mousePosition.y - rect.y;
-                    {
-                        int mouseState = 0;
-                        if (Input.GetButtonDown("Fire1")) {
-                            mouseState = 1;
-                        } else if (Input.GetButton("Fire1")) {
-                            mouseState = 2;
-                        } else if (Input.GetButtonUp("Fire1")) {
-                            mouseState = 3;
-                        }
-                        //_CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
-                        _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.mouseScrollDelta.y, mouseState);
-                    }
+                    var p = Event.current.mousePosition;
+                    p.y = Screen.height - p.y;
+                    p.x -= rect.x;
+                    p.y -= rect.y;
+                    int mouseState = 0;
+                    float delta = 0;
+                    if (Event.current.type == EventType.MouseDown)
+                        mouseState = 1;
+                    else if (Event.current.type == EventType.MouseDrag)
+                        mouseState = 2;
+                    else if (Event.current.type == EventType.MouseUp)
+                        mouseState = 3;
+                    else if (Event.current.type == EventType.ScrollWheel)
+                        delta = -Event.current.delta.y;
+                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, delta, mouseState);
                 }
                 break;
             case EventType.Repaint:
@@ -1968,9 +2006,10 @@ namespace Gree.UnityWebView
                     var keyCode = (ushort)inputString[0];
                     inputString = inputString.Substring(1);
                     if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
-                        Vector3 p;
-                        p.x = Input.mousePosition.x - rect.x;
-                        p.y = Input.mousePosition.y - rect.y;
+                        var p = Event.current.mousePosition;
+                        p.y = Screen.height - p.y;
+                        p.x -= rect.x;
+                        p.y -= rect.y;
                         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
                     }
                 }
@@ -2013,10 +2052,12 @@ namespace Gree.UnityWebView
             {
                 bg.transform.SetAsLastSibling();
             }
+#if !ENABLE_INPUT_SYSTEM
             if (hasFocus)
             {
                 inputString += Input.inputString;
             }
+#endif
             for (;;)
             {
                 if (webView == IntPtr.Zero)
@@ -2107,7 +2148,11 @@ namespace Gree.UnityWebView
             {
             case EventType.MouseDown:
             case EventType.MouseUp:
-                hasFocus = rect.Contains(Input.mousePosition);
+                {
+                    var p = Event.current.mousePosition;
+                    p.y = Screen.height - p.y;
+                    hasFocus = rect.Contains(p);
+                }
                 break;
             }
             switch (Event.current.type)
@@ -2119,17 +2164,21 @@ namespace Gree.UnityWebView
             case EventType.ScrollWheel:
                 if (hasFocus)
                 {
-                    Vector3 p;
-                    p.x = Input.mousePosition.x - rect.x;
-                    p.y = Input.mousePosition.y - rect.y;
+                    var p = Event.current.mousePosition;
+                    p.y = Screen.height - p.y;
+                    p.x -= rect.x;
+                    p.y -= rect.y;
                     int mouseState = 0;
-                    if (Input.GetButtonDown("Fire1"))
+                    float delta = 0;
+                    if (Event.current.type == EventType.MouseDown)
                         mouseState = 1;
-                    else if (Input.GetButton("Fire1"))
+                    else if (Event.current.type == EventType.MouseDrag)
                         mouseState = 2;
-                    else if (Input.GetButtonUp("Fire1"))
+                    else if (Event.current.type == EventType.MouseUp)
                         mouseState = 3;
-                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.mouseScrollDelta.y, mouseState);
+                    else if (Event.current.type == EventType.ScrollWheel)
+                        delta = -Event.current.delta.y;
+                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, delta, mouseState);
                 }
                 break;
             case EventType.Repaint:
@@ -2140,9 +2189,10 @@ namespace Gree.UnityWebView
                     inputString = inputString.Substring(1);
                     if (!string.IsNullOrEmpty(keyChars) || keyCode != 0)
                     {
-                        Vector3 p;
-                        p.x = Input.mousePosition.x - rect.x;
-                        p.y = Input.mousePosition.y - rect.y;
+                        var p = Event.current.mousePosition;
+                        p.y = Screen.height - p.y;
+                        p.x -= rect.x;
+                        p.y -= rect.y;
                         _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
                     }
                 }
