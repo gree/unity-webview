@@ -89,6 +89,10 @@ static BOOL s_useMetal;
     NSRegularExpression *hookRegex;
     BOOL inRendering;
     int devicePixelRatio0;
+    NSInteger eventNumber0;        // eventNumber for NSEvent (incremented each time to keep it unique)
+    NSInteger clickCount0;         // click count (shared by mouse down/up; used for double-click detection)
+    NSTimeInterval lastClickTime0; // timestamp of the last mouse down (for double-click detection)
+    NSPoint lastClickPos0;         // position of the last mouse down (for double-click detection)
 }
 @end
 
@@ -747,31 +751,59 @@ window.Unity = { \
         return;
     NSView *view = webView;
     NSGraphicsContext *context = [NSGraphicsContext currentContext];
+    // use the real window number (with 0, [event window] becomes nil and breaks AppKit's event routing)
+    NSInteger windowNumber = (window != nil) ? window.windowNumber : 0;
     [self runBlock:^{
+            NSPoint location = NSMakePoint(x, y);
+            NSTimeInterval now = GetCurrentEventTime();
             NSEvent *event;
             switch (mouseState) {
             case 1:
+                // double-click detection (cf. WebKit's updateClickCountForButton; increment if within 1s at the same position)
+                if (now - self->lastClickTime0 < 1.0 && NSEqualPoints(location, self->lastClickPos0)) {
+                    self->clickCount0 += 1;
+                } else {
+                    self->clickCount0 = 1;
+                }
+                self->lastClickTime0 = now;
+                self->lastClickPos0 = location;
                 event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown
-                                           location:NSMakePoint(x, y) modifierFlags:0
-                                          timestamp:GetCurrentEventTime() windowNumber:0
-                                            context:context eventNumber:0 clickCount:1 pressure:1];
-                [view mouseDown:event];
+                                           location:location modifierFlags:0
+                                          timestamp:now windowNumber:windowNumber
+                                            context:context eventNumber:++self->eventNumber0
+                                         clickCount:self->clickCount0 pressure:1];
+                // find the actual target subview via hitTest and dispatch to it (fall back to webView; cf. WebKit)
+                [([view hitTest:location] ?: view) mouseDown:event];
                 break;
             case 2:
                 event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDragged
-                                           location:NSMakePoint(x, y) modifierFlags:0
-                                          timestamp:GetCurrentEventTime() windowNumber:0
-                                            context:context eventNumber:0 clickCount:0 pressure:1];
+                                           location:location modifierFlags:0
+                                          timestamp:now windowNumber:windowNumber
+                                            context:context eventNumber:++self->eventNumber0
+                                         clickCount:self->clickCount0 pressure:1];
+                // send drags directly to webView so drag-scrolling outside the view works (cf. WebKit)
                 [view mouseDragged:event];
                 break;
             case 3:
+                // keep the mouse up clickCount the same as the mouse down (do not use 0)
                 event = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp
-                                           location:NSMakePoint(x, y) modifierFlags:0
-                                          timestamp:GetCurrentEventTime() windowNumber:0
-                                            context:context eventNumber:0 clickCount:0 pressure:0];
-                [view mouseUp:event];
+                                           location:location modifierFlags:0
+                                          timestamp:now windowNumber:windowNumber
+                                            context:context eventNumber:++self->eventNumber0
+                                         clickCount:self->clickCount0 pressure:0];
+                [([view hitTest:location] ?: view) mouseUp:event];
                 break;
             default:
+                // mouse move (hover); skip while scrolling (deltaY != 0)
+                if (deltaY == 0) {
+                    event = [NSEvent mouseEventWithType:NSEventTypeMouseMoved
+                                               location:location modifierFlags:0
+                                              timestamp:now windowNumber:windowNumber
+                                                context:context eventNumber:++self->eventNumber0
+                                             clickCount:0 pressure:0];
+                    // note: mouseMoved may be ignored for an offscreen WKWebView
+                    [view mouseMoved:event];
+                }
                 break;
             }
             if (deltaY != 0) {
