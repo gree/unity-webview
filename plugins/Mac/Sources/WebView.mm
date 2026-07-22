@@ -42,6 +42,16 @@
     return frameRect;
 }
 
+// Always report the window as visible so WKWebView keeps rendering even when the window is placed offscreen.
+// Otherwise the offscreen window is treated as occluded (not visible) and WebKit suppresses presentation
+// updates (layer commits). As a result, content after a page transition is never committed to the
+// WindowServer, and takeSnapshotWithConfiguration returns the old (pre-transition) content.
+// cf. isViewVisible() in WebKit's PageClientImplMac.mm reads viewWindow.occlusionState directly.
+- (NSWindowOcclusionState)occlusionState
+{
+    return NSWindowOcclusionStateVisible;
+}
+
 @end
 
 // cf. https://stackoverflow.com/questions/26383031/wkwebview-causes-my-view-controller-to-leak/33365424#33365424
