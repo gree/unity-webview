@@ -317,4 +317,4 @@ Then in `Project Settings/Player/Resolution and Presentation`, please select `un
 
 ## Star History
 
-![Star History Chart](https://api.star-history.com/svg?repos=gree/unity-webview&type=Date)]
+[![Star History Chart](https://star-history.dera.page/svg?repos=gree/unity-webview&type=date&legend=top-left)](https://star-history.dera.page/#gree/unity-webview&type=date&legend=top-left)
