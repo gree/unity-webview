@@ -2189,7 +2189,7 @@ namespace Gree.UnityWebView
                     var keyChars = inputString.Substring(0, 1);
                     // avoid the issue https://github.com/gree/unity-webview/issues/1228
                     // by setting keyCode to zero, though WebViewPlugin.cpp should be fixed.
-                    var keyCode = 0;
+                    var keyCode = (ushort)0;
                     //var keyCode = (ushort)inputString[0];
                     inputString = inputString.Substring(1);
                     if (!string.IsNullOrEmpty(keyChars) || keyCode != 0)
