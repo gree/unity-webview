@@ -486,10 +486,14 @@ namespace Gree.UnityWebView
 
         void OnTextInput(char ch)
         {
+#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
             if (hasFocus)
             {
                 inputString += ch;
             }
+#elif UNITY_EDITOR_LINUX || UNITY_SERVER
+            //TODO: UNSUPPORTED
+#endif
         }
 #endif
 #endif
