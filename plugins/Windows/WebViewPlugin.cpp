@@ -623,8 +623,10 @@ struct CreateParams {
     HRESULT createResult = E_PENDING;
 };
 
-// Keys on the navigation cluster and the arrows share scan codes with the numeric
-// keypad; without the extended bit Chromium reads VK_DELETE as the keypad's period.
+// The keys Windows marks as extended in WM_KEYDOWN. The navigation cluster and the
+// arrows share scan codes with the numeric keypad, and without the bit Chromium reads
+// VK_DELETE as the keypad's period; the right-hand CTRL and ALT likewise share theirs
+// with the left-hand pair.
 static bool IsExtendedKey(unsigned short vk) {
     switch (vk) {
     case VK_INSERT: case VK_DELETE: case VK_HOME: case VK_END:
@@ -644,6 +646,7 @@ static wchar_t ControlCharForKey(unsigned short vk) {
     switch (vk) {
     case VK_RETURN: return L'\r';
     case VK_BACK:   return L'\b';
+    case VK_TAB:    return L'\t';
     case VK_ESCAPE: return L'\x1b';
     default:        return 0;
     }
@@ -1045,8 +1048,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                 lp |= (LPARAM)1 << 24;
             if (data->keyState == 1 || data->keyState == 2) {
                 SendMessage(target, WM_KEYDOWN, (WPARAM)data->keyCode, lp);
-                // Stand in for TranslateMessage, which follows a key down with the
-                // character the key produces.
                 wchar_t ch = ControlCharForKey(data->keyCode);
                 if (ch)
                     SendMessage(target, WM_CHAR, (WPARAM)ch, lp);
