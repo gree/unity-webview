@@ -27,7 +27,7 @@ using System.Runtime.InteropServices;
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
 #endif
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_STANDALONE
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -470,7 +470,7 @@ namespace Gree.UnityWebView
             }
         }
     
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_STANDALONE
 #if ENABLE_INPUT_SYSTEM
         void OnEnable()
         {
@@ -2086,7 +2086,7 @@ namespace Gree.UnityWebView
 #if !ENABLE_INPUT_SYSTEM
             public KeyCode key;
             public SpecialKey(KeyCode k, ushort v) { key = k; vk = v; }
-#elif UNITY_EDITOR
+#elif UNITY_EDITOR || UNITY_STANDALONE
             public Key key;
             public SpecialKey(Key k, ushort v) { key = k; vk = v; }
 #endif
@@ -2110,7 +2110,7 @@ namespace Gree.UnityWebView
             new SpecialKey(KeyCode.RightArrow,  0x27), // VK_RIGHT
             new SpecialKey(KeyCode.DownArrow,   0x28), // VK_DOWN
         };
-#elif UNITY_EDITOR
+#elif UNITY_EDITOR || UNITY_STANDALONE
         static readonly SpecialKey[] specialKeys = {
             new SpecialKey(Key.Enter,       0x0D), // VK_RETURN
             new SpecialKey(Key.NumpadEnter, 0x0D), // VK_RETURN
@@ -2143,7 +2143,7 @@ namespace Gree.UnityWebView
                     _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 3);
                 }
             }
-#elif UNITY_EDITOR
+#elif UNITY_EDITOR || UNITY_STANDALONE
             var keyboard = Keyboard.current;
             if (keyboard == null)
             {
