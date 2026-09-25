@@ -27,7 +27,7 @@ using System.Runtime.InteropServices;
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
 #endif
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_STANDALONE
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -470,7 +470,10 @@ namespace Gree.UnityWebView
             }
         }
     
-#if UNITY_EDITOR
+        // Deliberately not one of the per-OS UNITY_STANDALONE_* guards used elsewhere in
+        // this file: without the Input System path a standalone player configured for the
+        // new input system gets no keyboard input at all, on any platform.
+#if UNITY_EDITOR || UNITY_STANDALONE
 #if ENABLE_INPUT_SYSTEM
         void OnEnable()
         {
@@ -2075,7 +2078,106 @@ namespace Gree.UnityWebView
                 UpdateBGTransform();
             }
         }
-    
+
+        // inputString only carries text, and Chromium drives editing off the key event
+        // rather than the character: Backspace and Delete do nothing when only a WM_CHAR
+        // arrives, and Unity spells Return as '\n' where Windows uses '\r'. These keys
+        // travel as virtual key codes instead. Ordinary text keys stay on the character
+        // path, which already handles layouts, dead keys and IME.
+        struct SpecialKey
+        {
+            public ushort vk;
+#if !ENABLE_INPUT_SYSTEM
+            public KeyCode key;
+            public SpecialKey(KeyCode k, ushort v) { key = k; vk = v; }
+#else
+            public Key key;
+            public SpecialKey(Key k, ushort v) { key = k; vk = v; }
+#endif
+        }
+
+#if !ENABLE_INPUT_SYSTEM
+        static readonly SpecialKey[] specialKeys = {
+            // The keypad's Enter is sent as a plain VK_RETURN. Windows would mark it
+            // extended, but nothing here reads the two apart.
+            new SpecialKey(KeyCode.Return,      0x0D), // VK_RETURN
+            new SpecialKey(KeyCode.KeypadEnter, 0x0D), // VK_RETURN
+            new SpecialKey(KeyCode.Backspace,   0x08), // VK_BACK
+            new SpecialKey(KeyCode.Tab,         0x09), // VK_TAB
+            new SpecialKey(KeyCode.Escape,      0x1B), // VK_ESCAPE
+            new SpecialKey(KeyCode.Delete,      0x2E), // VK_DELETE
+            new SpecialKey(KeyCode.Insert,      0x2D), // VK_INSERT
+            new SpecialKey(KeyCode.Home,        0x24), // VK_HOME
+            new SpecialKey(KeyCode.End,         0x23), // VK_END
+            new SpecialKey(KeyCode.PageUp,      0x21), // VK_PRIOR
+            new SpecialKey(KeyCode.PageDown,    0x22), // VK_NEXT
+            new SpecialKey(KeyCode.LeftArrow,   0x25), // VK_LEFT
+            new SpecialKey(KeyCode.UpArrow,     0x26), // VK_UP
+            new SpecialKey(KeyCode.RightArrow,  0x27), // VK_RIGHT
+            new SpecialKey(KeyCode.DownArrow,   0x28), // VK_DOWN
+        };
+#else
+        // Keep the entries and their order in sync with the KeyCode table above.
+        static readonly SpecialKey[] specialKeys = {
+            new SpecialKey(Key.Enter,       0x0D), // VK_RETURN
+            new SpecialKey(Key.NumpadEnter, 0x0D), // VK_RETURN
+            new SpecialKey(Key.Backspace,   0x08), // VK_BACK
+            new SpecialKey(Key.Tab,         0x09), // VK_TAB
+            new SpecialKey(Key.Escape,      0x1B), // VK_ESCAPE
+            new SpecialKey(Key.Delete,      0x2E), // VK_DELETE
+            new SpecialKey(Key.Insert,      0x2D), // VK_INSERT
+            new SpecialKey(Key.Home,        0x24), // VK_HOME
+            new SpecialKey(Key.End,         0x23), // VK_END
+            new SpecialKey(Key.PageUp,      0x21), // VK_PRIOR
+            new SpecialKey(Key.PageDown,    0x22), // VK_NEXT
+            new SpecialKey(Key.LeftArrow,   0x25), // VK_LEFT
+            new SpecialKey(Key.UpArrow,     0x26), // VK_UP
+            new SpecialKey(Key.RightArrow,  0x27), // VK_RIGHT
+            new SpecialKey(Key.DownArrow,   0x28), // VK_DOWN
+        };
+#endif
+
+        // Key down is gated on focus, key up is not. Losing focus with a key held down
+        // would otherwise swallow its release and leave Chromium holding the key.
+        void SendSpecialKeys(bool focused)
+        {
+#if !ENABLE_INPUT_SYSTEM
+            foreach (var entry in specialKeys)
+            {
+                if (focused && Input.GetKeyDown(entry.key))
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 1);
+                }
+                if (Input.GetKeyUp(entry.key))
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 3);
+                }
+            }
+#else
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+            {
+                return;
+            }
+            foreach (var entry in specialKeys)
+            {
+                var control = keyboard[entry.key];
+                if (control == null)
+                {
+                    continue;
+                }
+                if (focused && control.wasPressedThisFrame)
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 1);
+                }
+                if (control.wasReleasedThisFrame)
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 3);
+                }
+            }
+#endif
+        }
+
         void Update()
         {
             if (bg != null)
@@ -2125,6 +2227,7 @@ namespace Gree.UnityWebView
             }
             if (webView == IntPtr.Zero || !visibility)
                 return;
+            SendSpecialKeys(hasFocus);
             bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
             _CWebViewPlugin_Update(webView, refreshBitmap, devicePixelRatio);
 
@@ -2269,11 +2372,20 @@ namespace Gree.UnityWebView
                 while (!string.IsNullOrEmpty(inputString))
                 {
                     var keyChars = inputString.Substring(0, 1);
-                    // avoid the issue https://github.com/gree/unity-webview/issues/1228
-                    // by setting keyCode to zero, though WebViewPlugin.cpp should be fixed.
-                    var keyCode = (ushort)0;
-                    //var keyCode = (ushort)inputString[0];
                     inputString = inputString.Substring(1);
+                    // Control characters for keys SendSpecialKeys already sends as virtual
+                    // key codes, because Chromium acts on the key event rather than the
+                    // character: Return (Unity spells it '\n', Windows '\r'), Backspace,
+                    // Tab and Escape. Letting them through here too would double them up.
+                    if (keyChars == "\n" || keyChars == "\r" || keyChars == "\b"
+                        || keyChars == "\t" || keyChars == "\x1b")
+                    {
+                        continue;
+                    }
+                    // Everything left is text. Its virtual key code stays zero: passing the
+                    // character code as one is what caused
+                    // https://github.com/gree/unity-webview/issues/1228
+                    var keyCode = (ushort)0;
                     if (!string.IsNullOrEmpty(keyChars) || keyCode != 0)
                     {
                         var p = Event.current.mousePosition;
