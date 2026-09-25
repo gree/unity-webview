@@ -623,6 +623,32 @@ struct CreateParams {
     HRESULT createResult = E_PENDING;
 };
 
+// Keys on the navigation cluster and the arrows share scan codes with the numeric
+// keypad; without the extended bit Chromium reads VK_DELETE as the keypad's period.
+static bool IsExtendedKey(unsigned short vk) {
+    switch (vk) {
+    case VK_INSERT: case VK_DELETE: case VK_HOME: case VK_END:
+    case VK_PRIOR:  case VK_NEXT:
+    case VK_LEFT:   case VK_UP:     case VK_RIGHT: case VK_DOWN:
+    case VK_RCONTROL: case VK_RMENU: case VK_NUMLOCK: case VK_DIVIDE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// The control characters TranslateMessage would produce for a key down. Text keys are
+// not listed: their characters come from Unity through keyChars, which already handles
+// layouts, dead keys and IME.
+static wchar_t ControlCharForKey(unsigned short vk) {
+    switch (vk) {
+    case VK_RETURN: return L'\r';
+    case VK_BACK:   return L'\b';
+    case VK_ESCAPE: return L'\x1b';
+    default:        return 0;
+    }
+}
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     WebViewInstance* inst = (WebViewInstance*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
@@ -1015,10 +1041,22 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         }
         if (data->keyCode != 0) {
             LPARAM lp = 1 | (LPARAM)MapVirtualKeyW(data->keyCode, MAPVK_VK_TO_VSC) << 16;
-            if (data->keyState == 1 || data->keyState == 2)
+            if (IsExtendedKey(data->keyCode))
+                lp |= (LPARAM)1 << 24;
+            if (data->keyState == 1 || data->keyState == 2) {
                 SendMessage(target, WM_KEYDOWN, (WPARAM)data->keyCode, lp);
-            if (data->keyState == 3)
-                SendMessage(target, WM_KEYUP, (WPARAM)data->keyCode, lp);
+                // Stand in for TranslateMessage, which follows a key down with the
+                // character the key produces.
+                wchar_t ch = ControlCharForKey(data->keyCode);
+                if (ch)
+                    SendMessage(target, WM_CHAR, (WPARAM)ch, lp);
+            }
+            if (data->keyState == 3) {
+                // Bit 30 is the previous key state, bit 31 the transition state; both are
+                // set on a real key up.
+                SendMessage(target, WM_KEYUP, (WPARAM)data->keyCode,
+                            lp | ((LPARAM)1 << 30) | ((LPARAM)1 << 31));
+            }
         }
         if (fg && fg != hwnd)
             SetForegroundWindow(fg);

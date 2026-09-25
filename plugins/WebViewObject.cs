@@ -2075,7 +2075,99 @@ namespace Gree.UnityWebView
                 UpdateBGTransform();
             }
         }
-    
+
+        // inputString only carries text, and Chromium drives editing off the key event
+        // rather than the character: Backspace and Delete do nothing when only a WM_CHAR
+        // arrives, and Unity spells Return as '\n' where Windows uses '\r'. These keys
+        // travel as virtual key codes instead. Ordinary text keys stay on the character
+        // path, which already handles layouts, dead keys and IME.
+        struct SpecialKey
+        {
+#if !ENABLE_INPUT_SYSTEM
+            public KeyCode key;
+            public SpecialKey(KeyCode k, ushort v) { key = k; vk = v; }
+#elif UNITY_EDITOR
+            public Key key;
+            public SpecialKey(Key k, ushort v) { key = k; vk = v; }
+#endif
+            public ushort vk;
+        }
+
+#if !ENABLE_INPUT_SYSTEM
+        static readonly SpecialKey[] specialKeys = {
+            new SpecialKey(KeyCode.Return,      0x0D), // VK_RETURN
+            new SpecialKey(KeyCode.KeypadEnter, 0x0D), // VK_RETURN
+            new SpecialKey(KeyCode.Backspace,   0x08), // VK_BACK
+            new SpecialKey(KeyCode.Escape,      0x1B), // VK_ESCAPE
+            new SpecialKey(KeyCode.Delete,      0x2E), // VK_DELETE
+            new SpecialKey(KeyCode.Insert,      0x2D), // VK_INSERT
+            new SpecialKey(KeyCode.Home,        0x24), // VK_HOME
+            new SpecialKey(KeyCode.End,         0x23), // VK_END
+            new SpecialKey(KeyCode.PageUp,      0x21), // VK_PRIOR
+            new SpecialKey(KeyCode.PageDown,    0x22), // VK_NEXT
+            new SpecialKey(KeyCode.LeftArrow,   0x25), // VK_LEFT
+            new SpecialKey(KeyCode.UpArrow,     0x26), // VK_UP
+            new SpecialKey(KeyCode.RightArrow,  0x27), // VK_RIGHT
+            new SpecialKey(KeyCode.DownArrow,   0x28), // VK_DOWN
+        };
+#elif UNITY_EDITOR
+        static readonly SpecialKey[] specialKeys = {
+            new SpecialKey(Key.Enter,       0x0D), // VK_RETURN
+            new SpecialKey(Key.NumpadEnter, 0x0D), // VK_RETURN
+            new SpecialKey(Key.Backspace,   0x08), // VK_BACK
+            new SpecialKey(Key.Escape,      0x1B), // VK_ESCAPE
+            new SpecialKey(Key.Delete,      0x2E), // VK_DELETE
+            new SpecialKey(Key.Insert,      0x2D), // VK_INSERT
+            new SpecialKey(Key.Home,        0x24), // VK_HOME
+            new SpecialKey(Key.End,         0x23), // VK_END
+            new SpecialKey(Key.PageUp,      0x21), // VK_PRIOR
+            new SpecialKey(Key.PageDown,    0x22), // VK_NEXT
+            new SpecialKey(Key.LeftArrow,   0x25), // VK_LEFT
+            new SpecialKey(Key.UpArrow,     0x26), // VK_UP
+            new SpecialKey(Key.RightArrow,  0x27), // VK_RIGHT
+            new SpecialKey(Key.DownArrow,   0x28), // VK_DOWN
+        };
+#endif
+
+        void SendSpecialKeys()
+        {
+#if !ENABLE_INPUT_SYSTEM
+            foreach (var entry in specialKeys)
+            {
+                if (Input.GetKeyDown(entry.key))
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 1);
+                }
+                if (Input.GetKeyUp(entry.key))
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 3);
+                }
+            }
+#elif UNITY_EDITOR
+            var keyboard = Keyboard.current;
+            if (keyboard == null)
+            {
+                return;
+            }
+            foreach (var entry in specialKeys)
+            {
+                var control = keyboard[entry.key];
+                if (control == null)
+                {
+                    continue;
+                }
+                if (control.wasPressedThisFrame)
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 1);
+                }
+                if (control.wasReleasedThisFrame)
+                {
+                    _CWebViewPlugin_SendKeyEvent(webView, 0, 0, null, entry.vk, 3);
+                }
+            }
+#endif
+        }
+
         void Update()
         {
             if (bg != null)
@@ -2125,6 +2217,10 @@ namespace Gree.UnityWebView
             }
             if (webView == IntPtr.Zero || !visibility)
                 return;
+            if (hasFocus)
+            {
+                SendSpecialKeys();
+            }
             bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
             _CWebViewPlugin_Update(webView, refreshBitmap, devicePixelRatio);
 
@@ -2269,11 +2365,18 @@ namespace Gree.UnityWebView
                 while (!string.IsNullOrEmpty(inputString))
                 {
                     var keyChars = inputString.Substring(0, 1);
-                    // avoid the issue https://github.com/gree/unity-webview/issues/1228
-                    // by setting keyCode to zero, though WebViewPlugin.cpp should be fixed.
-                    var keyCode = (ushort)0;
-                    //var keyCode = (ushort)inputString[0];
                     inputString = inputString.Substring(1);
+                    // Return arrives as '\n' and Backspace as '\b', but Chromium acts on the
+                    // key event for both, so SendSpecialKeys sends them as VK_RETURN and
+                    // VK_BACK instead. Letting them through here too would double them up.
+                    if (keyChars == "\n" || keyChars == "\r" || keyChars == "\b")
+                    {
+                        continue;
+                    }
+                    // Everything left is text. Its virtual key code stays zero: passing the
+                    // character code as one is what caused
+                    // https://github.com/gree/unity-webview/issues/1228
+                    var keyCode = (ushort)0;
                     if (!string.IsNullOrEmpty(keyChars) || keyCode != 0)
                     {
                         var p = Event.current.mousePosition;
