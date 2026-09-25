@@ -64,6 +64,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <!-- C++/WinRT (Graphics Capture) needs C++20: under C++17 winrt/base.h pulls in the
+           deprecated <experimental/coroutine>, which the current MSVC STL rejects outright. -->
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.3800.47\build\native\include;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -80,6 +85,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <!-- C++/WinRT (Graphics Capture) needs C++20: under C++17 winrt/base.h pulls in the
+           deprecated <experimental/coroutine>, which the current MSVC STL rejects outright. -->
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)packages\microsoft.web.webview2.1.0.3800.47\build\native\include;$(ProjectDir)packages\Microsoft.Web.WebView2.1.0.3800.47\build\native\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -92,6 +102,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="WebViewPlugin.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Unity\IUnityInterface.h" />
+    <ClInclude Include="Unity\IUnityGraphics.h" />
+    <ClInclude Include="Unity\IUnityGraphicsD3D11.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

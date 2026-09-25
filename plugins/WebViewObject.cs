@@ -105,6 +105,10 @@ namespace Gree.UnityWebView
         Rect rect;
         Texture2D texture;
         byte[] textureDataBuffer;
+        // Zero-copy path: the plugin owns the texture and we only wrap it.
+        IntPtr textureNativePtr;
+        IntPtr renderEventFunc;
+        CommandBuffer renderCommandBuffer;
         string inputString = "";
         bool hasFocus;
 #elif UNITY_IPHONE
@@ -625,6 +629,14 @@ namespace Gree.UnityWebView
         [DllImport("WebView")]
         private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
         [DllImport("WebView")]
+        private static extern bool _CWebViewPlugin_BitmapIsBGRA(IntPtr instance);
+        [DllImport("WebView")]
+        private static extern IntPtr _CWebViewPlugin_GetTexturePtr(IntPtr instance);
+        [DllImport("WebView")]
+        private static extern IntPtr _CWebViewPlugin_GetRenderEventFunc();
+        [DllImport("WebView")]
+        private static extern void _CWebViewPlugin_SetColorSpace(bool linearColorSpace);
+        [DllImport("WebView")]
         private static extern void _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
         [DllImport("WebView")]
         private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
@@ -822,6 +834,9 @@ namespace Gree.UnityWebView
             _CWebViewPlugin_InitStatic(
                 Application.platform == RuntimePlatform.WindowsEditor,
                 SystemInfo.graphicsDeviceType == GraphicsDeviceType.Direct3D11);
+            // The plugin needs this to pick a shared texture format that matches the
+            // shader resource view Unity will create for the external texture.
+            _CWebViewPlugin_SetColorSpace(QualitySettings.activeColorSpace == ColorSpace.Linear);
             webView = _CWebViewPlugin_Init(
                 name,
                 transparent,
@@ -896,8 +911,17 @@ namespace Gree.UnityWebView
                 return;
             var ptr = webView;
             webView = IntPtr.Zero;
-            _CWebViewPlugin_Destroy(ptr);
+            if (renderCommandBuffer != null)
+            {
+                renderCommandBuffer.Release();
+                renderCommandBuffer = null;
+            }
+            // Drop our side of the external texture before the plugin retires the
+            // resource it points at.
             Destroy(texture);
+            texture = null;
+            textureNativePtr = IntPtr.Zero;
+            _CWebViewPlugin_Destroy(ptr);
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             if (bg != null) {
                 Destroy(bg.gameObject);
@@ -2103,19 +2127,73 @@ namespace Gree.UnityWebView
                 return;
             bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
             _CWebViewPlugin_Update(webView, refreshBitmap, devicePixelRatio);
+
+            // Drives the GPU copy on the render thread. A no-op unless the plugin is on
+            // the zero-copy path, and it also has to run before the first texture exists.
+            // GL.IssuePluginEvent cannot carry the instance pointer, so this goes through
+            // a command buffer, which has the "AndData" variant.
+            if (renderEventFunc == IntPtr.Zero)
+            {
+                renderEventFunc = _CWebViewPlugin_GetRenderEventFunc();
+            }
+            if (renderEventFunc != IntPtr.Zero)
+            {
+                if (renderCommandBuffer == null)
+                {
+                    renderCommandBuffer = new CommandBuffer();
+                    renderCommandBuffer.name = "WebViewObject.UpdateTexture";
+                }
+                renderCommandBuffer.Clear();
+                renderCommandBuffer.IssuePluginEventAndData(renderEventFunc, 1, webView);
+                Graphics.ExecuteCommandBuffer(renderCommandBuffer);
+            }
+
+            var nativeTexture = _CWebViewPlugin_GetTexturePtr(webView);
+            if (nativeTexture != IntPtr.Zero)
+            {
+                // The plugin owns a texture on Unity's device and fills it on the render
+                // thread, so there is nothing to read back or upload here.
+                var zw = _CWebViewPlugin_BitmapWidth(webView);
+                var zh = _CWebViewPlugin_BitmapHeight(webView);
+                if (zw > 0 && zh > 0
+                    && (texture == null || texture.width != zw || texture.height != zh
+                        || textureNativePtr != nativeTexture))
+                {
+                    bool zLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                    if (texture != null)
+                    {
+                        Destroy(texture);
+                    }
+                    texture = Texture2D.CreateExternalTexture(
+                        zw, zh, TextureFormat.BGRA32, false, !zLinearSpace, nativeTexture);
+                    texture.filterMode = FilterMode.Bilinear;
+                    texture.wrapMode = TextureWrapMode.Clamp;
+                    textureNativePtr = nativeTexture;
+                    textureDataBuffer = null;
+                }
+                return;
+            }
+
             if (refreshBitmap)
             {
                 var w = _CWebViewPlugin_BitmapWidth(webView);
                 var h = _CWebViewPlugin_BitmapHeight(webView);
+                // Graphics Capture delivers BGRA; the CapturePreview fallback delivers RGBA.
+                var f = _CWebViewPlugin_BitmapIsBGRA(webView) ? TextureFormat.BGRA32 : TextureFormat.RGBA32;
                 if (w > 0 && h > 0)
                 {
-                    if (texture == null || texture.width != w || texture.height != h)
+                    if (texture == null || texture.width != w || texture.height != h || texture.format != f)
                     {
                         bool isLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
-                        texture = new Texture2D(w, h, TextureFormat.RGBA32, false, !isLinearSpace);
+                        if (texture != null)
+                        {
+                            Destroy(texture);
+                        }
+                        texture = new Texture2D(w, h, f, false, !isLinearSpace);
                         texture.filterMode = FilterMode.Bilinear;
                         texture.wrapMode = TextureWrapMode.Clamp;
                         textureDataBuffer = new byte[w * h * 4];
+                        textureNativePtr = IntPtr.Zero;
                     }
                     if (textureDataBuffer != null && textureDataBuffer.Length > 0)
                     {
