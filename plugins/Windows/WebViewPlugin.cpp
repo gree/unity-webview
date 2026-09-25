@@ -21,8 +21,36 @@
 
 #include "WebView2.h"
 
+// GPU capture path: DirectComposition visual tree + Windows Graphics Capture.
+#include <d3d11.h>
+#include <dxgi.h>
+#include <DispatcherQueue.h>
+#include <winrt/base.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.System.h>
+#include <winrt/Windows.UI.Composition.h>
+#include <winrt/Windows.UI.Composition.Desktop.h>
+#include <winrt/Windows.Graphics.Capture.h>
+#include <winrt/Windows.Graphics.DirectX.Direct3D11.h>
+#include <windows.ui.composition.interop.h>
+#include <windows.graphics.capture.interop.h>
+#include <Windows.Graphics.DirectX.Direct3D11.interop.h>
+
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "windowsapp.lib")
+
+namespace wgc {
+    using namespace winrt;
+    using namespace winrt::Windows::UI::Composition;
+    using namespace winrt::Windows::UI::Composition::Desktop;
+    using namespace winrt::Windows::Graphics;
+    using namespace winrt::Windows::Graphics::Capture;
+    using namespace winrt::Windows::Graphics::DirectX;
+    using namespace winrt::Windows::Graphics::DirectX::Direct3D11;
+}
 
 // Set to 1 to log input and window info to OutputDebugString.
 // View logs: run DebugView (Sysinternals) as admin and enable "Capture Global Win32", or run Unity from Visual Studio and check Output.
@@ -85,6 +113,28 @@ struct WebViewInstance {
     std::atomic<bool> captureInProgress{ false };
     HANDLE captureDoneEvent = nullptr;
 
+    // GPU capture path. When captureActive is true, frames arrive on a threadpool
+    // thread and are read back into bitmapPixels; CapturePreview is not used at all.
+    // Everything here lives on this instance's own D3D11 device, so Unity's graphics
+    // device is never touched.
+    bool winrtReady = false;
+    std::atomic<bool> captureActive{ false };
+    std::mutex captureMutex;
+    ComPtr<ID3D11Device> d3dDevice;
+    ComPtr<ID3D11DeviceContext> d3dContext;
+    ComPtr<ID3D11Texture2D> stagingTexture;
+    UINT stagingWidth = 0;
+    UINT stagingHeight = 0;
+    wgc::IDirect3DDevice rtDevice{ nullptr };
+    wgc::Compositor compositor{ nullptr };
+    wgc::DesktopWindowTarget windowTarget{ nullptr };
+    wgc::ContainerVisual rootVisual{ nullptr };
+    wgc::ContainerVisual webViewVisual{ nullptr };
+    wgc::GraphicsCaptureItem captureItem{ nullptr };
+    wgc::Direct3D11CaptureFramePool framePool{ nullptr };
+    wgc::GraphicsCaptureSession captureSession{ nullptr };
+    wgc::Direct3D11CaptureFramePool::FrameArrived_revoker frameArrivedRevoker;
+
     // Custom headers for navigation
     std::mutex headersMutex;
     std::wstring customHeaders; // "Key: Value\r\n..."
@@ -145,6 +195,211 @@ static bool DecodePngStreamToRgba(IStream* stream, std::vector<uint8_t>& outPixe
     outWidth = (int)width;
     outHeight = (int)height;
     return true;
+}
+
+//------------------------------------------------------------------------------
+// GPU capture: visual tree + Windows Graphics Capture
+//
+// WebView2 is hosted through a CompositionController, which renders nothing until
+// a visual tree is attached with put_RootVisualTarget. Once attached, the
+// off-screen host window carries the page content and Windows Graphics Capture can
+// read it back from the GPU, replacing the CapturePreview PNG round trip
+// (PNG encode -> WIC decode) that dominated the previous frame cost.
+//
+// Frames are produced on a threadpool thread and land in bitmapPixels, so the
+// consumer side (_CWebViewPlugin_BitmapWidth/Height/Render) is unchanged.
+//------------------------------------------------------------------------------
+
+static bool CreateCaptureDevice(WebViewInstance* inst) {
+    const UINT flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+    D3D_FEATURE_LEVEL level{};
+    HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags,
+        nullptr, 0, D3D11_SDK_VERSION,
+        inst->d3dDevice.GetAddressOf(), &level, inst->d3dContext.GetAddressOf());
+    if (FAILED(hr)) {
+        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, flags,
+            nullptr, 0, D3D11_SDK_VERSION,
+            inst->d3dDevice.GetAddressOf(), &level, inst->d3dContext.GetAddressOf());
+    }
+    if (FAILED(hr)) {
+        WV_LOG("CreateCaptureDevice: D3D11CreateDevice failed 0x%08X", (unsigned)hr);
+        return false;
+    }
+
+    ComPtr<IDXGIDevice> dxgiDevice;
+    if (FAILED(inst->d3dDevice.As(&dxgiDevice))) return false;
+    winrt::com_ptr<::IInspectable> inspectable;
+    if (FAILED(CreateDirect3D11DeviceFromDXGIDevice(dxgiDevice.Get(), inspectable.put())))
+        return false;
+    inst->rtDevice = inspectable.as<wgc::IDirect3DDevice>();
+    return true;
+}
+
+// Connects WebView2's output to the host window. Without this the window stays
+// empty and Windows Graphics Capture would only ever see a blank surface.
+static bool BuildVisualTree(WebViewInstance* inst) {
+    if (!inst->compositionController || !inst->hwnd) return false;
+    try {
+        inst->compositor = wgc::Compositor();
+
+        auto interop = inst->compositor.as<ABI::Windows::UI::Composition::Desktop::ICompositorDesktopInterop>();
+        winrt::check_hresult(interop->CreateDesktopWindowTarget(
+            inst->hwnd, false,
+            reinterpret_cast<ABI::Windows::UI::Composition::Desktop::IDesktopWindowTarget**>(
+                winrt::put_abi(inst->windowTarget))));
+
+        // The root of a DesktopWindowTarget needs an explicit size; the child fills it.
+        auto root = inst->compositor.CreateContainerVisual();
+        root.Size({ (float)inst->rectWidth, (float)inst->rectHeight });
+        root.IsVisible(true);
+        inst->windowTarget.Root(root);
+
+        auto child = inst->compositor.CreateContainerVisual();
+        child.RelativeSizeAdjustment({ 1.0f, 1.0f });
+        root.Children().InsertAtTop(child);
+
+        winrt::check_hresult(inst->compositionController->put_RootVisualTarget(
+            reinterpret_cast<::IUnknown*>(winrt::get_abi(child))));
+
+        inst->rootVisual = root;
+        inst->webViewVisual = child;
+        return true;
+    } catch (const winrt::hresult_error& e) {
+        WV_LOG("BuildVisualTree failed 0x%08X", (unsigned)e.code());
+        return false;
+    } catch (...) {
+        return false;
+    }
+}
+
+static void ReadBackFrame(WebViewInstance* inst) {
+    std::lock_guard<std::mutex> lk(inst->captureMutex);
+    if (!inst->framePool || inst->destroying) return;
+    try {
+        auto frame = inst->framePool.TryGetNextFrame();
+        if (!frame) return;
+        auto surface = frame.Surface();
+        if (!surface) { frame.Close(); return; }
+
+        auto access = surface.as<::Windows::Graphics::DirectX::Direct3D11::IDirect3DDxgiInterfaceAccess>();
+        ComPtr<ID3D11Texture2D> frameTexture;
+        if (FAILED(access->GetInterface(IID_PPV_ARGS(frameTexture.GetAddressOf()))) || !frameTexture) {
+            frame.Close();
+            return;
+        }
+
+        D3D11_TEXTURE2D_DESC desc{};
+        frameTexture->GetDesc(&desc);
+
+        if (!inst->stagingTexture || inst->stagingWidth != desc.Width || inst->stagingHeight != desc.Height) {
+            D3D11_TEXTURE2D_DESC sd = desc;
+            sd.Usage = D3D11_USAGE_STAGING;
+            sd.BindFlags = 0;
+            sd.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            sd.MiscFlags = 0;
+            inst->stagingTexture.Reset();
+            if (FAILED(inst->d3dDevice->CreateTexture2D(&sd, nullptr, inst->stagingTexture.GetAddressOf()))) {
+                frame.Close();
+                return;
+            }
+            inst->stagingWidth = desc.Width;
+            inst->stagingHeight = desc.Height;
+        }
+
+        inst->d3dContext->CopyResource(inst->stagingTexture.Get(), frameTexture.Get());
+
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        if (FAILED(inst->d3dContext->Map(inst->stagingTexture.Get(), 0, D3D11_MAP_READ, 0, &mapped))) {
+            frame.Close();
+            return;
+        }
+
+        const size_t rowBytes = (size_t)desc.Width * 4;
+        inst->bitmapPixelsBack.resize(rowBytes * desc.Height);
+        // Capture frames are top-down, the same row order the decoded PNG had, so the
+        // consumer keeps working without a flip. Pixels are BGRA (see BitmapIsBGRA).
+        for (UINT y = 0; y < desc.Height; y++) {
+            memcpy(inst->bitmapPixelsBack.data() + rowBytes * y,
+                   (const uint8_t*)mapped.pData + (size_t)mapped.RowPitch * y,
+                   rowBytes);
+        }
+        inst->d3dContext->Unmap(inst->stagingTexture.Get(), 0);
+        frame.Close();
+
+        {
+            std::lock_guard<std::mutex> bl(inst->bitmapMutex);
+            inst->bitmapPixels.swap(inst->bitmapPixelsBack);
+            inst->bitmapWidth = (int)desc.Width;
+            inst->bitmapHeight = (int)desc.Height;
+        }
+    } catch (...) {
+        // A frame can fail during resize or teardown; just skip it.
+    }
+}
+
+static bool StartGraphicsCapture(WebViewInstance* inst) {
+    if (!inst->rtDevice || !inst->hwnd) return false;
+    if (!wgc::GraphicsCaptureSession::IsSupported()) {
+        WV_LOG("StartGraphicsCapture: not supported on this OS");
+        return false;
+    }
+    try {
+        auto interop = winrt::get_activation_factory<wgc::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
+        winrt::check_hresult(interop->CreateForWindow(
+            inst->hwnd,
+            winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(),
+            reinterpret_cast<void**>(winrt::put_abi(inst->captureItem))));
+
+        auto size = inst->captureItem.Size();
+        if (size.Width <= 0) size.Width = inst->rectWidth;
+        if (size.Height <= 0) size.Height = inst->rectHeight;
+
+        // Free-threaded: TryGetNextFrame runs on the threadpool thread that raises
+        // FrameArrived, which keeps the readback off Unity's main thread.
+        inst->framePool = wgc::Direct3D11CaptureFramePool::CreateFreeThreaded(
+            inst->rtDevice, wgc::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
+        inst->frameArrivedRevoker = inst->framePool.FrameArrived(
+            winrt::auto_revoke, [inst](auto&&, auto&&) { ReadBackFrame(inst); });
+
+        inst->captureSession = inst->framePool.CreateCaptureSession(inst->captureItem);
+        inst->captureSession.StartCapture();
+        inst->captureActive = true;
+        WV_LOG("StartGraphicsCapture: started (%dx%d)", size.Width, size.Height);
+        return true;
+    } catch (const winrt::hresult_error& e) {
+        WV_LOG("StartGraphicsCapture failed 0x%08X", (unsigned)e.code());
+        return false;
+    } catch (...) {
+        return false;
+    }
+}
+
+static void StopGraphicsCapture(WebViewInstance* inst) {
+    // Revoke first and outside the lock: revoke() waits for an in-flight
+    // FrameArrived handler, which itself takes captureMutex.
+    inst->frameArrivedRevoker.revoke();
+    inst->captureActive = false;
+
+    std::lock_guard<std::mutex> lk(inst->captureMutex);
+    if (inst->captureSession) { inst->captureSession.Close(); inst->captureSession = nullptr; }
+    if (inst->framePool) { inst->framePool.Close(); inst->framePool = nullptr; }
+    inst->captureItem = nullptr;
+    inst->stagingTexture.Reset();
+    inst->stagingWidth = 0;
+    inst->stagingHeight = 0;
+}
+
+static void ReleaseVisualTree(WebViewInstance* inst) {
+    if (inst->compositionController) {
+        inst->compositionController->put_RootVisualTarget(nullptr);
+    }
+    inst->webViewVisual = nullptr;
+    inst->rootVisual = nullptr;
+    inst->windowTarget = nullptr;
+    inst->compositor = nullptr;
+    inst->rtDevice = nullptr;
+    inst->d3dContext.Reset();
+    inst->d3dDevice.Reset();
 }
 
 //------------------------------------------------------------------------------
@@ -350,6 +605,17 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                     inst->controller->put_IsVisible(TRUE);
                                 }
 
+                                // Attach the visual tree so the host window actually carries the
+                                // page, then capture it on the GPU. Any failure here just leaves
+                                // captureActive false and the CapturePreview path takes over.
+                                if (inst->winrtReady && CreateCaptureDevice(inst) && BuildVisualTree(inst)) {
+                                    StartGraphicsCapture(inst);
+                                }
+                                if (!inst->captureActive) {
+                                    WV_LOG("GPU capture unavailable, falling back to CapturePreview");
+                                    ReleaseVisualTree(inst);
+                                }
+
                                 params->createResult = S_OK;
                                 SetEvent(params->readyEvent);
                                 return S_OK;
@@ -366,6 +632,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             if (inst->webview) {
                 inst->webview->Stop();
             }
+            // Tear the capture down before the composition controller goes away,
+            // otherwise a frame in flight can touch a released visual.
+            StopGraphicsCapture(inst);
+            ReleaseVisualTree(inst);
             inst->controller = nullptr;
             inst->compositionController = nullptr;
             inst->webview = nullptr;
@@ -423,10 +693,27 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         if (inst && inst->controller) {
             int w = (int)wParam;
             int h = (int)lParam;
+            const bool sizeChanged = (inst->rectWidth != w || inst->rectHeight != h);
             inst->rectWidth = w;
             inst->rectHeight = h;
             RECT r = { 0, 0, w, h };
             inst->controller->put_Bounds(r);
+
+            if (sizeChanged && w > 0 && h > 0) {
+                // The capture follows the host window, not the controller bounds, so the
+                // window itself has to be resized too.
+                SetWindowPos(hwnd, nullptr, 0, 0, w, h,
+                    SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+                if (inst->rootVisual) {
+                    inst->rootVisual.Size({ (float)w, (float)h });
+                }
+                if (inst->captureActive) {
+                    // Recreating the item and pool is more robust than FramePool::Recreate,
+                    // which is unreliable while a session is running.
+                    StopGraphicsCapture(inst);
+                    StartGraphicsCapture(inst);
+                }
+            }
         }
         return 0;
     }
@@ -574,7 +861,29 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 // Run message loop until WebView2 is created (used in Init)
 static DWORD WINAPI STAThreadProc(LPVOID param) {
     CreateParams* params = (CreateParams*)param;
-    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+    // WinRT (STA) is needed for the Compositor and Windows Graphics Capture.
+    // init_apartment also performs CoInitializeEx(COINIT_APARTMENTTHREADED).
+    bool winrtReady = true;
+    try {
+        winrt::init_apartment(winrt::apartment_type::single_threaded);
+    } catch (...) {
+        winrtReady = false;
+        CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    }
+
+    // Compositor() requires a DispatcherQueue on the calling thread.
+    ABI::Windows::System::IDispatcherQueueController* dqController = nullptr;
+    if (winrtReady) {
+        DispatcherQueueOptions opts{};
+        opts.dwSize = sizeof(opts);
+        opts.threadType = DQTYPE_THREAD_CURRENT;
+        opts.apartmentType = DQTAT_COM_STA;
+        if (FAILED(CreateDispatcherQueueController(opts, &dqController))) {
+            winrtReady = false;
+        }
+    }
+    if (params->instance) params->instance->winrtReady = winrtReady;
 
     WNDCLASSEXW wc = {};
     wc.cbSize = sizeof(wc);
@@ -585,18 +894,26 @@ static DWORD WINAPI STAThreadProc(LPVOID param) {
 
     // Use WS_EX_TOOLWINDOW and WS_POPUP to prevent the window from appearing on the taskbar.
     // WS_EX_NOACTIVATE prevents the host from being activated when receiving focus, avoiding Unity window minimize on click.
-    HWND hwnd = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, wc.lpszClassName, L"", WS_POPUP,
-        0, 0, params->width > 0 ? params->width : 640, params->height > 0 ? params->height : 480,
+    // WS_EX_LAYERED with alpha 1 keeps the window effectively invisible while still being
+    // composed by DWM, which Windows Graphics Capture requires.
+    const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    HWND hwnd = CreateWindowExW(
+        WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED | WS_EX_TRANSPARENT,
+        wc.lpszClassName, L"", WS_POPUP,
+        screenWidth + 100, 0,
+        params->width > 0 ? params->width : 640, params->height > 0 ? params->height : 480,
         nullptr, nullptr, wc.hInstance, params);
     if (!hwnd) {
         params->createResult = E_FAIL;
         SetEvent(params->readyEvent);
+        if (dqController) dqController->Release();
         CoUninitialize();
         return 1;
     }
 
-    // Visible but off-screen so WebView2 child receives input; fully hidden windows may ignore mouse/key.
-    SetWindowPos(hwnd, nullptr, -32000, -32000, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    // Parked just past the right edge of the primary monitor rather than at (-32000,-32000):
+    // DWM keeps composing a window placed there, which is what the capture reads from.
+    SetLayeredWindowAttributes(hwnd, 0, 1, LWA_ALPHA);
     ShowWindow(hwnd, SW_SHOWNOACTIVATE);
 
     MSG msg;
@@ -609,6 +926,7 @@ static DWORD WINAPI STAThreadProc(LPVOID param) {
     }
 
     UnregisterClassW(wc.lpszClassName, wc.hInstance);
+    if (dqController) dqController->Release();
     CoUninitialize();
     return 0;
 }
@@ -845,13 +1163,24 @@ __declspec(dllexport) void _CWebViewPlugin_SendKeyEvent(void* instance, int x, i
 __declspec(dllexport) void _CWebViewPlugin_Update(void* instance, bool refreshBitmap, int devicePixelRatio) {
     WebViewInstance* inst = (WebViewInstance*)instance;
     if (!inst || inst->destroying) return;
-    // Non-blocking: only start a new capture when none is in progress. STA thread uses
-    // double-buffering so Render() can read current bitmapPixels without delay.
+    // With Graphics Capture there is nothing to pump: frames arrive on their own and
+    // bitmapPixels always holds the newest one.
+    if (inst->captureActive) return;
+    // Fallback path. Non-blocking: only start a new capture when none is in progress.
+    // STA thread uses double-buffering so Render() can read current bitmapPixels without delay.
     if (refreshBitmap && inst->hwnd && inst->webview) {
         if (!inst->captureInProgress.exchange(true)) {
             PostMessage(inst->hwnd, WM_WEBVIEW_CAPTURE, 0, 0);
         }
     }
+}
+
+// True when frames come from Graphics Capture (BGRA), false for the CapturePreview
+// fallback (RGBA). The caller picks the matching Unity TextureFormat.
+__declspec(dllexport) bool _CWebViewPlugin_BitmapIsBGRA(void* instance) {
+    WebViewInstance* inst = (WebViewInstance*)instance;
+    if (!inst || inst->destroying) return false;
+    return inst->captureActive.load();
 }
 
 __declspec(dllexport) int _CWebViewPlugin_BitmapWidth(void* instance) {

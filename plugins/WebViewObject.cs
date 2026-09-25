@@ -625,6 +625,8 @@ namespace Gree.UnityWebView
         [DllImport("WebView")]
         private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
         [DllImport("WebView")]
+        private static extern bool _CWebViewPlugin_BitmapIsBGRA(IntPtr instance);
+        [DllImport("WebView")]
         private static extern void _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
         [DllImport("WebView")]
         private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
@@ -2107,12 +2109,14 @@ namespace Gree.UnityWebView
             {
                 var w = _CWebViewPlugin_BitmapWidth(webView);
                 var h = _CWebViewPlugin_BitmapHeight(webView);
+                // Graphics Capture delivers BGRA; the CapturePreview fallback delivers RGBA.
+                var f = _CWebViewPlugin_BitmapIsBGRA(webView) ? TextureFormat.BGRA32 : TextureFormat.RGBA32;
                 if (w > 0 && h > 0)
                 {
-                    if (texture == null || texture.width != w || texture.height != h)
+                    if (texture == null || texture.width != w || texture.height != h || texture.format != f)
                     {
                         bool isLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
-                        texture = new Texture2D(w, h, TextureFormat.RGBA32, false, !isLinearSpace);
+                        texture = new Texture2D(w, h, f, false, !isLinearSpace);
                         texture.filterMode = FilterMode.Bilinear;
                         texture.wrapMode = TextureWrapMode.Clamp;
                         textureDataBuffer = new byte[w * h * 4];
