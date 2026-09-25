@@ -103,6 +103,11 @@
   <ItemGroup>
     <ClCompile Include="WebViewPlugin.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Unity\IUnityInterface.h" />
+    <ClInclude Include="Unity\IUnityGraphics.h" />
+    <ClInclude Include="Unity\IUnityGraphicsD3D11.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
