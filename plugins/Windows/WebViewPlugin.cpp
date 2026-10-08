@@ -270,6 +270,7 @@ static void RetireSharedTexture(ComPtr<ID3D11Texture2D> tex) {
 }
 
 static void DrainRetiredTextures(bool force) {
+    // TODO: Count rendered frames, not per-instance events, before releasing retired textures.
     std::lock_guard<std::mutex> lk(s_retiredMutex);
     for (auto it = s_retiredTextures.begin(); it != s_retiredTextures.end();) {
         if (force || --it->second <= 0) {
@@ -1432,6 +1433,7 @@ __declspec(dllexport) void* _CWebViewPlugin_Init(
     inst->rectHeight = height > 0 ? height : 480;
     inst->captureDoneEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
+    // TODO: Keep initialization state alive until STA callbacks finish and clean up on failure/timeout.
     CreateParams params;
     params.instance = inst.get();
     params.width = inst->rectWidth;
@@ -1677,6 +1679,7 @@ __declspec(dllexport) int _CWebViewPlugin_BitmapHeight(void* instance) {
 }
 
 __declspec(dllexport) void _CWebViewPlugin_Render(void* instance, void* textureBuffer) {
+    // TODO: Accept destination capacity and return dimensions with the same locked bitmap snapshot.
     WebViewInstance* inst = (WebViewInstance*)instance;
     if (!inst || inst->destroying || !textureBuffer) return;
     std::lock_guard<std::mutex> lk(inst->bitmapMutex);
