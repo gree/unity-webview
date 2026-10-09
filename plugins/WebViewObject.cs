@@ -603,6 +603,7 @@ namespace Gree.UnityWebView
         private static extern void _CWebViewPlugin_SetVisibility(IntPtr instance, bool visibility);
         [DllImport("WebView")]
         private static extern bool _CWebViewPlugin_SetURLPattern(IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
+        // TODO: Match native UTF-8 for Windows string arguments and returned messages.
         [DllImport("WebView")]
         private static extern void _CWebViewPlugin_LoadURL(IntPtr instance, string url);
         [DllImport("WebView")]
@@ -2178,6 +2179,7 @@ namespace Gree.UnityWebView
 #endif
         }
 
+        // TODO: Bound and isolate callback dispatch so exceptions cannot interrupt texture updates.
         void Update()
         {
             if (bg != null)

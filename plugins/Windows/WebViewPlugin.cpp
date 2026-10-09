@@ -10,6 +10,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <objbase.h>
+#include <urlmon.h>
 #include <wrl.h>
 #include <string>
 #include <cstring>
@@ -47,6 +48,7 @@
 
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "windowsapp.lib")
@@ -100,9 +102,12 @@ struct MessageQueue {
 //------------------------------------------------------------------------------
 struct WebViewInstance {
     HWND hwnd = nullptr;
+    ComPtr<ICoreWebView2Environment> environment;
     ComPtr<ICoreWebView2Controller> controller;
     ComPtr<ICoreWebView2CompositionController> compositionController;
     ComPtr<ICoreWebView2> webview;
+    std::string pendingHtml;
+    ComPtr<IUri> pendingHtmlUri;
     MessageQueue messages;
     std::string gameObjectName;
 
@@ -127,6 +132,7 @@ struct WebViewInstance {
     // Everything here lives on this instance's own D3D11 device, so Unity's graphics
     // device is never touched.
     bool winrtReady = false;
+    bool capturePreviewForHtml = false;
     std::atomic<bool> captureActive{ false };
     std::mutex captureMutex;
     ComPtr<ID3D11Device> d3dDevice;
@@ -172,6 +178,12 @@ struct WebViewInstance {
 
 static std::mutex s_instancesMutex;
 static std::vector<std::unique_ptr<WebViewInstance>> s_instances;
+
+static void ReportWebViewError(WebViewInstance* inst, const char* operation, HRESULT result) {
+    char code[16];
+    snprintf(code, sizeof(code), "0x%08X", (unsigned)result);
+    inst->messages.push(std::string("CallOnError:") + operation + " failed (" + code + ")");
+}
 
 //------------------------------------------------------------------------------
 // PNG stream -> RGBA using WIC
@@ -258,6 +270,7 @@ static void RetireSharedTexture(ComPtr<ID3D11Texture2D> tex) {
 }
 
 static void DrainRetiredTextures(bool force) {
+    // TODO: Count rendered frames, not per-instance events, before releasing retired textures.
     std::lock_guard<std::mutex> lk(s_retiredMutex);
     for (auto it = s_retiredTextures.begin(); it != s_retiredTextures.end();) {
         if (force || --it->second <= 0) {
@@ -489,6 +502,7 @@ static void UpdateZeroCopyTexture(WebViewInstance* inst) {
 }
 
 static bool StartGraphicsCapture(WebViewInstance* inst) {
+    if (inst->capturePreviewForHtml) return false;
     if (!inst->rtDevice || !inst->hwnd) return false;
     if (!wgc::GraphicsCaptureSession::IsSupported()) {
         WV_LOG("StartGraphicsCapture: not supported on this OS");
@@ -569,7 +583,7 @@ static void SetupCapture(WebViewInstance* inst) {
     if (inst->winrtReady && CreateCaptureDevice(inst) && BuildVisualTree(inst)) {
         StartGraphicsCapture(inst);
     }
-    if (!inst->captureActive) {
+    if (!inst->captureActive && !inst->capturePreviewForHtml) {
         WV_LOG("GPU capture unavailable, falling back to CapturePreview");
         ReleaseVisualTree(inst);
     }
@@ -700,6 +714,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                         SetEvent(params->readyEvent);
                         return S_OK;
                     }
+                    params->instance->environment = e;
                     env3->CreateCoreWebView2CompositionController(params->instance->hwnd,
                         Callback<ICoreWebView2CreateCoreWebView2CompositionControllerCompletedHandler>(
                             [params](HRESULT err2, ICoreWebView2CompositionController* compCtrl) -> HRESULT {
@@ -735,7 +750,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                 inst->webview->AddScriptToExecuteOnDocumentCreated(script.c_str(), nullptr);
 
                                 // Message from JS
-                                inst->webview->add_WebMessageReceived(
+                                EventRegistrationToken eventToken{};
+                                HRESULT eventResult = inst->webview->add_WebMessageReceived(
                                     Callback<ICoreWebView2WebMessageReceivedEventHandler>(
                                         [inst](ICoreWebView2* wv, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT {
                                             LPWSTR msgRaw = nullptr;
@@ -749,10 +765,66 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                                 CoTaskMemFree(msgRaw);
                                             }
                                             return S_OK;
-                                        }).Get(), nullptr);
+                                        }).Get(), &eventToken);
+                                if (FAILED(eventResult)) {
+                                    params->createResult = eventResult;
+                                    SetEvent(params->readyEvent);
+                                    return S_OK;
+                                }
+
+                                eventResult = inst->webview->AddWebResourceRequestedFilter(
+                                    L"*", COREWEBVIEW2_WEB_RESOURCE_CONTEXT_DOCUMENT);
+                                if (SUCCEEDED(eventResult)) {
+                                    eventResult = inst->webview->add_WebResourceRequested(
+                                        Callback<ICoreWebView2WebResourceRequestedEventHandler>(
+                                            [inst](ICoreWebView2*, ICoreWebView2WebResourceRequestedEventArgs* args) -> HRESULT {
+                                                if (!inst->pendingHtmlUri) return S_OK;
+                                                ComPtr<ICoreWebView2WebResourceRequest> request;
+                                                HRESULT result = args->get_Request(&request);
+                                                LPWSTR requestUrl = nullptr;
+                                                if (SUCCEEDED(result)) result = request->get_Uri(&requestUrl);
+                                                ComPtr<IUri> requestUri;
+                                                if (SUCCEEDED(result)) {
+                                                    result = CreateUri(requestUrl, Uri_CREATE_CANONICALIZE, 0,
+                                                        requestUri.GetAddressOf());
+                                                }
+                                                CoTaskMemFree(requestUrl);
+                                                BOOL matches = FALSE;
+                                                if (FAILED(result) || FAILED(inst->pendingHtmlUri->IsEqual(requestUri.Get(), &matches))
+                                                    || !matches) return S_OK;
+
+                                                ComPtr<IStream> stream;
+                                                result = CreateStreamOnHGlobal(nullptr, TRUE, stream.GetAddressOf());
+                                                if (SUCCEEDED(result)) {
+                                                    result = stream->Write(inst->pendingHtml.data(),
+                                                        (ULONG)inst->pendingHtml.size(), nullptr);
+                                                }
+                                                LARGE_INTEGER beginning{};
+                                                if (SUCCEEDED(result)) result = stream->Seek(beginning, STREAM_SEEK_SET, nullptr);
+                                                const std::wstring headers = L"Content-Type: text/html; charset=utf-8\r\nContent-Length: " +
+                                                    std::to_wstring(inst->pendingHtml.size()) + L"\r\nCache-Control: no-store\r\n";
+                                                ComPtr<ICoreWebView2WebResourceResponse> response;
+                                                if (SUCCEEDED(result)) {
+                                                    result = inst->environment->CreateWebResourceResponse(
+                                                        stream.Get(), 200, L"OK", headers.c_str(), response.GetAddressOf());
+                                                }
+                                                if (SUCCEEDED(result)) result = args->put_Response(response.Get());
+                                                if (FAILED(result)) {
+                                                    inst->pendingHtmlUri.Reset();
+                                                    inst->pendingHtml.clear();
+                                                    ReportWebViewError(inst, "LoadHTML response", result);
+                                                }
+                                                return S_OK;
+                                            }).Get(), &eventToken);
+                                }
+                                if (FAILED(eventResult)) {
+                                    params->createResult = eventResult;
+                                    SetEvent(params->readyEvent);
+                                    return S_OK;
+                                }
 
                                 // Navigation events
-                                inst->webview->add_NavigationStarting(
+                                eventResult = inst->webview->add_NavigationStarting(
                                     Callback<ICoreWebView2NavigationStartingEventHandler>(
                                         [inst](ICoreWebView2* wv, ICoreWebView2NavigationStartingEventArgs* args) -> HRESULT {
                                             inst->progress = 0;
@@ -767,9 +839,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                                 CoTaskMemFree(uriRaw);
                                             }
                                             return S_OK;
-                                        }).Get(), nullptr);
+                                        }).Get(), &eventToken);
+                                if (FAILED(eventResult)) {
+                                    params->createResult = eventResult;
+                                    SetEvent(params->readyEvent);
+                                    return S_OK;
+                                }
 
-                                inst->webview->add_NavigationCompleted(
+                                eventResult = inst->webview->add_NavigationCompleted(
                                     Callback<ICoreWebView2NavigationCompletedEventHandler>(
                                         [inst](ICoreWebView2* wv, ICoreWebView2NavigationCompletedEventArgs* args) -> HRESULT {
                                             // Unity posts WM_WEBVIEW_CAPTURE only when captureInProgress is false. If the previous
@@ -778,6 +855,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                             BOOL success = FALSE;
                                             args->get_IsSuccess(&success);
                                             inst->progress = success ? 100 : 0;
+                                            ComPtr<ICoreWebView2NavigationCompletedEventArgs2> httpArgs;
+                                            if (SUCCEEDED(args->QueryInterface(IID_PPV_ARGS(&httpArgs)))) {
+                                                int statusCode = 0;
+                                                if (SUCCEEDED(httpArgs->get_HttpStatusCode(&statusCode)) && statusCode >= 400) {
+                                                    inst->messages.push("CallOnHttpError:" + std::to_string(statusCode));
+                                                }
+                                            }
                                             if (success) {
                                                 LPWSTR uriRaw = nullptr;
                                                 wv->get_Source(&uriRaw);
@@ -789,6 +873,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                                     inst->messages.push("CallOnLoaded:" + uri);
                                                     CoTaskMemFree(uriRaw);
                                                 }
+                                            } else {
+                                                COREWEBVIEW2_WEB_ERROR_STATUS errorStatus = COREWEBVIEW2_WEB_ERROR_STATUS_UNKNOWN;
+                                                args->get_WebErrorStatus(&errorStatus);
+                                                inst->messages.push("CallOnError:WebView2 navigation failed (" +
+                                                    std::to_string((int)errorStatus) + ")");
                                             }
                                             BOOL back = FALSE, fwd = FALSE;
                                             wv->get_CanGoBack(&back);
@@ -799,7 +888,12 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                                 inst->canGoForward = (fwd != FALSE);
                                             }
                                             return S_OK;
-                                        }).Get(), nullptr);
+                                        }).Get(), &eventToken);
+                                if (FAILED(eventResult)) {
+                                    params->createResult = eventResult;
+                                    SetEvent(params->readyEvent);
+                                    return S_OK;
+                                }
 
                                 // Resize and show (composition controller also implements controller)
                                 if (inst->controller) {
@@ -836,6 +930,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             inst->controller = nullptr;
             inst->compositionController = nullptr;
             inst->webview = nullptr;
+            inst->environment = nullptr;
+            inst->pendingHtmlUri.Reset();
+            inst->pendingHtml.clear();
             if (inst->captureDoneEvent) {
                 CloseHandle(inst->captureDoneEvent);
                 inst->captureDoneEvent = nullptr;
@@ -856,6 +953,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             return 0;
         }
         if (wParam == 0) {
+            inst->pendingHtmlUri.Reset();
+            inst->pendingHtml.clear();
+            if (inst->capturePreviewForHtml) {
+                inst->capturePreviewForHtml = false;
+                if (inst->rtDevice && inst->rootVisual) {
+                    StartGraphicsCapture(inst);
+                } else {
+                    SetupCapture(inst);
+                }
+            }
             inst->webview->Stop();
             inst->captureInProgress = false;
             PostMessage(hwnd, WM_WEBVIEW_LOAD_URL, 1, (LPARAM)url);
@@ -866,14 +973,41 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         return 0;
     }
     case WM_WEBVIEW_LOAD_HTML: {
+        std::unique_ptr<wchar_t[]> html((wchar_t*)wParam);
+        std::unique_ptr<wchar_t[]> baseUrl((wchar_t*)lParam);
         if (inst && inst->webview) {
-            wchar_t* html = (wchar_t*)wParam;
-            wchar_t* baseUrl = (wchar_t*)lParam;
-            inst->webview->Stop();
+            inst->capturePreviewForHtml = true;
+            StopGraphicsCapture(inst);
+            {
+                std::lock_guard<std::mutex> bitmapLock(inst->bitmapMutex);
+                inst->bitmapPixels.clear();
+                inst->bitmapWidth = 0;
+                inst->bitmapHeight = 0;
+            }
             inst->captureInProgress = false;
-            inst->webview->NavigateToString(html);
-            delete[] html;
-            if (baseUrl) delete[] baseUrl;
+            inst->pendingHtmlUri.Reset();
+            inst->pendingHtml.clear();
+            const wchar_t* targetUrl = baseUrl && baseUrl[0] && wcscmp(baseUrl.get(), L"about:blank") != 0 ? baseUrl.get()
+                : L"https://unity-webview.invalid/index.html";
+            HRESULT result = CreateUri(targetUrl, Uri_CREATE_CANONICALIZE, 0,
+                inst->pendingHtmlUri.GetAddressOf());
+            if (SUCCEEDED(result)) {
+                int byteCount = WideCharToMultiByte(CP_UTF8, 0, html.get(), -1, nullptr, 0, nullptr, nullptr);
+                if (byteCount > 0) {
+                    inst->pendingHtml.resize(byteCount);
+                    WideCharToMultiByte(CP_UTF8, 0, html.get(), -1,
+                        inst->pendingHtml.data(), byteCount, nullptr, nullptr);
+                    inst->pendingHtml.pop_back();
+                    result = inst->webview->Navigate(targetUrl);
+                } else {
+                    result = HRESULT_FROM_WIN32(GetLastError());
+                }
+            }
+            if (FAILED(result)) {
+                inst->pendingHtmlUri.Reset();
+                inst->pendingHtml.clear();
+                ReportWebViewError(inst, "LoadHTML", result);
+            }
         }
         return 0;
     }
@@ -949,7 +1083,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         inst->captureDoneEvent = doneEv;
 
         ComPtr<IStream> stream;
-        CreateStreamOnHGlobal(nullptr, TRUE, &stream);
+        HRESULT streamResult = CreateStreamOnHGlobal(nullptr, TRUE, &stream);
+        if (FAILED(streamResult)) {
+            inst->captureInProgress = false;
+            if (inst->captureDoneEvent) SetEvent(inst->captureDoneEvent);
+            ReportWebViewError(inst, "CapturePreview stream", streamResult);
+            return 0;
+        }
         ComPtr<IStream> streamRef = stream;
 
         HRESULT errCapture = inst->webview->CapturePreview(COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT_PNG, stream.Get(),
@@ -968,16 +1108,21 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                             inst->bitmapPixels.swap(inst->bitmapPixelsBack);
                             inst->bitmapWidth = inst->bitmapWidthBack;
                             inst->bitmapHeight = inst->bitmapHeightBack;
+                        } else {
+                            ReportWebViewError(inst, "CapturePreview PNG decode", E_FAIL);
                         }
+                    } else if (FAILED(err) && inst->progress == 100) {
+                        ReportWebViewError(inst, "CapturePreview completion", err);
                     }
                     if (inst->captureDoneEvent) SetEvent(inst->captureDoneEvent);
                     inst->captureInProgress = false;
                     return S_OK;
                 }).Get());
-	if (FAILED(errCapture)) {
-	    if (inst->captureDoneEvent) SetEvent(inst->captureDoneEvent);
-	    inst->captureInProgress = false;
-	}
+        if (FAILED(errCapture)) {
+            if (inst->captureDoneEvent) SetEvent(inst->captureDoneEvent);
+            inst->captureInProgress = false;
+            if (inst->progress == 100) ReportWebViewError(inst, "CapturePreview", errCapture);
+        }
         return 0;
     }
     case WM_WEBVIEW_SEND_MOUSE: {
@@ -1288,6 +1433,7 @@ __declspec(dllexport) void* _CWebViewPlugin_Init(
     inst->rectHeight = height > 0 ? height : 480;
     inst->captureDoneEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
+    // TODO: Keep initialization state alive until STA callbacks finish and clean up on failure/timeout.
     CreateParams params;
     params.instance = inst.get();
     params.width = inst->rectWidth;
@@ -1381,16 +1527,31 @@ __declspec(dllexport) void _CWebViewPlugin_LoadURL(void* instance, const char* u
 __declspec(dllexport) void _CWebViewPlugin_LoadHTML(void* instance, const char* html, const char* baseUrl) {
     WebViewInstance* inst = (WebViewInstance*)instance;
     if (!inst || inst->destroying || !html) return;
-    int n = MultiByteToWideChar(CP_UTF8, 0, html, -1, nullptr, 0);
+    int n = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, html, -1, nullptr, 0);
+    if (n == 0) {
+        ReportWebViewError(inst, "LoadHTML UTF-8 conversion", HRESULT_FROM_WIN32(GetLastError()));
+        return;
+    }
     wchar_t* wHtml = new wchar_t[n];
-    MultiByteToWideChar(CP_UTF8, 0, html, -1, wHtml, n);
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, html, -1, wHtml, n);
     wchar_t* wBase = nullptr;
     if (baseUrl && baseUrl[0]) {
-        int nb = MultiByteToWideChar(CP_UTF8, 0, baseUrl, -1, nullptr, 0);
+        int nb = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, baseUrl, -1, nullptr, 0);
+        if (nb == 0) {
+            HRESULT result = HRESULT_FROM_WIN32(GetLastError());
+            delete[] wHtml;
+            ReportWebViewError(inst, "LoadHTML baseUrl UTF-8 conversion", result);
+            return;
+        }
         wBase = new wchar_t[nb];
-        MultiByteToWideChar(CP_UTF8, 0, baseUrl, -1, wBase, nb);
+        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, baseUrl, -1, wBase, nb);
     }
-    PostMessage(inst->hwnd, WM_WEBVIEW_LOAD_HTML, (WPARAM)wHtml, (LPARAM)wBase);
+    if (!PostMessage(inst->hwnd, WM_WEBVIEW_LOAD_HTML, (WPARAM)wHtml, (LPARAM)wBase)) {
+        HRESULT result = HRESULT_FROM_WIN32(GetLastError());
+        delete[] wHtml;
+        delete[] wBase;
+        ReportWebViewError(inst, "LoadHTML PostMessage", result);
+    }
 }
 
 __declspec(dllexport) void _CWebViewPlugin_EvaluateJS(void* instance, const char* js) {
@@ -1518,6 +1679,7 @@ __declspec(dllexport) int _CWebViewPlugin_BitmapHeight(void* instance) {
 }
 
 __declspec(dllexport) void _CWebViewPlugin_Render(void* instance, void* textureBuffer) {
+    // TODO: Accept destination capacity and return dimensions with the same locked bitmap snapshot.
     WebViewInstance* inst = (WebViewInstance*)instance;
     if (!inst || inst->destroying || !textureBuffer) return;
     std::lock_guard<std::mutex> lk(inst->bitmapMutex);
