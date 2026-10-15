@@ -15,6 +15,7 @@
 #include <string>
 #include <cstring>
 #include <queue>
+#include <map>
 #include <mutex>
 #include <memory>
 #include <atomic>
@@ -159,9 +160,9 @@ struct WebViewInstance {
     wgc::GraphicsCaptureSession captureSession{ nullptr };
     wgc::Direct3D11CaptureFramePool::FrameArrived_revoker frameArrivedRevoker;
 
-    // Custom headers for navigation
+    // Custom headers added to requests (UTF-8). Guarded by headersMutex: accessed from the main thread and the STA thread
     std::mutex headersMutex;
-    std::wstring customHeaders; // "Key: Value\r\n..."
+    std::map<std::string, std::string> customHeaders;
 
     // URL pattern (allow/deny/hook) - simplified: we allow all for now
     bool allowAllUrls = true;
@@ -183,6 +184,25 @@ static void ReportWebViewError(WebViewInstance* inst, const char* operation, HRE
     char code[16];
     snprintf(code, sizeof(code), "0x%08X", (unsigned)result);
     inst->messages.push(std::string("CallOnError:") + operation + " failed (" + code + ")");
+}
+
+static std::wstring Utf8ToWide(const std::string& s) {
+    int n = MultiByteToWideChar(CP_UTF8, 0, s.data(), (int)s.size(), nullptr, 0);
+    std::wstring w(n, 0);
+    MultiByteToWideChar(CP_UTF8, 0, s.data(), (int)s.size(), &w[0], n);
+    return w;
+}
+
+// Add the custom headers to a WebResourceRequested request (called on the STA thread)
+static void ApplyCustomHeaders(WebViewInstance* inst, ICoreWebView2WebResourceRequestedEventArgs* args) {
+    std::lock_guard<std::mutex> lk(inst->headersMutex);
+    if (inst->customHeaders.empty()) return;
+    ComPtr<ICoreWebView2WebResourceRequest> request;
+    ComPtr<ICoreWebView2HttpRequestHeaders> headers;
+    if (FAILED(args->get_Request(&request)) || FAILED(request->get_Headers(&headers))) return;
+    for (const auto& header : inst->customHeaders) {
+        headers->SetHeader(Utf8ToWide(header.first).c_str(), Utf8ToWide(header.second).c_str());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -772,13 +792,18 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
                                     return S_OK;
                                 }
 
+                                // TODO: Switch to AddWebResourceRequestedFilterWithRequestSourceKinds; the current API does not fire for cross-origin iframes.
                                 eventResult = inst->webview->AddWebResourceRequestedFilter(
-                                    L"*", COREWEBVIEW2_WEB_RESOURCE_CONTEXT_DOCUMENT);
+                                    L"*", COREWEBVIEW2_WEB_RESOURCE_CONTEXT_ALL);
                                 if (SUCCEEDED(eventResult)) {
                                     eventResult = inst->webview->add_WebResourceRequested(
                                         Callback<ICoreWebView2WebResourceRequestedEventHandler>(
                                             [inst](ICoreWebView2*, ICoreWebView2WebResourceRequestedEventArgs* args) -> HRESULT {
-                                                if (!inst->pendingHtmlUri) return S_OK;
+                                                ApplyCustomHeaders(inst, args);
+                                                // LoadHTML content is returned only for document requests (the filter is registered for all resource contexts)
+                                                COREWEBVIEW2_WEB_RESOURCE_CONTEXT resourceContext{};
+                                                if (!inst->pendingHtmlUri || FAILED(args->get_ResourceContext(&resourceContext))
+                                                    || resourceContext != COREWEBVIEW2_WEB_RESOURCE_CONTEXT_DOCUMENT) return S_OK;
                                                 ComPtr<ICoreWebView2WebResourceRequest> request;
                                                 HRESULT result = args->get_Request(&request);
                                                 LPWSTR requestUrl = nullptr;
@@ -1690,24 +1715,40 @@ __declspec(dllexport) void _CWebViewPlugin_Render(void* instance, void* textureB
 }
 
 __declspec(dllexport) void _CWebViewPlugin_AddCustomHeader(void* instance, const char* headerKey, const char* headerValue) {
-    (void)instance;
-    (void)headerKey;
-    (void)headerValue;
+    WebViewInstance* inst = (WebViewInstance*)instance;
+    if (!inst || inst->destroying || !headerKey || !headerValue) return;
+    std::lock_guard<std::mutex> lk(inst->headersMutex);
+    inst->customHeaders[headerKey] = headerValue;
 }
 
 __declspec(dllexport) const char* _CWebViewPlugin_GetCustomHeaderValue(void* instance, const char* headerKey) {
-    (void)instance;
-    (void)headerKey;
-    return nullptr;
+    WebViewInstance* inst = (WebViewInstance*)instance;
+    if (!inst || inst->destroying || !headerKey) return nullptr;
+    std::string value;
+    {
+        std::lock_guard<std::mutex> lk(inst->headersMutex);
+        auto it = inst->customHeaders.find(headerKey);
+        if (it == inst->customHeaders.end()) return nullptr;
+        value = it->second;
+    }
+    char* buf = (char*)CoTaskMemAlloc(value.size() + 1);
+    if (!buf) return nullptr;
+    memcpy(buf, value.c_str(), value.size() + 1);
+    return buf;
 }
 
 __declspec(dllexport) void _CWebViewPlugin_RemoveCustomHeader(void* instance, const char* headerKey) {
-    (void)instance;
-    (void)headerKey;
+    WebViewInstance* inst = (WebViewInstance*)instance;
+    if (!inst || inst->destroying || !headerKey) return;
+    std::lock_guard<std::mutex> lk(inst->headersMutex);
+    inst->customHeaders.erase(headerKey);
 }
 
 __declspec(dllexport) void _CWebViewPlugin_ClearCustomHeader(void* instance) {
-    (void)instance;
+    WebViewInstance* inst = (WebViewInstance*)instance;
+    if (!inst || inst->destroying) return;
+    std::lock_guard<std::mutex> lk(inst->headersMutex);
+    inst->customHeaders.clear();
 }
 
 __declspec(dllexport) void _CWebViewPlugin_ClearCookie(const char* url, const char* name) {
