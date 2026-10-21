@@ -47,6 +47,7 @@ import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
 import android.webkit.JsResult;
 import android.webkit.JsPromptResult;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -344,6 +345,19 @@ public class CWebViewPlugin {
                     canGoBack = webView.canGoBack();
                     canGoForward = webView.canGoForward();
                     mWebViewPlugin.call("CallOnHttpError", Integer.toString(errorResponse.getStatusCode()));
+                }
+
+                // cf. https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)
+                @Override
+                public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                    // the renderer process crashed or was killed by the system and this webview cannot be
+                    // used anymore. release it and notify Unity directly (mWebViewPlugin.call() drops
+                    // messages once mWebView is null). returning true keeps WebView from killing the app.
+                    if (view == mWebView) {
+                        MyUnitySendMessage(gameObject, "CallOnRenderProcessGone", detail.didCrash() ? "crashed" : "killed");
+                        releaseWebView(a);
+                    }
+                    return true;
                 }
 
                 @Override
@@ -679,25 +693,32 @@ public class CWebViewPlugin {
             return;
         }
         a.runOnUiThread(new Runnable() {public void run() {
-            final WebView webView = mWebView;
-            mWebView = null;
-            if (webView == null) {
-                return;
+            if (mWebView != null) {
+                mWebView.stopLoading();
             }
-            if (mGlobalLayoutListener != null) {
-                View activityRootView = a.getWindow().getDecorView().getRootView();
-                activityRootView.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
-                mGlobalLayoutListener = null;
-            }
-            webView.stopLoading();
-            if (mVideoView != null) {
-                layout.removeView(mVideoView);
-                layout.setBackgroundColor(0x00000000);
-                mVideoView = null;
-            }
-            layout.removeView(webView);
-            webView.destroy();
+            releaseWebView(a);
         }});
+    }
+
+    // must be called on the UI thread.
+    private void releaseWebView(final Activity a) {
+        final WebView webView = mWebView;
+        mWebView = null;
+        if (webView == null) {
+            return;
+        }
+        if (mGlobalLayoutListener != null) {
+            View activityRootView = a.getWindow().getDecorView().getRootView();
+            activityRootView.getViewTreeObserver().removeOnGlobalLayoutListener(mGlobalLayoutListener);
+            mGlobalLayoutListener = null;
+        }
+        if (mVideoView != null) {
+            layout.removeView(mVideoView);
+            layout.setBackgroundColor(0x00000000);
+            mVideoView = null;
+        }
+        layout.removeView(webView);
+        webView.destroy();
     }
 
     public boolean SetURLPattern(final String allowPattern, final String denyPattern, final String hookPattern)
