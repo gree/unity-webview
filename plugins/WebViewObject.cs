@@ -72,6 +72,7 @@ namespace Gree.UnityWebView
         Callback onLoaded;
         Callback onHooked;
         Callback onCookies;
+        Callback onRenderProcessGone;
         bool paused;
         bool visibility;
         bool alertDialogEnabled;
@@ -207,6 +208,9 @@ namespace Gree.UnityWebView
                     break;
                 case "CallOnHttpError":
                     CallOnHttpError(s.Substring(i + 1));
+                    break;
+                case "CallOnRenderProcessGone":
+                    CallOnRenderProcessGone(s.Substring(i + 1));
                     break;
                 case "CallOnLoaded":
                     CallOnLoaded(s.Substring(i + 1));
@@ -799,6 +803,7 @@ namespace Gree.UnityWebView
             Callback started = null,
             Callback hooked = null,
             Callback cookies = null,
+            Callback renderProcessGone = null,
             bool transparent = false,
             bool zoom = true,
             string ua = "",
@@ -825,6 +830,7 @@ namespace Gree.UnityWebView
             onLoaded = ld;
             onHooked = hooked;
             onCookies = cookies;
+            onRenderProcessGone = renderProcessGone;
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
             _gree_unity_webview_init(name);
@@ -1636,6 +1642,16 @@ namespace Gree.UnityWebView
             if (onCookies != null)
             {
                 onCookies(cookies);
+            }
+        }
+
+        // Android only: the WebView renderer process crashed ("crashed") or was killed by the system ("killed").
+        // The native WebView has already been released, so the owner should destroy this object.
+        public void CallOnRenderProcessGone(string reason)
+        {
+            if (onRenderProcessGone != null)
+            {
+                onRenderProcessGone(reason);
             }
         }
     
